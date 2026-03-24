@@ -43,7 +43,7 @@ class SheetsManager:
             client = gspread.authorize(creds)
             nome_planilha = os.environ.get("SHEET_NAME", "Start Finance")
             self.sheet = client.open(nome_planilha)
-            self.aba_transacoes = self.sheet.worksheet("Transações")
+            self.aba_transacoes = self.sheet.worksheet("Transacoes")
             logger.info("✅ Google Sheets conectado com sucesso!")
 
         except Exception as e:
