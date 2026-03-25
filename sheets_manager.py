@@ -1,6 +1,6 @@
 """
-START FINANCE — Google Sheets Manager v4.0
-14 colunas: + Método de Pagamento, Parcela, Total Parcelas
+START FINANCE — Google Sheets Manager v5.0 Aurora
+Correções: head=3, formato mes_ano consistente
 """
 
 import os, json, logging
@@ -16,6 +16,16 @@ SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive",
 ]
+
+# Meses em português para formato consistente com o Apps Script
+MESES_PT = ['jan.','fev.','mar.','abr.','mai.','jun.',
+            'jul.','ago.','set.','out.','nov.','dez.']
+
+def get_mes_ano(data: datetime = None) -> str:
+    """Retorna o mês/ano no formato exato usado nas fórmulas: mar./2026"""
+    d = data or datetime.now()
+    return f"{MESES_PT[d.month - 1]}/{d.year}"
+
 
 class SheetsManager:
     def __init__(self):
@@ -46,34 +56,36 @@ class SheetsManager:
         """Registra uma transação na planilha com 14 colunas."""
         try:
             agora = datetime.now()
-            mes_ano = agora.strftime("%b./%Y").lower()
-            # Formato: mar./2026
-            mes_ano = agora.strftime("%b./").lower() + str(agora.year)
+            mes_ano = get_mes_ano(agora)
 
-            # Formata parcelas
-            parcela_atual = dados.get("parcela_atual", 0) or 0
-            total_parcelas = dados.get("total_parcelas", 0) or 0
-            parcela_str = f"{parcela_atual}/{total_parcelas}" if total_parcelas > 0 else ""
+            # Parcelas
+            parcela_atual   = dados.get("parcela_atual", 0) or 0
+            total_parcelas  = dados.get("total_parcelas", 0) or 0
+            try:
+                parcela_atual  = int(parcela_atual)
+                total_parcelas = int(total_parcelas)
+            except (ValueError, TypeError):
+                parcela_atual = total_parcelas = 0
 
             nova_linha = [
-                dados.get("data", agora.strftime("%d/%m/%Y")),      # A - Data
-                dados.get("hora", agora.strftime("%H:%M")),          # B - Hora
-                float(dados.get("valor", 0)),                        # C - Valor
-                dados.get("tipo", "Gasto"),                          # D - Tipo
-                dados.get("categoria", "Outros"),                    # E - Categoria
-                dados.get("subcategoria", ""),                       # F - Subcategoria
-                dados.get("descricao", ""),                          # G - Descrição
-                dados.get("localizacao", ""),                        # H - Localização
-                dados.get("metodo_pagamento", ""),                   # I - Método
-                parcela_atual if total_parcelas > 0 else "",         # J - Parcela atual
-                total_parcelas if total_parcelas > 0 else "",        # K - Total parcelas
-                "Telegram",                                          # L - Canal
-                mes_ano,                                             # M - Mês/Ano
-                "✅"                                                  # N - Status
+                dados.get("data",  agora.strftime("%d/%m/%Y")),  # A - Data
+                dados.get("hora",  agora.strftime("%H:%M")),     # B - Hora
+                float(dados.get("valor", 0)),                    # C - Valor
+                dados.get("tipo",        "Gasto"),               # D - Tipo
+                dados.get("categoria",   "Outros"),              # E - Categoria
+                dados.get("subcategoria",""),                    # F - Subcategoria
+                dados.get("descricao",   ""),                    # G - Descrição
+                dados.get("localizacao", ""),                    # H - Localização
+                dados.get("metodo_pagamento", ""),               # I - Método
+                parcela_atual  if total_parcelas > 0 else "",    # J - Parcela atual
+                total_parcelas if total_parcelas > 0 else "",    # K - Total parcelas
+                "Telegram",                                      # L - Canal
+                mes_ano,                                         # M - Mês/Ano
+                "✅"                                              # N - Status
             ]
 
             self.aba_transacoes.append_row(nova_linha, value_input_option="USER_ENTERED")
-            logger.info(f"✅ Registrado: {dados.get('descricao')} R${dados.get('valor')}")
+            logger.info(f"✅ Registrado: {dados.get('descricao')} | R${dados.get('valor')} | {mes_ano}")
 
             return self.get_saldo_mes()
 
@@ -81,18 +93,46 @@ class SheetsManager:
             logger.error(f"❌ Erro ao registrar: {e}")
             raise
 
+    def _get_todos_registros(self) -> list:
+        """
+        Lê todos os registros da planilha.
+        head=3 porque o cabeçalho está na linha 3 (Aurora Edition).
+        """
+        try:
+            return self.aba_transacoes.get_all_records(head=3)
+        except Exception:
+            # Fallback: lê valores brutos e monta dicts manualmente
+            try:
+                valores = self.aba_transacoes.get_all_values()
+                if len(valores) < 3:
+                    return []
+                headers = valores[2]  # linha 3 (índice 2) = cabeçalhos
+                registros = []
+                for row in valores[3:]:  # dados a partir da linha 4
+                    if any(cell for cell in row):  # ignora linhas vazias
+                        d = {}
+                        for i, h in enumerate(headers):
+                            d[h] = row[i] if i < len(row) else ""
+                        registros.append(d)
+                return registros
+            except Exception as e2:
+                logger.error(f"❌ Erro ao ler registros: {e2}")
+                return []
+
     def get_saldo_mes(self) -> float:
         """Calcula o saldo do mês atual."""
         try:
-            agora = datetime.now()
-            mes_atual = agora.strftime("%b./").lower() + str(agora.year)
-            todas = self.aba_transacoes.get_all_records()
-
+            mes_atual = get_mes_ano()
+            registros = self._get_todos_registros()
             saldo = 0.0
-            for row in todas:
-                if str(row.get("MÊS/ANO", "")).strip().lower() == mes_atual:
+            for row in registros:
+                # Tenta os dois possíveis nomes de coluna
+                mes_row = str(row.get("MÊS/ANO", row.get("MES/ANO", ""))).strip()
+                if mes_row == mes_atual:
                     try:
-                        saldo += float(row.get("VALOR (R$)", 0))
+                        v = str(row.get("VALOR (R$)", row.get("VALOR", "0")))
+                        v = v.replace("R$","").replace(".","").replace(",",".").strip()
+                        saldo += float(v)
                     except (ValueError, TypeError):
                         pass
             return saldo
@@ -104,22 +144,24 @@ class SheetsManager:
     def get_resumo_mes(self) -> dict:
         """Retorna resumo completo do mês atual."""
         try:
-            agora = datetime.now()
-            mes_atual = agora.strftime("%b./").lower() + str(agora.year)
-            todas = self.aba_transacoes.get_all_records()
+            mes_atual = get_mes_ano()
+            registros = self._get_todos_registros()
 
-            entradas = 0.0
-            saidas = 0.0
+            entradas   = 0.0
+            saidas     = 0.0
             categorias = defaultdict(float)
-            metodos = defaultdict(float)
-            total_registros = 0
+            metodos    = defaultdict(float)
+            total      = 0
 
-            for row in todas:
-                if str(row.get("MÊS/ANO", "")).strip().lower() != mes_atual:
+            for row in registros:
+                mes_row = str(row.get("MÊS/ANO", row.get("MES/ANO", ""))).strip()
+                if mes_row != mes_atual:
                     continue
                 try:
-                    valor = float(row.get("VALOR (R$)", 0))
-                    total_registros += 1
+                    v_str = str(row.get("VALOR (R$)", row.get("VALOR", "0")))
+                    v_str = v_str.replace("R$","").replace(".","").replace(",",".").strip()
+                    valor = float(v_str)
+                    total += 1
                     if valor > 0:
                         entradas += valor
                     else:
@@ -127,19 +169,19 @@ class SheetsManager:
                         cat = row.get("CATEGORIA", "Outros")
                         if cat:
                             categorias[cat] += abs(valor)
-                        metodo = row.get("MÉTODO", "")
-                        if metodo:
-                            metodos[metodo] += abs(valor)
+                        met = row.get("MÉTODO", "")
+                        if met:
+                            metodos[met] += abs(valor)
                 except (ValueError, TypeError):
                     pass
 
             return {
                 "entradas": entradas,
-                "saidas": saidas,
-                "saldo": entradas - saidas,
+                "saidas":   saidas,
+                "saldo":    entradas - saidas,
                 "categorias": dict(sorted(categorias.items(), key=lambda x: x[1], reverse=True)),
-                "metodos": dict(sorted(metodos.items(), key=lambda x: x[1], reverse=True)),
-                "total_registros": total_registros
+                "metodos":    dict(sorted(metodos.items(),    key=lambda x: x[1], reverse=True)),
+                "total_registros": total
             }
 
         except Exception as e:
@@ -147,7 +189,6 @@ class SheetsManager:
             raise
 
     def get_top_categorias(self, n: int = 3) -> list:
-        """Retorna as N categorias com maior gasto."""
         try:
             resumo = self.get_resumo_mes()
             return list(resumo["categorias"].items())[:n]
