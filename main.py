@@ -230,13 +230,26 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             saldo_emoji = "💚" if saldo >= 0 else "🔴"
             tipo_emoji = "💸" if dados.get("tipo") == "Gasto" else "💰"
 
+            subcategoria = dados.get('subcategoria', '')
+            categoria_completa = dados.get('categoria', 'Outros')
+            if subcategoria:
+                categoria_completa += f" · {subcategoria}"
+
             msg = (
                 f"✅ *Registrado com sucesso!*\n\n"
-                f"{tipo_emoji} R$ {abs(float(dados.get('valor', 0))):.2f} "
-                f"em *{dados.get('categoria', 'Outros')}*\n\n"
-                f"{saldo_emoji} Saldo de {datetime.now().strftime('%B').capitalize()}: "
-                f"*R$ {saldo:.2f}*"
+                f"{tipo_emoji} *R$ {abs(float(dados.get('valor', 0))):.2f}* "
+                f"em {categoria_completa}"
             )
+
+            if dados.get('localizacao'):
+                msg += f"\n📍 {dados.get('localizacao')}"
+
+            if dados.get('metodo_pagamento'):
+                msg += f"\n💳 {dados.get('metodo_pagamento')}"
+
+            total_parcelas = dados.get('total_parcelas', 0)
+            if total_parcelas and int(total_parcelas) > 0:
+                msg += f"\n🔢 Parcelado em *{total_parcelas}x*"
 
             # Dica inteligente baseada na categoria
             dica = gerar_dica(dados, saldo)
