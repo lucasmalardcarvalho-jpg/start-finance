@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Start Finance — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Lora:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#F4F6F9; --card:#FFFFFF; --card2:#F9FAFB; --border:#E8ECF0;
+  --azul:#3B6FF0; --azul-light:#EEF3FF; --azul-dark:#2451C7;
+  --verde:#10B981; --verde-light:#ECFDF5; --verde-dark:#059669;
+  --vermelho:#EF4444; --verm-light:#FEF2F2;
+  --laranja:#F97316; --lara-light:#FFF7ED;
+  --roxo:#8B5CF6; --roxo-light:#F5F3FF;
+  --amarelo:#F59E0B; --amar-light:#FFFBEB;
+  --texto:#111827; --texto2:#374151; --muted:#6B7280; --muted2:#9CA3AF;
+  --shadow:0 1px 3px rgba(0,0,0,.07),0 4px 16px rgba(0,0,0,.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,.10);
+  --radius:16px; --radius-sm:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Cabinet Grotesk',sans-serif;background:var(--bg);color:var(--texto);min-height:100vh;overflow-x:hidden;}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
+.spin{width:48px;height:48px;border:4px solid var(--border);border-top-color:var(--azul);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:14px;font-weight:600;color:var(--muted);}
+#app{opacity:0;transition:opacity .4s;}
+#app.visible{opacity:1;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:28px 0;z-index:100;box-shadow:2px 0 12px rgba(0,0,0,.04);}
+.logo{padding:0 24px 28px;border-bottom:1px solid var(--border);margin-bottom:16px;}
+.logo-mark{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--azul),var(--azul-dark));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 4px 12px rgba(59,111,240,.3);}
+.logo-text{font-size:17px;font-weight:800;letter-spacing:-0.5px;}
+.logo-text span{color:var(--azul);}
+.logo-period{font-size:11px;color:var(--muted);font-weight:500;margin-top:4px;padding-left:48px;}
+.nav-section{padding:0 12px;flex:1;}
+.nav-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);padding:8px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;margin-bottom:2px;}
+.nav-item:hover{background:var(--bg);color:var(--texto);}
+.nav-item.active{background:var(--azul-light);color:var(--azul);}
+.nav-icon{font-size:17px;width:22px;text-align:center;}
+.sidebar-tg{margin:0 12px 8px;background:linear-gradient(135deg,#2AABEE22,#229ED922);border:1px solid #2AABEE33;border-radius:var(--radius-sm);padding:14px;}
+.tg-label{font-size:11px;font-weight:700;color:#2AABEE;margin-bottom:4px;}
+.tg-bot{font-size:13px;font-weight:600;color:var(--texto2);}
+.tg-status{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--verde);font-weight:600;margin-top:6px;}
+.tg-dot{width:6px;height:6px;background:var(--verde);border-radius:50%;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* MAIN */
+.main{margin-left:240px;padding:32px;min-height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;}
+.page-title h1{font-size:26px;font-weight:900;letter-spacing:-.5px;}
+.page-title p{font-size:13px;color:var(--muted);margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.month-badge{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--texto2);}
+.btn-refresh{background:var(--azul);color:white;border:none;border-radius:10px;padding:10px 18px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;box-shadow:0 4px 12px rgba(59,111,240,.3);transition:all .2s;display:flex;align-items:center;gap:6px;}
+.btn-refresh:hover{background:var(--azul-dark);transform:translateY(-1px);}
+.btn-refresh:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow);transition:transform .2s,box-shadow .2s;position:relative;overflow:hidden;}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius) var(--radius) 0 0;}
+.kpi-card.verde::before{background:var(--verde);}
+.kpi-card.vermelho::before{background:var(--vermelho);}
+.kpi-card.azul::before{background:var(--azul);}
+.kpi-card.amarelo::before{background:var(--amarelo);}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.kpi-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.verde .kpi-icon{background:var(--verde-light);}
+.vermelho .kpi-icon{background:var(--verm-light);}
+.azul .kpi-icon{background:var(--azul-light);}
+.amarelo .kpi-icon{background:var(--amar-light);}
+.kpi-change{font-size:12px;font-weight:700;padding:3px 8px;border-radius:100px;}
+.kpi-change.pos{background:var(--verde-light);color:var(--verde-dark);}
+.kpi-change.neg{background:var(--verm-light);color:var(--vermelho);}
+.kpi-change.neu{background:var(--azul-light);color:var(--azul);}
+.kpi-value{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1;margin-bottom:4px;}
+.kpi-label{font-size:12px;color:var(--muted);font-weight:600;}
+
+/* GRID */
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:20px;}
+.grid2eq{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 0;margin-bottom:16px;}
+.card-title{font-size:15px;font-weight:800;color:var(--texto);}
+.card-subtitle{font-size:11px;color:var(--muted);font-weight:500;margin-top:2px;}
+.card-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--bg);color:var(--muted);}
+
+/* CHART BARS */
+.chart-wrap{padding:0 22px 20px;height:100px;display:flex;align-items:flex-end;gap:6px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end;}
+.bar-fill{width:100%;border-radius:5px 5px 0 0;cursor:pointer;min-height:4px;}
+.bar-fill:hover{filter:brightness(1.1);}
+.bar-fill.r{background:linear-gradient(180deg,#10B981,#059669);}
+.bar-fill.g{background:linear-gradient(180deg,#EF4444,#DC2626);opacity:.85;}
+.bar-fill.a{background:linear-gradient(180deg,#3B6FF0,#2451C7);}
+.bar-label{font-size:9px;color:var(--muted2);font-weight:600;white-space:nowrap;}
+.chart-legend{padding:0 22px 16px;display:flex;gap:16px;}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--muted);}
+.leg-dot{width:10px;height:10px;border-radius:3px;}
+
+/* DONUT */
+.donut-wrap{padding:8px 22px 20px;display:flex;align-items:center;gap:24px;}
+.donut-legend{flex:1;display:flex;flex-direction:column;gap:8px;}
+.leg-row{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--texto2);}
+.leg-circle{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.leg-pct{margin-left:auto;color:var(--muted);font-size:11px;}
+
+/* CATEGORIAS */
+.cat-list{padding:0 22px 20px;}
+.cat-item{display:grid;grid-template-columns:28px 1fr 80px 72px;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.cat-item:last-child{border-bottom:none;}
+.cat-emoji{font-size:16px;text-align:center;}
+.cat-name{font-size:13px;font-weight:700;color:var(--texto2);}
+.cat-bar-wrap{height:6px;background:var(--border);border-radius:100px;overflow:hidden;}
+.cat-bar-fill{height:100%;border-radius:100px;transition:width 1s cubic-bezier(.34,1.56,.64,1);}
+.cat-val{font-size:13px;font-weight:800;text-align:right;color:var(--vermelho);}
+.cat-status{font-size:11px;font-weight:700;text-align:right;}
+.s-ok{color:var(--verde)}.s-warn{color:var(--laranja)}.s-over{color:var(--vermelho)}.s-free{color:var(--muted2)}
+
+/* TRANSAÇÕES */
+.tx-list{padding:0 22px 20px;}
+.tx-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.tx-item:last-child{border-bottom:none;}
+.tx-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.tx-info{flex:1;min-width:0;}
+.tx-desc{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tx-meta{display:flex;align-items:center;gap:5px;margin-top:2px;}
+.tx-cat{font-size:11px;color:var(--muted);font-weight:500;}
+.tx-method{font-size:10px;color:var(--muted2);background:var(--bg);padding:1px 6px;border-radius:100px;font-weight:600;}
+.tx-parcela{font-size:10px;font-weight:700;background:var(--lara-light);color:var(--laranja);padding:1px 6px;border-radius:100px;}
+.tx-right{text-align:right;flex-shrink:0;}
+.tx-valor{font-size:14px;font-weight:800;letter-spacing:-.3px;}
+.tv-neg{color:var(--vermelho)}.tv-pos{color:var(--verde)}
+.tx-date{font-size:11px;color:var(--muted2);margin-top:2px;}
+
+/* NARRATIVA */
+.narrative-body{padding:0 22px 20px;font-family:'Lora',serif;font-style:italic;font-size:14px;color:var(--texto2);line-height:1.7;}
+.narrative-body strong{font-style:normal;font-weight:700;color:var(--texto);}
+
+/* MÉTODOS */
+.metodo-list{padding:0 22px 20px;display:flex;flex-direction:column;gap:10px;}
+.met-item{display:flex;align-items:center;gap:12px;}
+.met-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;background:var(--bg);}
+.met-info{flex:1;}
+.met-name{font-size:12px;font-weight:700;color:var(--texto2);}
+.met-bar-wrap{height:5px;background:var(--border);border-radius:100px;margin-top:4px;overflow:hidden;}
+.met-bar-fill{height:100%;border-radius:100px;}
+.met-val{font-size:13px;font-weight:800;white-space:nowrap;}
+
+/* PREVISÃO */
+.prev-list{padding:0 22px 20px;display:flex;flex-direction:column;gap:10px;}
+.prev-item{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--bg);border-radius:10px;}
+.prev-label{font-size:13px;font-weight:700;color:var(--texto2);}
+.prev-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.prev-val{font-size:15px;font-weight:900;}
+.pv-pos{color:var(--verde)}.pv-neg{color:var(--vermelho)}.pv-neu{color:var(--azul)}
+
+/* BADGES */
+.badges-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 22px 20px;}
+.badge-item{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;display:flex;gap:10px;align-items:flex-start;}
+.badge-item.conquistado{border-color:#10B98133;background:var(--verde-light);}
+.badge-icon{font-size:22px;flex-shrink:0;}
+.badge-name{font-size:12px;font-weight:800;color:var(--texto2);}
+.badge-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+.badge-prog-wrap{height:4px;background:var(--border);border-radius:100px;margin-top:6px;overflow:hidden;}
+.badge-prog-fill{height:100%;border-radius:100px;transition:width 1s cubic-bezier(.34,1.56,.64,1);}
+
+/* TELEGRAM PANEL */
+.tg-panel{background:linear-gradient(135deg,#2AABEE,#229ED9);border-radius:var(--radius);padding:24px;color:white;box-shadow:0 8px 24px rgba(42,171,238,.3);}
+.tg-p-title{font-size:16px;font-weight:800;margin-bottom:4px;}
+.tg-p-sub{font-size:12px;opacity:.8;margin-bottom:16px;}
+.tg-examples{display:flex;flex-direction:column;gap:8px;}
+.tg-ex{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:8px;}
+
+/* ANIMAÇÕES */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.kpi-card{animation:fadeInUp .4s ease both;}
+.kpi-card:nth-child(1){animation-delay:.05s}
+.kpi-card:nth-child(2){animation-delay:.10s}
+.kpi-card:nth-child(3){animation-delay:.15s}
+.kpi-card:nth-child(4){animation-delay:.20s}
+.card{animation:fadeInUp .5s ease .2s both;}
+
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(2,1fr)}.grid2,.grid2eq,.grid3{grid-template-columns:1fr}}
+@media(max-width:768px){.sidebar{display:none}.main{margin-left:0;padding:20px 16px}.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spin"></div>
+  <div class="loading-text">Carregando seu dashboard...</div>
+</div>
+
+<div id="app">
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">🌅</div>
+      <span class="logo-text"><span>Start</span> Finance</span>
+    </div>
+    <div class="logo-period" id="logo-period">Carregando...</div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Principal</div>
+    <div class="nav-item active"><span class="nav-icon">📊</span> Dashboard</div>
+    <div class="nav-item"><span class="nav-icon">💸</span> Transações</div>
+    <div class="nav-item"><span class="nav-icon">🎯</span> Metas</div>
+    <div class="nav-item"><span class="nav-icon">🔮</span> Previsões</div>
+    <div class="nav-label" style="margin-top:8px">Configurar</div>
+    <div class="nav-item"><span class="nav-icon">📂</span> Categorias</div>
+    <div class="nav-item"><span class="nav-icon">⚙️</span> Limites</div>
+    <div class="nav-item"><span class="nav-icon">🏅</span> Conquistas</div>
+  </div>
+  <div class="sidebar-tg">
+    <div class="tg-label">🤖 BOT TELEGRAM</div>
+    <div class="tg-bot">@startfinance_bot</div>
+    <div class="tg-status"><span class="tg-dot"></span> Online agora</div>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="topbar">
+    <div class="page-title">
+      <h1>Olá, Lucas 👋</h1>
+      <p>Panorama completo das suas finanças — dados em tempo real</p>
+    </div>
+    <div class="topbar-right">
+      <div class="month-badge" id="month-badge">—</div>
+      <button class="btn-refresh" onclick="carregarDados()">🔄 Atualizar</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card verde">
+      <div class="kpi-header">
+        <div class="kpi-icon">💰</div>
+        <span class="kpi-change pos" id="kpi-entradas-change">Mês atual</span>
+      </div>
+      <div class="kpi-value" id="kpi-entradas">R$ —</div>
+      <div class="kpi-label">Entradas do mês</div>
+    </div>
+    <div class="kpi-card vermelho">
+      <div class="kpi-header">
+        <div class="kpi-icon">💸</div>
+        <span class="kpi-change neg" id="kpi-saidas-change">Mês atual</span>
+      </div>
+      <div class="kpi-value" id="kpi-saidas">R$ —</div>
+      <div class="kpi-label">Saídas do mês</div>
+    </div>
+    <div class="kpi-card azul">
+      <div class="kpi-header">
+        <div class="kpi-icon">⚖️</div>
+        <span class="kpi-change neu" id="kpi-saldo-change">Disponível</span>
+      </div>
+      <div class="kpi-value" id="kpi-saldo">R$ —</div>
+      <div class="kpi-label">Saldo do mês</div>
+    </div>
+    <div class="kpi-card amarelo">
+      <div class="kpi-header">
+        <div class="kpi-icon">📋</div>
+        <span class="kpi-change neu">Registros</span>
+      </div>
+      <div class="kpi-value" id="kpi-registros">—</div>
+      <div class="kpi-label">Transações via Telegram</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: Gráfico + Donut -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Evolução Mensal</div>
+          <div class="card-subtitle">Entradas × Saídas — últimos 6 meses</div>
+        </div>
+        <span class="card-badge">6 meses</span>
+      </div>
+      <div class="chart-wrap" id="chart-historico"></div>
+      <div class="chart-legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--verde)"></div> Entradas</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--vermelho);opacity:.85"></div> Saídas</div>
+        <div class="leg-item" style="color:var(--azul)"><div class="leg-dot" style="background:var(--azul)"></div> Mês atual</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Por Categoria</div>
+          <div class="card-subtitle">Distribuição dos gastos</div>
+        </div>
+      </div>
+      <div class="donut-wrap" id="donut-wrap">
+        <div style="color:var(--muted);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: Categorias + Transações -->
+  <div class="grid2eq">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Limites por Categoria</div>
+          <div class="card-subtitle">Gasto × limite definido</div>
+        </div>
+      </div>
+      <div class="cat-list" id="cat-list">
+        <div style="padding:20px;color:var(--muted);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Últimas Transações</div>
+          <div class="card-subtitle">Recebidas via Telegram</div>
+        </div>
+      </div>
+      <div class="tx-list" id="tx-list">
+        <div style="padding:20px;color:var(--muted);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Narrativa + Métodos + Previsão -->
+  <div class="grid3">
+    <div class="card" style="background:linear-gradient(135deg,#3B6FF008,#10B98108);border-color:#3B6FF020">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📖 Narrativa do Mês</div>
+          <div class="card-subtitle">Resumo automático</div>
+        </div>
+      </div>
+      <div class="narrative-body" id="narrativa">Carregando...</div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">💳 Formas de Pagamento</div>
+          <div class="card-subtitle">Como você pagou</div>
+        </div>
+      </div>
+      <div class="metodo-list" id="metodo-list">
+        <div style="padding:8px;color:var(--muted);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔮 Previsão — Próximo mês</div>
+          <div class="card-subtitle">Baseada no histórico</div>
+        </div>
+      </div>
+      <div class="prev-list" id="prev-list">
+        <div style="padding:8px;color:var(--muted);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: Badges + Telegram -->
+  <div class="grid2eq">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🏅 Conquistas & Badges</div>
+          <div class="card-subtitle">Sua jornada gamificada</div>
+        </div>
+      </div>
+      <div class="badges-grid" id="badges-grid">
+        <div style="padding:8px;color:var(--muted);font-size:13px">Carregando...</div>
+      </div>
+    </div>
+    <div class="tg-panel">
+      <div class="tg-p-title">🤖 Registre via Telegram</div>
+      <div class="tg-p-sub">Mande uma mensagem e o bot registra na hora</div>
+      <div class="tg-examples">
+        <div class="tg-ex">🍽️ "Gastei R$45 no almoço hoje"</div>
+        <div class="tg-ex">🚗 "50 uber + 35 ifood"</div>
+        <div class="tg-ex">🚘 "Mecânico 350, parcelado 3x"</div>
+        <div class="tg-ex">💰 "Caiu o salário, 3500"</div>
+        <div class="tg-ex">🎤 Ou mande um áudio!</div>
+      </div>
+      <div style="margin-top:16px;padding:10px;background:rgba(255,255,255,.2);border-radius:8px;font-size:12px;font-weight:700">
+        📲 @startfinance_bot — Abrir no Telegram →
+      </div>
+    </div>
+  </div>
+</main>
+</div>
+
+<script>
+const fmt = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtShort = v => {
+  if (v >= 1000) return 'R$ ' + (v/1000).toFixed(1) + 'k';
+  return 'R$ ' + Math.round(v);
+};
+
+const CORES_MET = {
+  'Cartão crédito':'#3B6FF0','Cartão débito':'#EF4444',
+  'Pix':'#2AABEE','Dinheiro':'#10B981','Boleto':'#F97316','Cartão':'#8B5CF6',
+};
+
+async function carregarDados() {
+  const btn = document.querySelector('.btn-refresh');
+  btn.disabled = true;
+  btn.textContent = '⏳ Carregando...';
+
+  try {
+    const res  = await fetch('/api/data');
+    const data = await res.json();
+    if (data.erro) throw new Error(data.erro);
+
+    renderKPIs(data.kpis, data.mes);
+    renderHistorico(data.historico);
+    renderDonut(data.categorias);
+    renderCategorias(data.categorias);
+    renderTransacoes(data.transacoes);
+    renderNarrativa(data.narrativa);
+    renderMetodos(data.metodos);
+    renderPrevisao(data.previsao);
+    renderBadges(data.badges);
+
+    document.getElementById('month-badge').textContent = data.mes.toUpperCase();
+    document.getElementById('logo-period').textContent = data.mes;
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+
+  } catch (err) {
+    console.error('Erro:', err);
+    document.getElementById('loading').innerHTML =
+      `<div style="text-align:center;padding:40px">
+        <div style="font-size:32px;margin-bottom:12px">⚠️</div>
+        <div style="font-size:16px;font-weight:700;color:#111;margin-bottom:8px">Erro ao carregar dados</div>
+        <div style="font-size:13px;color:#6B7280;margin-bottom:20px">${err.message}</div>
+        <button onclick="carregarDados()" style="background:#3B6FF0;color:white;border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Tentar novamente</button>
+      </div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔄 Atualizar';
+  }
+}
+
+function renderKPIs(kpis, mes) {
+  const saldo = kpis.saldo;
+  document.getElementById('kpi-entradas').textContent = fmt(kpis.entradas);
+  document.getElementById('kpi-saidas').textContent   = fmt(kpis.saidas);
+  document.getElementById('kpi-saldo').textContent    = fmt(saldo);
+  document.getElementById('kpi-saldo').style.color    = saldo >= 0 ? 'var(--verde)' : 'var(--vermelho)';
+  document.getElementById('kpi-registros').textContent = kpis.registros;
+  document.getElementById('kpi-saldo-change').textContent = saldo >= 0 ? '💚 Positivo' : '🔴 Negativo';
+  document.getElementById('kpi-saldo-change').className = 'kpi-change ' + (saldo >= 0 ? 'pos' : 'neg');
+  document.getElementById('kpi-entradas-change').textContent = mes;
+  document.getElementById('kpi-saidas-change').textContent   = mes;
+}
+
+function renderHistorico(hist) {
+  if (!hist || !hist.length) return;
+  const wrap = document.getElementById('chart-historico');
+  const maxVal = Math.max(...hist.flatMap(h => [h.entradas, h.saidas]), 1);
+  wrap.innerHTML = '';
+
+  hist.forEach(h => {
+    const pctE = Math.max(h.entradas / maxVal * 100, 2);
+    const pctS = Math.max(h.saidas   / maxVal * 100, 2);
+    const label = h.label;
+    const atual = h.atual;
+
+    wrap.innerHTML += `
+      <div class="bar-col">
+        <div class="bar-fill ${atual ? 'a' : 'g'}" style="height:${pctS}%" title="${label} Saídas: ${fmt(h.saidas)}"></div>
+        <div class="bar-label">${label}</div>
+      </div>
+      <div class="bar-col">
+        <div class="bar-fill r" style="height:${pctE}%" title="${label} Entradas: ${fmt(h.entradas)}"></div>
+        <div class="bar-label" style="${atual?'color:var(--verde);font-weight:800':''}">${atual ? label+'✦' : ''}</div>
+      </div>
+    `;
+  });
+}
+
+function renderDonut(cats) {
+  if (!cats || !cats.length) return;
+  const top5  = cats.slice(0, 5);
+  const total = top5.reduce((s, c) => s + c.gasto, 0) || 1;
+  const wrap  = document.getElementById('donut-wrap');
+
+  // SVG donut
+  let svg = `<svg width="110" height="110" viewBox="0 0 110 110" style="flex-shrink:0">
+    <circle cx="55" cy="55" r="42" fill="none" stroke="#F3F4F6" stroke-width="16"/>`;
+
+  let offset = 0;
+  const circ = 2 * Math.PI * 42;
+  top5.forEach(c => {
+    const pct  = c.gasto / total;
+    const dash = pct * circ;
+    const gap  = circ - dash;
+    svg += `<circle cx="55" cy="55" r="42" fill="none" stroke="${c.cor}" stroke-width="16"
+      stroke-dasharray="${dash.toFixed(1)} ${gap.toFixed(1)}"
+      stroke-dashoffset="${(-offset * circ).toFixed(1)}"
+      transform="rotate(-90 55 55)"/>`;
+    offset += pct;
+  });
+
+  const totalGasto = cats.reduce((s,c) => s+c.gasto, 0);
+  svg += `<text x="55" y="50" text-anchor="middle" font-size="11" font-weight="800" fill="#111827" font-family="Cabinet Grotesk">R$</text>
+    <text x="55" y="65" text-anchor="middle" font-size="10" font-weight="700" fill="#6B7280" font-family="Cabinet Grotesk">${(totalGasto/1000).toFixed(1)}k</text>
+  </svg>`;
+
+  let legend = '<div class="donut-legend">';
+  top5.forEach(c => {
+    const pct = Math.round(c.gasto / totalGasto * 100);
+    legend += `<div class="leg-row">
+      <div class="leg-circle" style="background:${c.cor}"></div>
+      ${c.emoji} ${c.nome}
+      <span class="leg-pct">${pct}%</span>
+    </div>`;
+  });
+  legend += '</div>';
+
+  wrap.innerHTML = svg + legend;
+}
+
+function renderCategorias(cats) {
+  if (!cats || !cats.length) {
+    document.getElementById('cat-list').innerHTML =
+      '<div style="padding:20px;color:var(--muted);font-size:13px;text-align:center">Nenhum gasto registrado ainda</div>';
+    return;
+  }
+  const el  = document.getElementById('cat-list');
+  const maxVal = Math.max(...cats.map(c => c.gasto), 1);
+  el.innerHTML = cats.slice(0, 8).map(c => {
+    const barPct   = c.limite > 0 ? Math.min(c.pct, 105) : (c.gasto / maxVal * 100);
+    const barColor = c.status === 'estourou' ? 'var(--vermelho)' :
+                     c.status === 'atencao'  ? 'var(--laranja)'  :
+                     c.status === 'ok'       ? 'var(--verde)'    : 'var(--muted2)';
+    const statusTxt = c.status === 'estourou' ? `<span class="cat-status s-over">🔴 Estourou!</span>` :
+                      c.status === 'atencao'  ? `<span class="cat-status s-warn">🟡 ${Math.round(c.pct)}%</span>` :
+                      c.status === 'ok'       ? `<span class="cat-status s-ok">🟢 ${Math.round(c.pct)}%</span>` :
+                                               `<span class="cat-status s-free">♾️ Livre</span>`;
+    return `<div class="cat-item">
+      <span class="cat-emoji">${c.emoji}</span>
+      <div>
+        <div class="cat-name">${c.nome}</div>
+        <div class="cat-bar-wrap"><div class="cat-bar-fill" style="width:0%;background:${barColor}" data-w="${barPct}%"></div></div>
+      </div>
+      <div class="cat-val">${fmt(c.gasto)}</div>
+      ${statusTxt}
+    </div>`;
+  }).join('');
+
+  // Anima barras
+  setTimeout(() => {
+    el.querySelectorAll('.cat-bar-fill').forEach(b => { b.style.width = b.dataset.w; });
+  }, 100);
+}
+
+function renderTransacoes(txs) {
+  if (!txs || !txs.length) {
+    document.getElementById('tx-list').innerHTML =
+      '<div style="padding:20px;color:var(--muted);font-size:13px;text-align:center">Nenhuma transação ainda.<br>Registre via Telegram! 🤖</div>';
+    return;
+  }
+  document.getElementById('tx-list').innerHTML = txs.slice(0,7).map(t => {
+    const neg   = t.valor < 0;
+    const valFmt = (neg ? '−' : '+') + fmt(t.valor);
+    const metBadge = t.metodo ? `<span class="tx-method">${t.metodo}</span>` : '';
+    const parcBadge = t.parcelas > 0 ? `<span class="tx-parcela">${t.parcelas}x</span>` : '';
+    const desc  = t.descricao || t.categoria;
+    const subCat = t.subcategoria ? ` · ${t.subcategoria}` : '';
+    return `<div class="tx-item">
+      <div class="tx-icon" style="background:${t.cor}22">${t.emoji}</div>
+      <div class="tx-info">
+        <div class="tx-desc">${desc}</div>
+        <div class="tx-meta">
+          <span class="tx-cat">${t.categoria}${subCat}</span>
+          ${parcBadge}${metBadge}
+        </div>
+      </div>
+      <div class="tx-right">
+        <div class="tx-valor ${neg?'tv-neg':'tv-pos'}">${valFmt}</div>
+        <div class="tx-date">${t.data} · ${t.hora}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderNarrativa(texto) {
+  if (!texto) return;
+  // Enriquece com bold nos valores
+  const enriquecido = texto
+    .replace(/(R\$\s*[\d.,]+)/g, '<strong>$1</strong>')
+    .replace(/(\d+\s*transações?)/g, '<strong>$1</strong>');
+  document.getElementById('narrativa').innerHTML = enriquecido;
+}
+
+function renderMetodos(metodos) {
+  if (!metodos || !metodos.length) {
+    document.getElementById('metodo-list').innerHTML =
+      '<div style="padding:8px;color:var(--muted);font-size:13px">Nenhum método registrado</div>';
+    return;
+  }
+  const icones = {
+    'Cartão crédito':'💳','Cartão débito':'💳','Pix':'📲',
+    'Dinheiro':'💵','Boleto':'📄','Cartão':'💳',
+  };
+  document.getElementById('metodo-list').innerHTML = metodos.map(m => {
+    const cor = CORES_MET[m.nome] || '#9CA3AF';
+    return `<div class="met-item">
+      <div class="met-icon">${icones[m.nome] || '💰'}</div>
+      <div class="met-info">
+        <div class="met-name">${m.nome}</div>
+        <div class="met-bar-wrap"><div class="met-bar-fill" style="width:0%;background:${cor}" data-w="${m.pct}%"></div></div>
+      </div>
+      <div class="met-val">${fmt(m.valor)}</div>
+    </div>`;
+  }).join('');
+  setTimeout(() => {
+    document.querySelectorAll('.met-bar-fill').forEach(b => { b.style.width = b.dataset.w; });
+  }, 100);
+}
+
+function renderPrevisao(prev) {
+  if (!prev) return;
+  document.getElementById('prev-list').innerHTML = `
+    <div class="prev-item">
+      <div><div class="prev-label">💰 Receita estimada</div><div class="prev-sub">Baseado no histórico</div></div>
+      <div class="prev-val pv-pos">${fmt(prev.entradas)}</div>
+    </div>
+    <div class="prev-item">
+      <div><div class="prev-label">💸 Gasto estimado</div><div class="prev-sub">+5% de tendência</div></div>
+      <div class="prev-val pv-neg">${fmt(prev.saidas)}</div>
+    </div>
+    <div class="prev-item">
+      <div><div class="prev-label">⚖️ Saldo projetado</div><div class="prev-sub">Diferença estimada</div></div>
+      <div class="prev-val ${prev.saldo >= 0 ? 'pv-pos' : 'pv-neg'}">${fmt(prev.saldo)}</div>
+    </div>`;
+}
+
+function renderBadges(badges) {
+  if (!badges || !badges.length) return;
+  const cores = {conquistado:'#10B981',progresso:'#9CA3AF'};
+  document.getElementById('badges-grid').innerHTML = badges.map(b => {
+    const conquistado = b.status === 'conquistado';
+    return `<div class="badge-item ${conquistado?'conquistado':''}">
+      <div class="badge-icon">${b.emoji}</div>
+      <div>
+        <div class="badge-name">${b.nome}</div>
+        <div class="badge-desc">${b.desc} — <strong>${b.progresso}</strong></div>
+        <div class="badge-prog-wrap">
+          <div class="badge-prog-fill" style="width:0%;background:${cores[b.status]}" data-w="${Math.round(b.pct)}%"></div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  setTimeout(() => {
+    document.querySelectorAll('.badge-prog-fill').forEach(b => { b.style.width = b.dataset.w; });
+  }, 100);
+}
+
+// Nav
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+    item.classList.add('active');
+  });
+});
+
+// Carrega ao iniciar
+carregarDados();
+
+// Auto-atualiza a cada 2 minutos
+setInterval(carregarDados, 120000);
+</script>
+</body>
+</html>
