@@ -64,6 +64,10 @@ def api_todas():
                 if v != "": return v
             return ""
 
+        # Lê valores raw para garantir coluna O (índice 14) mesmo sem cabeçalho
+        todos_raw = sheets.aba_transacoes.get_all_values()
+        raw_data  = todos_raw[3:] if len(todos_raw) > 3 else []
+
         txs = []
         for i, row in enumerate(todos):
             cat   = str(col(row,"CATEGORIA")).strip() or "Outros"
@@ -73,8 +77,15 @@ def api_todas():
             except:
                 pt = 0
 
+            # Cartão: pelo cabeçalho ou fallback pela posição (col O = índice 14)
+            cartao_val = str(col(row,"CARTÃO","CARTAO","cartao","Cartão")).strip()
+            if not cartao_val and i < len(raw_data):
+                raw_row = raw_data[i]
+                if len(raw_row) > 14:
+                    cartao_val = str(raw_row[14]).strip()
+
             txs.append({
-                "idx":         i,   # índice real para editar/deletar
+                "idx":         i,
                 "data":        str(col(row,"DATA")).strip(),
                 "hora":        str(col(row,"HORA")).strip(),
                 "valor":       round(valor, 2),
@@ -84,7 +95,7 @@ def api_todas():
                 "descricao":   str(col(row,"DESCRIÇÃO","DESCRICAO")).strip(),
                 "localizacao": str(col(row,"LOCALIZAÇÃO","LOCALIZACAO")).strip(),
                 "metodo":      str(col(row,"MÉTODO","METODO")).strip(),
-                "cartao":      str(col(row,"CARTÃO","CARTAO")).strip(),
+                "cartao":      cartao_val,
                 "parcelas":    pt,
                 "mes_ano":     str(col(row,"MÊS/ANO","MES/ANO")).strip(),
                 "emoji":       EMOJIS.get(cat,"📦"),
