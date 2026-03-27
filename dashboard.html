@@ -90,7 +90,7 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .cs{font-size:11px;color:var(--muted);margin-top:2px}
 
 /* KPIs */
-.kg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+.kg{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);position:relative;overflow:hidden;cursor:pointer;transition:all .2s}
 .kpi:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--r) var(--r) 0 0}
@@ -243,7 +243,7 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .page.active .kg{animation:fadeUp .35s ease .05s both}
 .page.active .card,.page.active .tw{animation:fadeUp .4s ease .1s both}
 
-@media(max-width:1280px){.kg{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:1400px){.kg{grid-template-columns:repeat(5,1fr)}}@media(max-width:1100px){.kg{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1050px){.g2,.g2e,.g3,.g32,.g4{grid-template-columns:1fr}.kg{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.sidebar{display:none}.main{margin-left:0}.kg{grid-template-columns:1fr 1fr}}
 </style>
@@ -412,81 +412,152 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 <!-- ═══ DASHBOARD ═══ -->
 <div class="page active" id="page-dashboard">
+
+  <!-- TOPBAR -->
   <div class="ph">
-    <div><h1 id="dashGreet">Olá, Lucas 👋</h1><p id="dashSubtitle">Dados de — · carregando...</p></div>
+    <div>
+      <h1 id="dashGreet">Olá, Lucas 👋</h1>
+      <p id="dashSubtitle">Carregando dados...</p>
+    </div>
     <div class="pa">
       <button class="btn bs" onclick="reload(true)" id="btnReload">🔄 Atualizar</button>
       <button class="btn bp" onclick="OM('ovTx');resetTxForm()">+ Lançar</button>
     </div>
   </div>
 
+  <!-- ── LINHA 1: KPIs ── -->
   <div class="kg">
-    <div class="kpi g" onclick="go('transacoes')"><div class="kpi-top"><div class="kpi-ic">💰</div><span class="kpi-tr up" id="k1t">—</span></div><div class="kpi-v" id="k1">R$ —</div><div class="kpi-l">Receitas do mês</div><div class="kpi-h">↗ Ver transações</div></div>
-    <div class="kpi r" onclick="go('transacoes')"><div class="kpi-top"><div class="kpi-ic">💸</div><span class="kpi-tr dn" id="k2t">—</span></div><div class="kpi-v" id="k2">R$ —</div><div class="kpi-l">Gastos do mês</div><div class="kpi-h">↗ Ver transações</div></div>
-    <div class="kpi b"><div class="kpi-top"><div class="kpi-ic">⚖️</div><span class="kpi-tr nu" id="k3t">Saldo</span></div><div class="kpi-v" id="k3">R$ —</div><div class="kpi-l">Disponível</div><div class="kpi-h" id="k3h"></div></div>
-    <div class="kpi y" onclick="go('fixas')"><div class="kpi-top"><div class="kpi-ic">📌</div><span class="kpi-tr nu">Fixas</span></div><div class="kpi-v" id="k4">R$ —</div><div class="kpi-l">Despesas fixas</div><div class="kpi-h">↗ Ver despesas fixas</div></div>
-    <div class="kpi p" onclick="go('investimentos')"><div class="kpi-top"><div class="kpi-ic">📈</div><span class="kpi-tr up" id="k5t">Portfólio</span></div><div class="kpi-v" id="k5">R$ —</div><div class="kpi-l">Investimentos</div><div class="kpi-h">↗ Ver carteira</div></div>
+    <div class="kpi g" onclick="go('transacoes')">
+      <div class="kpi-top"><div class="kpi-ic">💰</div><span class="kpi-tr up" id="k1t">—</span></div>
+      <div class="kpi-v" id="k1">R$ —</div><div class="kpi-l">Receitas do mês</div>
+      <div class="kpi-h">↗ Ver transações</div>
+    </div>
+    <div class="kpi r" onclick="go('transacoes')">
+      <div class="kpi-top"><div class="kpi-ic">💸</div><span class="kpi-tr dn" id="k2t">—</span></div>
+      <div class="kpi-v" id="k2">R$ —</div><div class="kpi-l">Gastos do mês</div>
+      <div class="kpi-h">↗ Ver transações</div>
+    </div>
+    <div class="kpi b">
+      <div class="kpi-top"><div class="kpi-ic">⚖️</div><span class="kpi-tr nu" id="k3t">Saldo</span></div>
+      <div class="kpi-v" id="k3">R$ —</div><div class="kpi-l">Disponível</div>
+      <div class="kpi-h" id="k3h"></div>
+    </div>
+    <div class="kpi y" onclick="go('fixas')">
+      <div class="kpi-top"><div class="kpi-ic">📌</div><span class="kpi-tr nu">Fixas</span></div>
+      <div class="kpi-v" id="k4">R$ —</div><div class="kpi-l">Despesas fixas</div>
+      <div class="kpi-h">↗ Ver despesas fixas</div>
+    </div>
+    <div class="kpi p" onclick="go('investimentos')">
+      <div class="kpi-top"><div class="kpi-ic">📈</div><span class="kpi-tr up" id="k5t">Portfólio</span></div>
+      <div class="kpi-v" id="k5">R$ —</div><div class="kpi-l">Investimentos</div>
+      <div class="kpi-h">↗ Ver carteira</div>
+    </div>
   </div>
 
-  <div class="g2 mb">
+  <!-- ── LINHA 2: Evolução + Donut + Últimas Txs ── -->
+  <div style="display:grid;grid-template-columns:1.6fr .9fr;gap:15px;margin-bottom:15px">
+
+    <!-- Evolução mensal compacta -->
     <div class="card">
-      <div class="ch"><div><div class="ct">Evolução Mensal</div><div class="cs">Entradas × Saídas — 6 meses</div></div><button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button></div>
-      <div id="dashChart"></div>
-      <div style="padding:0 18px 12px;display:flex;gap:14px">
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--verde)"></div>Entradas</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--verm);opacity:.85"></div>Saídas</div>
+      <div class="ch">
+        <div><div class="ct">Evolução Mensal</div><div class="cs" id="dashChartSub">Jan → Dez — passe o mouse para detalhes</div></div>
+        <button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button>
       </div>
+      <div id="dashChart"></div>
     </div>
-    <div class="card" onclick="go('categorias')" style="cursor:pointer">
-      <div class="ch"><div><div class="ct">Por Categoria</div><div class="cs">Distribuição do mês</div></div></div>
-      <div id="dashDonut"></div>
+
+    <!-- Coluna direita: Donut + narrativa rápida -->
+    <div style="display:flex;flex-direction:column;gap:15px">
+
+      <!-- Donut -->
+      <div class="card" onclick="go('categorias')" style="cursor:pointer;flex:1">
+        <div class="ch"><div><div class="ct">Por Categoria</div><div class="cs">Este mês</div></div></div>
+        <div id="dashDonut"></div>
+      </div>
+
+      <!-- Narrativa compacta -->
+      <div class="card" style="background:linear-gradient(135deg,#3B6FF008,#10B98108);border-color:#3B6FF018">
+        <div class="ch"><div><div class="ct">📖 Resumo do Mês</div></div></div>
+        <div style="padding:0 18px 16px;font-family:'Lora',serif;font-style:italic;font-size:12.5px;color:var(--txt2);line-height:1.7" id="dashNarr">Carregando...</div>
+      </div>
+
     </div>
   </div>
 
-  <div class="g32 mb">
+  <!-- ── LINHA 3: Limites + Últimas Txs ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
+
+    <!-- Limites por categoria -->
     <div class="card" onclick="go('limites')" style="cursor:pointer">
-      <div class="ch"><div><div class="ct">📊 Limites por Categoria</div><div class="cs">Clique para configurar</div></div></div>
+      <div class="ch">
+        <div><div class="ct">📊 Limites por Categoria</div><div class="cs">Clique para configurar</div></div>
+        <span style="font-size:11px;color:var(--azul);font-weight:700">Editar →</span>
+      </div>
       <div id="dashCatList"></div>
     </div>
+
+    <!-- Últimas transações -->
     <div class="card">
-      <div class="ch"><div><div class="ct">🕐 Últimas Transações</div></div><button class="btn bg btn-sm" onclick="go('transacoes')">Ver todas →</button></div>
+      <div class="ch">
+        <div><div class="ct">🕐 Últimas Transações</div></div>
+        <button class="btn bg btn-sm" onclick="go('transacoes')">Ver todas →</button>
+      </div>
       <div id="dashTxs"></div>
     </div>
+
   </div>
 
-  <div class="g3 mb">
-    <div class="card" style="background:linear-gradient(135deg,#3B6FF008,#10B98108);border-color:#3B6FF018">
-      <div class="ch"><div><div class="ct">📖 Narrativa Financeira</div></div></div>
-      <div style="padding:0 18px 16px;font-family:'Lora',serif;font-style:italic;font-size:13px;color:var(--txt2);line-height:1.75" id="dashNarr">Carregando...</div>
-    </div>
+  <!-- ── LINHA 4: Cartões + Dívidas + Metas ── -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:15px">
+
+    <!-- Cartões -->
     <div class="card" onclick="go('cartoes')" style="cursor:pointer">
-      <div class="ch"><div><div class="ct">💳 Cartões</div><div class="cs">Gasto neste mês</div></div><span style="font-size:11px;color:var(--azul);font-weight:700">Ver →</span></div>
+      <div class="ch">
+        <div><div class="ct">💳 Cartões</div><div class="cs" id="dashCartoesMes">Fatura do mês</div></div>
+        <span style="font-size:11px;color:var(--azul);font-weight:700">Ver →</span>
+      </div>
       <div id="dashCartoes" style="padding:0 18px 14px"></div>
     </div>
+
+    <!-- Dívidas -->
     <div class="card" onclick="go('dividas')" style="cursor:pointer">
-      <div class="ch"><div><div class="ct">⛓️ Dívidas</div><div class="cs">Progresso de quitação</div></div><span style="font-size:11px;color:var(--azul);font-weight:700">Ver →</span></div>
+      <div class="ch">
+        <div><div class="ct">⛓️ Dívidas</div><div class="cs">Progresso de quitação</div></div>
+        <span style="font-size:11px;color:var(--azul);font-weight:700">Ver →</span>
+      </div>
       <div id="dashDividas" style="padding:0 18px 14px"></div>
     </div>
-  </div>
 
-  <div class="g2e mb">
+    <!-- Metas -->
     <div class="card" onclick="go('metas')" style="cursor:pointer">
-      <div class="ch"><div><div class="ct">🎯 Metas</div></div><span style="font-size:11px;color:var(--azul);font-weight:700">Ver todas →</span></div>
+      <div class="ch">
+        <div><div class="ct">🎯 Metas</div></div>
+        <span style="font-size:11px;color:var(--azul);font-weight:700">Ver todas →</span>
+      </div>
       <div id="dashMetas" style="padding:0 18px 14px"></div>
     </div>
-    <div style="background:linear-gradient(135deg,#2AABEE,#229ED9);border-radius:var(--r);padding:20px;color:#fff;box-shadow:0 8px 24px rgba(42,171,238,.3)">
-      <div style="font-size:15px;font-weight:800;margin-bottom:3px">🤖 Registre via Telegram</div>
-      <div style="font-size:12px;opacity:.8;margin-bottom:14px">O bot entende qualquer forma de falar</div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600">🍽️ "Gastei 45 no almoço hoje"</div>
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600">🚗 "50 uber + 35 ifood"</div>
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600">🚘 "Mecânico 350, parcelado 3x"</div>
-        <div style="background:rgba(255,255,255,.15);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600">💳 "Comprei 500 no inter parcelado em 5x"</div>
+
+  </div>
+
+  <!-- ── LINHA 5: Telegram banner compacto ── -->
+  <div style="background:linear-gradient(135deg,#2AABEE,#229ED9);border-radius:var(--r);padding:18px 22px;color:#fff;box-shadow:0 8px 24px rgba(42,171,238,.3);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
+    <div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:10px">🤖 Registre pelo Telegram — o bot entende qualquer forma de falar</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="background:rgba(255,255,255,.18);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600">🍽️ "Gastei 45 no almoço"</div>
+        <div style="background:rgba(255,255,255,.18);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600">🚗 "50 uber + 35 ifood"</div>
+        <div style="background:rgba(255,255,255,.18);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600">💳 "500 no inter parcelado 5x"</div>
+        <div style="background:rgba(255,255,255,.18);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600">💰 "Caiu o salário 3500"</div>
+        <div style="background:rgba(255,255,255,.18);border-radius:7px;padding:6px 11px;font-size:12px;font-weight:600">🎤 Ou mande um áudio!</div>
       </div>
     </div>
+    <div style="text-align:center;flex-shrink:0">
+      <div style="font-size:32px;margin-bottom:6px">📱</div>
+      <div style="background:rgba(255,255,255,.22);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:800">@startfinance_bot</div>
+    </div>
   </div>
-</div>
 
+</div>
 <!-- ═══ TRANSAÇÕES ═══ -->
 <div class="page" id="page-transacoes">
   <div class="ph"><div><h1>💸 Transações</h1><p id="txSubtitle">Todos os lançamentos — editáveis e pesquisáveis</p></div>
@@ -948,7 +1019,7 @@ function renderDash(){
   const totIv=INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.atual||i.valor||0),0);
   document.getElementById('k5').textContent=fmt(totIv);
   // Gráfico histórico
-  renderHistChart('dashChart',80);
+  renderHistChart('dashChart',60);
   // Donut
   renderDonut('dashDonut',d.categorias);
   // Cat list
@@ -998,29 +1069,33 @@ function renderEvolucaoAnual(el, h){
   const totS   = hist.filter(h=>!h.futuro).reduce((s,h)=>s+h.saidas,0);
   const melhor = hist.reduce((best,h)=>(!h.futuro&&h.saldo>best.saldo?h:best), {saldo:-Infinity,label:'—'});
 
-  // Injeta HTML completo (chart + legenda + stats)
+  // Stats inline (linha única compacta)
   el.style.height = 'auto';
   el.style.padding = '0';
   el.innerHTML = `
-    <!-- Stats rápidos do ano -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:0">
-      <div style="padding:10px 18px;border-right:1px solid var(--border)">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Receitas ${new Date().getFullYear()}</div>
-        <div style="font-size:18px;font-weight:900;color:var(--verde);letter-spacing:-0.5px;margin-top:2px">${fmt(totE)}</div>
+    <!-- Stats rápidos — linha compacta -->
+    <div style="display:flex;align-items:center;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+      <div style="padding:8px 16px;border-right:1px solid var(--border);flex:1">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Receitas ${new Date().getFullYear()}</div>
+        <div style="font-size:15px;font-weight:900;color:var(--verde);letter-spacing:-.5px">${fmt(totE)}</div>
       </div>
-      <div style="padding:10px 18px;border-right:1px solid var(--border)">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Gastos ${new Date().getFullYear()}</div>
-        <div style="font-size:18px;font-weight:900;color:var(--verm);letter-spacing:-0.5px;margin-top:2px">${fmt(totS)}</div>
+      <div style="padding:8px 16px;border-right:1px solid var(--border);flex:1">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Gastos ${new Date().getFullYear()}</div>
+        <div style="font-size:15px;font-weight:900;color:var(--verm);letter-spacing:-.5px">${fmt(totS)}</div>
       </div>
-      <div style="padding:10px 18px">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Melhor mês</div>
-        <div style="font-size:18px;font-weight:900;color:var(--azul);letter-spacing:-0.5px;margin-top:2px">${melhor.label} <span style="font-size:12px;color:var(--muted);font-weight:600">${fmt(melhor.saldo)}</span></div>
+      <div style="padding:8px 16px;border-right:1px solid var(--border);flex:1">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Saldo ${new Date().getFullYear()}</div>
+        <div style="font-size:15px;font-weight:900;color:${totE-totS>=0?'var(--verde)':'var(--verm)'};letter-spacing:-.5px">${fmt(totE-totS)}</div>
+      </div>
+      <div style="padding:8px 16px;flex:1">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Melhor mês</div>
+        <div style="font-size:15px;font-weight:900;color:var(--azul);letter-spacing:-.5px">${melhor.label} <span style="font-size:11px;font-weight:600;color:var(--muted)">${fmtSm(melhor.saldo)}</span></div>
       </div>
     </div>
 
     <!-- Gráfico principal -->
-    <div style="padding:16px 18px 8px;overflow-x:auto">
-      <div style="display:flex;align-items:flex-end;gap:3px;min-width:560px;height:${h+20}px" id="histBarsInner">
+    <div style="padding:12px 18px 6px;overflow-x:auto">
+      <div style="display:flex;align-items:flex-end;gap:3px;min-width:520px;height:${h+16}px" id="histBarsInner">
         ${hist.map((hh,i) => {
           const pE = Math.max(hh.entradas/max*100, hh.entradas>0?3:0);
           const pS = Math.max(hh.saidas/max*100, hh.saidas>0?3:0);
@@ -1050,7 +1125,7 @@ function renderEvolucaoAnual(el, h){
     </div>
 
     <!-- Legenda + linha do saldo -->
-    <div style="padding:0 18px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+    <div style="padding:6px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <div style="display:flex;gap:14px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:var(--verde)"></div>Entradas</div>
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:var(--verm);opacity:.85"></div>Saídas</div>
@@ -1061,9 +1136,9 @@ function renderEvolucaoAnual(el, h){
     </div>
 
     <!-- Mini linha de saldo -->
-    <div style="padding:10px 18px 16px;border-top:1px solid var(--border)">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">📈 Saldo mensal</div>
-      <div style="display:flex;align-items:flex-end;gap:3px;height:40px;overflow-x:auto">
+    <div style="padding:8px 18px 12px;border-top:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Saldo mensal</div>
+      <div style="display:flex;align-items:flex-end;gap:3px;height:32px;overflow-x:auto">
         ${hist.map(hh=>{
           const absMax=Math.max(...hist.map(h=>Math.abs(h.saldo)),1);
           const pct=Math.abs(hh.saldo)/absMax*100;
@@ -1115,7 +1190,7 @@ function renderCatListDash(cats){
   if(!cats){document.getElementById('dashCatList').innerHTML='<div class="empty"><div class="empty-ic">📊</div><p>Sem dados para o mês</p></div>';return;}
   const el=document.getElementById('dashCatList');
   if(!cats.length){el.innerHTML='<div class="empty"><div class="empty-ic">🎉</div><p>Nenhum gasto registrado neste mês!</p></div>';return;}
-  el.innerHTML=`<div style="padding:0 18px 14px">`+cats.slice(0,7).map(c=>{
+  el.innerHTML=`<div style="padding:0 18px 10px">`+cats.slice(0,6).map(c=>{
     const bPct=c.limite>0?Math.min(c.pct,105):50;
     const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':c.status==='ok'?'var(--verde)':'var(--muted2)';
     const stIco=c.status==='estourou'?'🔴':c.status==='atencao'?'🟡':c.status==='ok'?'🟢':'♾️';
@@ -1132,7 +1207,7 @@ function renderCatListDash(cats){
 
 function renderDashTxs(txMes){
   const el=document.getElementById('dashTxs');if(!el)return;
-  const recentes=[...txMes].slice(0,5);
+  const recentes=[...txMes].slice(0,6);
   if(!recentes.length){el.innerHTML='<div class="empty" style="padding:24px"><p>Sem transações neste mês</p></div>';return;}
   el.innerHTML=recentes.map(t=>{
     const neg=t.valor<0;
@@ -1146,6 +1221,7 @@ function renderDashTxs(txMes){
 
 function renderCartoesDash(){
   const el=document.getElementById('dashCartoes');if(!el)return;
+  const mesEl=document.getElementById('dashCartoesMes');if(mesEl)mesEl.textContent='Fatura de '+getMesNome();
   if(!CARTOES.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">💳</div><p>Nenhum cartão</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'cartoes\')">Adicionar cartão</button></div>';return;}
   const rawG=MES_DATA.gastosPorCartao||{};
   const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
