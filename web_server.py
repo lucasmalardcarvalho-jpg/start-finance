@@ -226,7 +226,7 @@ def editar_transacao(idx):
 
         todos = sheets._get_todos_registros()
         total = len(todos)
-        linha_sheet = (total - idx) + 3  # +3: 2 decorativas + 1 cabeçalho
+        linha_sheet = idx + 4  # idx 0-based, dados começam na linha 4 da planilha
 
         # Se a planilha tem menos de 15 colunas, ajusta
         sheets.aba_transacoes.update(
@@ -245,7 +245,7 @@ def deletar_transacao(idx):
     try:
         todos  = sheets._get_todos_registros()
         total  = len(todos)
-        linha  = (total - idx) + 3
+        linha  = idx + 4  # idx 0-based, dados começam na linha 4 da planilha
         sheets.aba_transacoes.delete_rows(linha)
         return jsonify({"ok": True})
     except Exception as e:
