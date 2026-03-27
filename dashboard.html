@@ -431,7 +431,7 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
   <div class="g2 mb">
     <div class="card">
       <div class="ch"><div><div class="ct">Evolução Mensal</div><div class="cs">Entradas × Saídas — 6 meses</div></div><button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button></div>
-      <div class="cw" id="dashChart" style="height:90px"></div>
+      <div id="dashChart"></div>
       <div style="padding:0 18px 12px;display:flex;gap:14px">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--verde)"></div>Entradas</div>
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:8px;height:8px;border-radius:2px;background:var(--verm);opacity:.85"></div>Saídas</div>
@@ -691,15 +691,50 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 <!-- ═══ LIMITES ═══ -->
 <div class="page" id="page-limites">
-  <div class="ph"><div><h1>⚙️ Limites Mensais</h1><p>Defina quanto quer gastar em cada categoria</p></div>
-  <div class="pa"><button class="btn bp" onclick="saveLimits()">💾 Salvar limites</button></div></div>
-  <div class="tw">
-    <table class="st">
-      <thead><tr><th>Categoria</th><th>Limite (R$)</th><th>Gasto Atual</th><th>Restante</th><th>Progresso</th><th>Status</th></tr></thead>
-      <tbody id="limBody"></tbody>
-    </table>
+  <div class="ph">
+    <div><h1>⚙️ Limites Mensais</h1><p id="limSubtitle">Configure quanto quer gastar em cada categoria</p></div>
+    <div class="pa">
+      <button class="btn bs" onclick="limToggleView()" id="btnLimView">🃏 Ver como cards</button>
+      <button class="btn bp" onclick="saveLimits()">💾 Salvar limites</button>
+    </div>
   </div>
-  <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:8px">💡 Edite o campo "Limite" e clique em "Salvar limites"</div>
+
+  <!-- KPIs resumo dos limites -->
+  <div id="limKpis" class="g4 mb"></div>
+
+  <!-- Barra de progresso do orçamento total -->
+  <div class="card mb" id="limBudgetBar">
+    <div class="ch"><div><div class="ct">📊 Orçamento Total do Mês</div><div class="cs" id="limBudgetSub">Gasto vs total de limites definidos</div></div></div>
+    <div style="padding:0 20px 20px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px">
+        <span id="limBudgetGasto" style="color:var(--verm)">R$ 0,00 gastos</span>
+        <span id="limBudgetPct" style="color:var(--muted)">0%</span>
+        <span id="limBudgetTotal" style="color:var(--muted)">de R$ 0,00</span>
+      </div>
+      <div style="height:16px;background:var(--border);border-radius:100px;overflow:hidden;position:relative">
+        <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1);background:linear-gradient(90deg,var(--verde),var(--azul))"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px">
+        <span>0%</span><span style="color:var(--lara);font-weight:700">⚠️ 80%</span><span style="color:var(--verm);font-weight:700">🔴 100%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- View tabela (padrão) -->
+  <div id="limTableView">
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px" id="limCards"></div>
+  </div>
+
+  <!-- View cards compacta -->
+  <div id="limCardView" style="display:none">
+    <div class="tw">
+      <table class="st">
+        <thead><tr><th>Categoria</th><th>Limite (R$)</th><th>Gasto</th><th>Restante</th><th>Progresso</th><th>Status</th><th>Transações</th></tr></thead>
+        <tbody id="limBody"></tbody>
+      </table>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:10px">💡 Clique no valor do limite para editar. Clique em "Salvar limites" para preservar.</div>
 </div>
 
 <!-- ═══ RELATÓRIOS ═══ -->
@@ -930,15 +965,138 @@ function renderDash(){
   renderMetasDash();
 }
 
-function renderHistChart(elId,h=80){
-  if(!HISTORICO.length)return;
-  const el=document.getElementById(elId);if(!el)return;
-  const max=Math.max(...HISTORICO.flatMap(h=>[h.entradas,h.saidas]),1);
-  el.style.height=h+'px';
-  el.innerHTML=HISTORICO.map(hh=>`
-    <div class="bc"><div class="bf ${hh.atual?'at':'ga'}" style="height:${Math.max(hh.saidas/max*100,3)}%" title="${hh.label} Saídas: ${fmt(hh.saidas)}"></div><div class="bl">${hh.label.slice(0,3)}</div></div>
-    <div class="bc"><div class="bf ri" style="height:${Math.max(hh.entradas/max*100,3)}%" title="${hh.label} Entradas: ${fmt(hh.entradas)}"></div><div class="bl" style="${hh.atual?'color:var(--verde);font-weight:800':''}"></div></div>`).join('');
+function renderHistChart(elId, h=80){
+  if(!HISTORICO.length) return;
+  const el = document.getElementById(elId);
+  if(!el) return;
+  el.innerHTML = '';
+
+  // Se for o chart do dashboard principal, usa versão rica
+  if(elId === 'dashChart'){
+    renderEvolucaoAnual(el, h);
+  } else {
+    // Versão simples para planejamento/relatórios
+    const max = Math.max(...HISTORICO.flatMap(h=>[h.entradas,h.saidas]),1);
+    el.style.height = h+'px';
+    el.innerHTML = HISTORICO.map(hh=>`
+      <div class="bc"><div class="bf ${hh.atual?'at':'ga'}" style="height:${Math.max(hh.saidas/max*100,3)}%;opacity:${hh.futuro?'.25':'1'}" title="${hh.label} Saídas: ${fmt(hh.saidas)}"></div><div class="bl">${hh.label.slice(0,3)}</div></div>
+      <div class="bc"><div class="bf ri" style="height:${Math.max(hh.entradas/max*100,3)}%;opacity:${hh.futuro?'.2':'1'}" title="${hh.label} Entradas: ${fmt(hh.entradas)}"></div><div class="bl" style="${hh.atual?'color:var(--verde);font-weight:800':''}"></div></div>
+    `).join('');
+  }
 }
+
+function renderEvolucaoAnual(el, h){
+  // Container pai completo — não apenas barras simples
+  const wrap = el.closest('.card') || el.parentElement;
+
+  // Envolve em um container dedicado
+  const hist = HISTORICO;
+  const max  = Math.max(...hist.map(hh => Math.max(hh.entradas, hh.saidas)), 1);
+
+  // Totais do ano
+  const totE   = hist.filter(h=>!h.futuro).reduce((s,h)=>s+h.entradas,0);
+  const totS   = hist.filter(h=>!h.futuro).reduce((s,h)=>s+h.saidas,0);
+  const melhor = hist.reduce((best,h)=>(!h.futuro&&h.saldo>best.saldo?h:best), {saldo:-Infinity,label:'—'});
+
+  // Injeta HTML completo (chart + legenda + stats)
+  el.style.height = 'auto';
+  el.style.padding = '0';
+  el.innerHTML = `
+    <!-- Stats rápidos do ano -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:0">
+      <div style="padding:10px 18px;border-right:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Receitas ${new Date().getFullYear()}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--verde);letter-spacing:-0.5px;margin-top:2px">${fmt(totE)}</div>
+      </div>
+      <div style="padding:10px 18px;border-right:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Gastos ${new Date().getFullYear()}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--verm);letter-spacing:-0.5px;margin-top:2px">${fmt(totS)}</div>
+      </div>
+      <div style="padding:10px 18px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">Melhor mês</div>
+        <div style="font-size:18px;font-weight:900;color:var(--azul);letter-spacing:-0.5px;margin-top:2px">${melhor.label} <span style="font-size:12px;color:var(--muted);font-weight:600">${fmt(melhor.saldo)}</span></div>
+      </div>
+    </div>
+
+    <!-- Gráfico principal -->
+    <div style="padding:16px 18px 8px;overflow-x:auto">
+      <div style="display:flex;align-items:flex-end;gap:3px;min-width:560px;height:${h+20}px" id="histBarsInner">
+        ${hist.map((hh,i) => {
+          const pE = Math.max(hh.entradas/max*100, hh.entradas>0?3:0);
+          const pS = Math.max(hh.saidas/max*100, hh.saidas>0?3:0);
+          const isFuturo = hh.futuro;
+          const isAtual  = hh.atual;
+          const saldoPos = hh.saldo >= 0;
+          return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:${h+20}px;justify-content:flex-end;position:relative;min-width:36px"
+            onmouseenter="showHistTooltip(this,'${hh.label}',${hh.entradas},${hh.saidas},${hh.saldo},'${isFuturo}')"
+            onmouseleave="hideHistTooltip()">
+            <!-- Tooltip -->
+            <div class="hist-tip" style="display:none;position:absolute;top:-70px;left:50%;transform:translateX(-50%);background:var(--txt);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;white-space:nowrap;z-index:10;pointer-events:none;text-align:center">
+              <div style="font-weight:800">${hh.label}</div>
+              <div style="color:#4ade80">↑ ${fmtSm(hh.entradas)}</div>
+              <div style="color:#f87171">↓ ${fmtSm(hh.saidas)}</div>
+              <div style="color:${saldoPos?'#4ade80':'#f87171'}">${saldoPos?'💚':'🔴'} ${fmtSm(hh.saldo)}</div>
+            </div>
+            <!-- Barra Saídas -->
+            <div style="width:42%;border-radius:4px 4px 0 0;background:${isAtual?'var(--azul-d)':'var(--verm)'};opacity:${isFuturo?.2:.85};height:0%;transition:height 1s cubic-bezier(.34,1.56,.64,1)" data-h="${pS}%"></div>
+            <!-- Barra Entradas -->
+            <div style="width:42%;border-radius:4px 4px 0 0;background:${isAtual?'var(--azul)':'var(--verde)'};opacity:${isFuturo?.15:1};height:0%;transition:height 1s cubic-bezier(.34,1.56,.64,1) .1s" data-h="${pE}%"></div>
+            <!-- Label mês -->
+            <div style="font-size:9px;font-weight:${isAtual?'800':'600'};color:${isAtual?'var(--azul)':isFuturo?'var(--muted2)':'var(--muted)'};margin-top:4px;text-align:center">${hh.label}</div>
+            ${isAtual?`<div style="position:absolute;bottom:18px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:var(--azul)"></div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- Legenda + linha do saldo -->
+    <div style="padding:0 18px 14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:var(--verde)"></div>Entradas</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:var(--verm);opacity:.85"></div>Saídas</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--azul)"><div style="width:10px;height:10px;border-radius:3px;background:var(--azul)"></div>Mês atual</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted2)"><div style="width:10px;height:10px;border-radius:3px;background:var(--muted2);opacity:.4"></div>Meses futuros</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-style:italic">Passe o mouse nas barras para detalhes</div>
+    </div>
+
+    <!-- Mini linha de saldo -->
+    <div style="padding:10px 18px 16px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">📈 Saldo mensal</div>
+      <div style="display:flex;align-items:flex-end;gap:3px;height:40px;overflow-x:auto">
+        ${hist.map(hh=>{
+          const absMax=Math.max(...hist.map(h=>Math.abs(h.saldo)),1);
+          const pct=Math.abs(hh.saldo)/absMax*100;
+          const pos=hh.saldo>=0;
+          const op=hh.futuro?'.2':'1';
+          return `<div style="flex:1;min-width:36px;display:flex;flex-direction:column;align-items:center;justify-content:${pos?'flex-end':'flex-start'};height:40px">
+            <div style="width:70%;border-radius:3px;background:${pos?'var(--verde)':'var(--verm)'};height:${pct/2}%;opacity:${op};min-height:${hh.saldo!==0?'3':'0'}px" title="${hh.label}: ${fmt(hh.saldo)}"></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+        ${hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0)).map(hh=>`
+          <span style="font-size:10px;font-weight:700;color:${hh.saldo>=0?'var(--verde)':'var(--verm)'};background:${hh.saldo>=0?'var(--verde-l)':'var(--verm-l)'};padding:2px 7px;border-radius:100px">${hh.label}: ${hh.saldo>=0?'+':''}${fmtSm(hh.saldo)}</span>
+        `).join('')}
+      </div>
+    </div>
+  `;
+
+  // Anima as barras
+  setTimeout(() => {
+    el.querySelectorAll('[data-h]').forEach(b => { b.style.height = b.dataset.h; });
+  }, 150);
+}
+
+function showHistTooltip(el, label, e, s, sd, futuro){
+  if(futuro==='true') return;
+  const tip = el.querySelector('.hist-tip');
+  if(tip) tip.style.display = 'block';
+}
+function hideHistTooltip(){
+  document.querySelectorAll('.hist-tip').forEach(t => t.style.display='none');
+}
+
 
 function renderDonut(elId,cats){
   if(!cats||!cats.length){document.getElementById(elId).innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sem gastos neste mês</div>';return;}
@@ -1754,28 +1912,160 @@ function filtrarPorCategoria(cat){
 }
 
 // ════════════════════════════════════════════════
-// LIMITES
+// LIMITES — REDESIGN VISUAL
 // ════════════════════════════════════════════════
-function renderLimits(){
-  const cats=MES_DATA.categorias||[];
-  const gastoMap={};cats.forEach(c=>gastoMap[c.nome]=c.gasto);
-  const lims={...LIMS_DEF,...LIMS_LOCAL};
-  document.getElementById('limBody').innerHTML=Object.keys(LIMS_DEF).map(cat=>{
-    const lim=lims[cat]||0;const g=gastoMap[cat]||0;
-    const pct=lim>0?Math.min(g/lim*100,105):0;
-    const rest=Math.max(lim-g,0);
-    const cor=pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
-    const st=pct>=100?'🔴 Estourou':pct>=80?`🟡 ${Math.round(pct)}%`:g>0?`🟢 ${Math.round(pct)}%`:'✅ Livre';
-    return `<tr>
-      <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${EMOJIS[cat]||'📦'}</span><span style="font-weight:700">${cat}</span></div></td>
-      <td><input type="number" class="fi" style="width:110px;text-align:center;font-weight:700;color:var(--azul)" value="${lim}" onchange="LIMS_LOCAL['${cat}']=parseFloat(this.value)||0"></td>
-      <td class="vn">${fmt(g)}</td>
-      <td class="vp">${lim>0?fmt(rest):'—'}</td>
-      <td style="width:140px"><div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(pct,100)}%;background:${cor};border-radius:100px"></div></div></td>
-      <td style="font-weight:700;font-size:12px">${st}</td>
-    </tr>`;
-  }).join('');
+let LIM_VIEW = 'cards'; // 'cards' | 'tabela'
+
+function limToggleView(){
+  LIM_VIEW = LIM_VIEW === 'cards' ? 'tabela' : 'cards';
+  document.getElementById('limTableView').style.display = LIM_VIEW === 'cards' ? '' : 'none';
+  document.getElementById('limCardView').style.display  = LIM_VIEW === 'tabela' ? '' : 'none';
+  document.getElementById('btnLimView').textContent = LIM_VIEW === 'cards' ? '☰ Ver como tabela' : '🃏 Ver como cards';
 }
+
+function renderLimits(){
+  const txMes  = MES_DATA.txMes || [];
+  const lims   = {...LIMS_DEF, ...LIMS_LOCAL};
+  const gastoMap = {};
+  txMes.filter(t => t.valor < 0).forEach(t => {
+    gastoMap[t.categoria] = (gastoMap[t.categoria]||0) + Math.abs(t.valor);
+  });
+
+  const mes = getMesNome();
+  document.getElementById('limSubtitle').textContent = `Limites configurados para ${mes}`;
+
+  // ── Dados de cada categoria ──
+  const catData = Object.keys(LIMS_DEF).map(cat => {
+    const lim  = lims[cat] || 0;
+    const g    = gastoMap[cat] || 0;
+    const pct  = lim > 0 ? Math.min(g / lim * 100, 150) : 0;
+    const rest = Math.max(lim - g, 0);
+    const nTx  = txMes.filter(t => t.categoria === cat && t.valor < 0).length;
+    const status = g === 0 ? 'livre' : pct >= 100 ? 'estourou' : pct >= 80 ? 'atencao' : 'ok';
+    const cor    = status === 'estourou' ? 'var(--verm)' : status === 'atencao' ? 'var(--lara)' : status === 'ok' ? 'var(--verde)' : 'var(--muted2)';
+    const stTxt  = status === 'estourou' ? '🔴 Estourou' : status === 'atencao' ? `🟡 ${Math.round(pct)}%` : status === 'ok' ? `🟢 ${Math.round(pct)}%` : '⚪ Livre';
+    const stBg   = status === 'estourou' ? 'var(--verm-l)' : status === 'atencao' ? 'var(--lara-l)' : status === 'ok' ? 'var(--verde-l)' : 'var(--bg)';
+    const stColor= status === 'estourou' ? 'var(--verm)' : status === 'atencao' ? 'var(--lara)' : status === 'ok' ? 'var(--verde-d)' : 'var(--muted)';
+    return { cat, lim, g, pct, rest, nTx, status, cor, stTxt, stBg, stColor };
+  }).sort((a, b) => b.g - a.g); // ordenado por maior gasto
+
+  // ── KPIs ──
+  const totalLim    = catData.reduce((s,c) => s + c.lim, 0);
+  const totalGasto  = catData.reduce((s,c) => s + c.g, 0);
+  const nEstourou   = catData.filter(c => c.status === 'estourou').length;
+  const nAtencao    = catData.filter(c => c.status === 'atencao').length;
+  const nOk         = catData.filter(c => c.status === 'ok').length;
+  const nLivre      = catData.filter(c => c.status === 'livre').length;
+
+  document.getElementById('limKpis').innerHTML = `
+    <div class="kpi b" style="cursor:default">
+      <div class="kpi-top"><div class="kpi-ic">💰</div><span class="kpi-tr nu">${mes}</span></div>
+      <div class="kpi-v">${fmt(totalLim)}</div><div class="kpi-l">Total orçado</div>
+    </div>
+    <div class="kpi r" style="cursor:default">
+      <div class="kpi-top"><div class="kpi-ic">💸</div><span class="kpi-tr ${totalGasto/totalLim>0.8?'dn':'up'}">${totalLim>0?(totalGasto/totalLim*100).toFixed(0)+'%':'—'}</span></div>
+      <div class="kpi-v">${fmt(totalGasto)}</div><div class="kpi-l">Total gasto</div>
+    </div>
+    <div class="kpi g" style="cursor:default">
+      <div class="kpi-top"><div class="kpi-ic">✅</div></div>
+      <div class="kpi-v">${fmt(Math.max(totalLim - totalGasto, 0))}</div><div class="kpi-l">Disponível no orçamento</div>
+    </div>
+    <div class="kpi ${nEstourou>0?'r':'g'}" style="cursor:default">
+      <div class="kpi-top"><div class="kpi-ic">${nEstourou>0?'🔴':'🏆'}</div></div>
+      <div class="kpi-v">${nEstourou}</div>
+      <div class="kpi-l">Categorias estouradas</div>
+      <div class="kpi-h">${nAtencao} em atenção · ${nOk} OK · ${nLivre} livres</div>
+    </div>`;
+
+  // ── Barra geral ──
+  const pctGeral = totalLim > 0 ? Math.min(totalGasto / totalLim * 100, 100) : 0;
+  const corGeral = pctGeral >= 100 ? 'linear-gradient(90deg,var(--verm),#F87171)' : pctGeral >= 80 ? 'linear-gradient(90deg,var(--lara),var(--amar))' : 'linear-gradient(90deg,var(--verde),var(--azul))';
+  document.getElementById('limBudgetGasto').textContent  = `${fmt(totalGasto)} gastos`;
+  document.getElementById('limBudgetPct').textContent    = `${pctGeral.toFixed(1)}%`;
+  document.getElementById('limBudgetTotal').textContent  = `de ${fmt(totalLim)}`;
+  document.getElementById('limBudgetFill').style.width   = pctGeral + '%';
+  document.getElementById('limBudgetFill').style.background = corGeral;
+  document.getElementById('limBudgetSub').textContent = `${fmt(totalGasto)} gastos de ${fmt(totalLim)} orçados — ${fmt(Math.max(totalLim-totalGasto,0))} disponível`;
+
+  // ── CARDS (view principal) ──
+  document.getElementById('limCards').innerHTML = catData.map(d => {
+    const pctBar = Math.min(d.pct, 100);
+    const segments = buildSegments(d.g, d.lim);
+    return `
+    <div style="background:var(--card);border:1px solid ${d.status==='estourou'?'rgba(239,68,68,.4)':d.status==='atencao'?'rgba(249,115,22,.35)':'var(--border)'};border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;transition:box-shadow .2s"
+         onmouseenter="this.style.boxShadow='var(--sh-md)'" onmouseleave="this.style.boxShadow='var(--sh)'">
+
+      <!-- Header do card -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px">
+        <div style="display:flex;align-items:center;gap:9px">
+          <div style="width:36px;height:36px;border-radius:9px;background:${d.stBg};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${EMOJIS[d.cat]||'📦'}</div>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--txt)">${d.cat}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px">${d.nTx > 0 ? d.nTx+' transação(ões) · ' : ''}${getMesNome()}</div>
+          </div>
+        </div>
+        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;background:${d.stBg};color:${d.stColor}">${d.stTxt}</span>
+      </div>
+
+      <!-- Valores principais -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div style="padding:10px 14px;border-right:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px">GASTO</div>
+          <div style="font-size:16px;font-weight:900;color:${d.g>0?'var(--verm)':'var(--muted2)'}">${fmt(d.g)}</div>
+        </div>
+        <div style="padding:10px 14px;border-right:1px solid var(--border)">
+          <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px">LIMITE</div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="number" value="${d.lim}" step="50" min="0"
+              style="width:90px;font-size:14px;font-weight:900;color:var(--azul);border:none;background:none;outline:none;cursor:text;padding:0"
+              onchange="LIMS_LOCAL['${d.cat}']=parseFloat(this.value)||0;renderLimits()"
+              onclick="this.select()"
+              title="Clique para editar">
+            <span style="font-size:10px;color:var(--muted)">✏️</span>
+          </div>
+        </div>
+        <div style="padding:10px 14px">
+          <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px">RESTANTE</div>
+          <div style="font-size:16px;font-weight:900;color:${d.lim>0?(d.rest>0?'var(--verde)':'var(--verm)'):'var(--muted2)'}">${d.lim>0?fmt(d.rest):'—'}</div>
+        </div>
+      </div>
+
+      <!-- Barra de progresso visual com marcadores -->
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;font-size:10px;font-weight:600;color:var(--muted);margin-bottom:5px">
+          <span>0%</span>
+          <span style="color:var(--lara)">80%</span>
+          <span style="color:var(--verm)">100%</span>
+          ${d.pct > 100 ? `<span style="color:var(--verm);font-weight:800">${Math.round(d.pct)}% ⚠️</span>` : ''}
+        </div>
+        <div style="position:relative;height:10px;background:var(--border);border-radius:100px;overflow:visible">
+          <!-- Marcador 80% -->
+          <div style="position:absolute;left:80%;top:-3px;width:2px;height:16px;background:var(--lara);opacity:.6;border-radius:1px;z-index:1"></div>
+          <!-- Barra preenchida -->
+          <div style="height:100%;width:0%;border-radius:100px;background:${d.cor};transition:width 1.2s cubic-bezier(.34,1.56,.64,1);position:relative;z-index:2" data-w="${pctBar}%"></div>
+        </div>
+        ${d.lim>0 ? `<div style="font-size:10px;color:var(--muted);margin-top:4px;text-align:right">${d.pct.toFixed(1)}% do limite utilizado</div>` : '<div style="font-size:10px;color:var(--muted);margin-top:4px">Sem limite definido — clique no valor para adicionar</div>'}
+      </div>
+    </div>`;
+  }).join('');
+
+  setTimeout(()=>{
+    document.querySelectorAll('#limCards [data-w]').forEach(b => b.style.width = b.dataset.w);
+  }, 100);
+
+  // ── TABELA (view alternativa) ──
+  document.getElementById('limBody').innerHTML = catData.map(d => `<tr>
+    <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${EMOJIS[d.cat]||'📦'}</span><span style="font-weight:700">${d.cat}</span></div></td>
+    <td><input type="number" class="fi" style="width:110px;text-align:center;font-weight:700;color:var(--azul)" value="${d.lim}" onchange="LIMS_LOCAL['${d.cat}']=parseFloat(this.value)||0"></td>
+    <td class="vn">${fmt(d.g)}</td>
+    <td class="vp">${d.lim>0?fmt(d.rest):'—'}</td>
+    <td style="min-width:130px"><div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(d.pct,100)}%;background:${d.cor};border-radius:100px"></div></div></td>
+    <td style="font-weight:700;font-size:12px">${d.stTxt}</td>
+    <td style="color:var(--azul);font-weight:700">${d.nTx}</td>
+  </tr>`).join('');
+}
+
+function buildSegments(gasto, limite) { return []; }
 function saveLimits(){save('sf_limites',LIMS_LOCAL);renderLimits();toast('💾 Limites salvos!','success')}
 
 // ════════════════════════════════════════════════
