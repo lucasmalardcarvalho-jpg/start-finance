@@ -230,13 +230,15 @@ class SheetsManager:
         return ultimas
 
     # ── HISTÓRICO 6 MESES ───────────────────────────────────────────
-    def get_historico_6_meses(self) -> list:
+    def get_historico_ano(self) -> list:
+        """Retorna todos os 12 meses do ano atual (Jan-Dez)."""
+        from datetime import date as _date
         agora = datetime.now()
+        ano   = agora.year
         todos = self._get_todos_registros()
         hist  = []
-        for i in range(5, -1, -1):
-            d   = (agora.replace(day=1) - timedelta(days=i*28)).replace(day=1)
-            mes = get_mes_ano(d)
+        for m in range(1, 13):
+            mes = f"{MESES_PT[m-1]}/{ano}"
             e = s = 0.0
             for row in todos:
                 if str(self._col(row, "MÊS/ANO", "MES/ANO")).strip() != mes:
@@ -246,13 +248,19 @@ class SheetsManager:
                 else:     s += abs(v)
             hist.append({
                 "mes":      mes,
-                "label":    MESES_PT[d.month-1].replace(".","").capitalize(),
+                "mes_num":  m,
+                "label":    MESES_PT[m-1].replace(".","").capitalize(),
                 "entradas": round(e, 2),
                 "saidas":   round(s, 2),
                 "saldo":    round(e - s, 2),
-                "atual":    (i == 0),
+                "atual":    (m == agora.month),
+                "futuro":   (m > agora.month),
             })
         return hist
+
+    def get_historico_6_meses(self) -> list:
+        """Compat: retorna ano completo."""
+        return self.get_historico_ano()
 
     # ── PREVISÃO ────────────────────────────────────────────────────
     def get_previsao_proximo_mes(self) -> dict:
