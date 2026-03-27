@@ -106,7 +106,7 @@ def api_todas():
         txs.reverse()
 
         # Histórico 6 meses para o gráfico
-        historico = sheets.get_historico_6_meses()
+        historico = sheets.get_historico_ano()
 
         return jsonify({"transacoes": txs, "historico": historico})
 
