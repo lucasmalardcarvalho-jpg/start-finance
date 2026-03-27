@@ -220,6 +220,23 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .cor-opt{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s}
 .cor-opt.sel{border-color:var(--txt);transform:scale(1.15)}
 
+/* EMOJI / COLOR PICKER */
+.epick{font-size:20px;cursor:pointer;padding:5px;border-radius:7px;border:2px solid transparent;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px}
+.epick:hover,.epick.sel{border-color:var(--azul);background:var(--azul-l)}
+.cpick{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;flex-shrink:0}
+.cpick:hover,.cpick.sel{border-color:var(--txt);transform:scale(1.2)}
+.catFiltBtn.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+/* CAT CARD */
+.cat-card-item{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 12px;text-align:center;cursor:pointer;transition:all .2s;position:relative}
+.cat-card-item:hover{transform:translateY(-2px);box-shadow:var(--sh-md)}
+.cat-card-item .cc-em{font-size:28px;margin-bottom:7px}
+.cat-card-item .cc-nm{font-size:12px;font-weight:800;color:var(--txt2);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-card-item .cc-vl{font-size:14px;font-weight:900}
+.cat-card-item .cc-lm{font-size:10px;color:var(--muted);margin-top:2px}
+.cat-card-item .cc-st{position:absolute;top:8px;right:8px;font-size:11px}
+.cat-card-item .cc-bar{height:4px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:7px}
+.cat-card-item .cc-fill{height:100%;border-radius:100px;transition:width 1s cubic-bezier(.34,1.56,.64,1)}
+
 /* ANIMAÇÕES */
 @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .page.active>.ph{animation:fadeUp .3s ease}
@@ -573,13 +590,104 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 <!-- ═══ CATEGORIAS ═══ -->
 <div class="page" id="page-categorias">
-  <div class="ph"><div><h1>📂 Categorias</h1><p id="catSubtitle">Gastos por categoria no mês atual</p></div></div>
-  <div id="catsGrid" class="g4 mb"></div>
+  <div class="ph">
+    <div><h1>📂 Categorias</h1><p id="catSubtitle">Gastos por categoria — clique para ver transações</p></div>
+    <div class="pa"><button class="btn bp" onclick="abrirModalCat()">+ Nova categoria</button></div>
+  </div>
+
+  <!-- KPIs rápidos de categorias -->
+  <div id="catsKpis" class="g4 mb"></div>
+
+  <!-- Filtro de visualização -->
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted)">Mostrar:</span>
+    <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="atencao" onclick="setCatFiltro('atencao',this)">🟡 Atenção</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="ok" onclick="setCatFiltro('ok',this)">🟢 OK</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="zerado" onclick="setCatFiltro('zerado',this)">⚪ Sem gastos</button>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">Ordenar:</span>
+      <select class="sf-f" id="catOrdem" onchange="renderCats()" style="font-size:12px;padding:5px 8px">
+        <option value="gasto">Maior gasto</option>
+        <option value="nome">Nome A-Z</option>
+        <option value="pct">% do limite</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Grid de categorias -->
+  <div id="catsGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"></div>
+
+  <!-- Análise detalhada -->
   <div class="card mb">
-    <div class="ch"><div><div class="ct">Análise Detalhada</div></div></div>
+    <div class="ch">
+      <div><div class="ct">📊 Análise Detalhada por Categoria</div><div class="cs">Gasto, limite, progresso e nº de transações</div></div>
+    </div>
     <div id="catsDetail" style="padding:0 18px 16px"></div>
   </div>
+
+  <!-- Categorias personalizadas -->
+  <div class="card">
+    <div class="ch">
+      <div><div class="ct">⭐ Minhas Categorias Personalizadas</div><div class="cs">Criadas por você</div></div>
+      <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Adicionar</button>
+    </div>
+    <div id="catsCustom" style="padding:0 18px 16px"></div>
+  </div>
 </div>
+
+<!-- Modal Nova Categoria -->
+<div class="ov" id="ovCatModal">
+<div class="modal">
+  <div class="mh"><div class="mt" id="catModalTitle">Nova Categoria</div><button class="mc" onclick="CM('ovCatModal')">✕</button></div>
+  <div class="mb2">
+    <div class="fr"><div class="fg"><label class="fl">Nome da Categoria</label><input class="fi" id="catNome" placeholder="Ex: Academia, Pets, Hobbies..."></div>
+    <div class="fg"><label class="fl">Limite Mensal (R$)</label><input type="number" class="fi" id="catLimite" step="0.01" placeholder="0 = sem limite"></div></div>
+    <div class="fr one"><div class="fg"><label class="fl">Escolha um emoji</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="emojiPicker">
+        <span class="epick" onclick="selEmoji(this,'🎯')">🎯</span><span class="epick" onclick="selEmoji(this,'🎮')">🎮</span>
+        <span class="epick" onclick="selEmoji(this,'🎵')">🎵</span><span class="epick" onclick="selEmoji(this,'🎬')">🎬</span>
+        <span class="epick" onclick="selEmoji(this,'🏋️')">🏋️</span><span class="epick" onclick="selEmoji(this,'🧘')">🧘</span>
+        <span class="epick" onclick="selEmoji(this,'🐕')">🐕</span><span class="epick" onclick="selEmoji(this,'🐈')">🐈</span>
+        <span class="epick" onclick="selEmoji(this,'🌱')">🌱</span><span class="epick" onclick="selEmoji(this,'🏡')">🏡</span>
+        <span class="epick" onclick="selEmoji(this,'✈️')">✈️</span><span class="epick" onclick="selEmoji(this,'🏖️')">🏖️</span>
+        <span class="epick" onclick="selEmoji(this,'📷')">📷</span><span class="epick" onclick="selEmoji(this,'🎸')">🎸</span>
+        <span class="epick" onclick="selEmoji(this,'🍷')">🍷</span><span class="epick" onclick="selEmoji(this,'☕')">☕</span>
+        <span class="epick" onclick="selEmoji(this,'💇')">💇</span><span class="epick" onclick="selEmoji(this,'💆')">💆</span>
+        <span class="epick" onclick="selEmoji(this,'🛁')">🛁</span><span class="epick" onclick="selEmoji(this,'🧴')">🧴</span>
+        <span class="epick" onclick="selEmoji(this,'🏊')">🏊</span><span class="epick" onclick="selEmoji(this,'🚲')">🚲</span>
+        <span class="epick" onclick="selEmoji(this,'⚽')">⚽</span><span class="epick" onclick="selEmoji(this,'🏄')">🏄</span>
+        <span class="epick" onclick="selEmoji(this,'🎲')">🎲</span><span class="epick" onclick="selEmoji(this,'🧩')">🧩</span>
+        <span class="epick" onclick="selEmoji(this,'📚')">📚</span><span class="epick" onclick="selEmoji(this,'✏️')">✏️</span>
+        <span class="epick" onclick="selEmoji(this,'💊')">💊</span><span class="epick" onclick="selEmoji(this,'🦷')">🦷</span>
+        <span class="epick" onclick="selEmoji(this,'🔧')">🔧</span><span class="epick" onclick="selEmoji(this,'🖥️')">🖥️</span>
+        <span class="epick" onclick="selEmoji(this,'🎁')">🎁</span><span class="epick" onclick="selEmoji(this,'💝')">💝</span>
+        <span class="epick" onclick="selEmoji(this,'🏦')">🏦</span><span class="epick" onclick="selEmoji(this,'📦')">📦</span>
+      </div>
+      <input type="hidden" id="catEmoji" value="📦">
+    </div></div>
+    <div class="fr one"><div class="fg"><label class="fl">Cor</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="colorPicker">
+        <div class="cpick sel" style="background:#EF4444" onclick="selColor(this,'#EF4444')"></div>
+        <div class="cpick" style="background:#F97316" onclick="selColor(this,'#F97316')"></div>
+        <div class="cpick" style="background:#F59E0B" onclick="selColor(this,'#F59E0B')"></div>
+        <div class="cpick" style="background:#10B981" onclick="selColor(this,'#10B981')"></div>
+        <div class="cpick" style="background:#3B6FF0" onclick="selColor(this,'#3B6FF0')"></div>
+        <div class="cpick" style="background:#8B5CF6" onclick="selColor(this,'#8B5CF6')"></div>
+        <div class="cpick" style="background:#EC4899" onclick="selColor(this,'#EC4899')"></div>
+        <div class="cpick" style="background:#14B8A6" onclick="selColor(this,'#14B8A6')"></div>
+        <div class="cpick" style="background:#84CC16" onclick="selColor(this,'#84CC16')"></div>
+        <div class="cpick" style="background:#0EA5E9" onclick="selColor(this,'#0EA5E9')"></div>
+        <div class="cpick" style="background:#6366F1" onclick="selColor(this,'#6366F1')"></div>
+        <div class="cpick" style="background:#64748B" onclick="selColor(this,'#64748B')"></div>
+      </div>
+      <input type="hidden" id="catCor" value="#EF4444">
+    </div></div>
+    <input type="hidden" id="catModalIdx" value="-1">
+  </div>
+  <div class="mf"><button class="btn bg" onclick="CM('ovCatModal')">Cancelar</button><button class="btn bp" onclick="salvarCatCustom()">💾 Salvar</button></div>
+</div></div>
 
 <!-- ═══ LIMITES ═══ -->
 <div class="page" id="page-limites">
@@ -1389,35 +1497,260 @@ function renderPlan(){
 }
 
 // ════════════════════════════════════════════════
-// CATEGORIAS
+// CATEGORIAS — COMPLETO
 // ════════════════════════════════════════════════
+let CAT_FILTRO='todas';
+
+function setCatFiltro(f,el){
+  CAT_FILTRO=f;
+  document.querySelectorAll('.catFiltBtn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderCats();
+}
+
+function selEmoji(el,emoji){
+  document.querySelectorAll('.epick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('catEmoji').value=emoji;
+}
+
+function selColor(el,cor){
+  document.querySelectorAll('.cpick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('catCor').value=cor;
+}
+
+function abrirModalCat(idx=-1){
+  document.getElementById('catModalIdx').value=idx;
+  if(idx>=0){
+    const c=CATS_CUSTOM[idx];
+    document.getElementById('catNome').value=c.nome;
+    document.getElementById('catLimite').value=c.limite||0;
+    document.getElementById('catEmoji').value=c.emoji;
+    document.getElementById('catCor').value=c.cor;
+    document.getElementById('catModalTitle').textContent='✏️ Editar Categoria';
+    // Marca emoji e cor ativos
+    document.querySelectorAll('.epick').forEach(e=>e.classList.toggle('sel',e.textContent===c.emoji));
+    document.querySelectorAll('.cpick').forEach(e=>e.classList.toggle('sel',e.style.background===c.cor));
+  } else {
+    document.getElementById('catNome').value='';
+    document.getElementById('catLimite').value='';
+    document.getElementById('catModalTitle').textContent='Nova Categoria';
+    document.querySelectorAll('.epick').forEach((e,i)=>e.classList.toggle('sel',i===0));
+    document.querySelectorAll('.cpick').forEach((e,i)=>e.classList.toggle('sel',i===0));
+    document.getElementById('catEmoji').value='📦';
+    document.getElementById('catCor').value='#EF4444';
+  }
+  OM('ovCatModal');
+}
+
+function salvarCatCustom(){
+  const idx=parseInt(document.getElementById('catModalIdx').value);
+  const c={
+    nome:document.getElementById('catNome').value.trim(),
+    emoji:document.getElementById('catEmoji').value||'📦',
+    cor:document.getElementById('catCor').value||'#9CA3AF',
+    limite:parseFloat(document.getElementById('catLimite').value)||0,
+    custom:true
+  };
+  if(!c.nome)return toast('Digite o nome da categoria','warning');
+  if(idx>=0) CATS_CUSTOM[idx]=c;
+  else CATS_CUSTOM.push(c);
+  save('sf_cats',CATS_CUSTOM);
+  CM('ovCatModal');
+  renderCats();
+  // Atualiza dropdown de categorias nos formulários de tx
+  atualizarSelectCats();
+  toast('✅ Categoria salva!','success');
+}
+
+function delCatCustom(idx){
+  CATS_CUSTOM.splice(idx,1);
+  save('sf_cats',CATS_CUSTOM);
+  renderCats();
+  atualizarSelectCats();
+  toast('🗑️ Categoria removida','info');
+}
+
+function atualizarSelectCats(){
+  const sel=document.getElementById('txCat');
+  if(!sel)return;
+  // Mantém a seleção atual
+  const atual=sel.value;
+  const padrao=['Alimentação','Transporte','Contas','Lazer','Saúde','Educação','Moradia','Beleza','Vestuário','Pet','Tecnologia','Filhos','Presentes','Veículo','Impostos','Assinaturas','Salário','Freelance','Investimento','Outros'];
+  const custom=CATS_CUSTOM.map(c=>c.nome);
+  const todas=[...padrao,...custom.filter(n=>!padrao.includes(n))];
+  sel.innerHTML=todas.map(n=>`<option value="${n}"${n===atual?' selected':''}>${n}</option>`).join('');
+}
+
+// Categorias padrão completas (50+)
+const CATS_PADRAO_EXTRA = [
+  {nome:'Alimentação',emoji:'🍽️',cor:'#EF4444'},
+  {nome:'Transporte',emoji:'🚗',cor:'#F97316'},
+  {nome:'Contas',emoji:'⚡',cor:'#3B6FF0'},
+  {nome:'Lazer',emoji:'🎮',cor:'#8B5CF6'},
+  {nome:'Saúde',emoji:'❤️',cor:'#10B981'},
+  {nome:'Educação',emoji:'📚',cor:'#F59E0B'},
+  {nome:'Moradia',emoji:'🏠',cor:'#6366F1'},
+  {nome:'Beleza',emoji:'💅',cor:'#EC4899'},
+  {nome:'Vestuário',emoji:'👗',cor:'#14B8A6'},
+  {nome:'Pet',emoji:'🐾',cor:'#84CC16'},
+  {nome:'Tecnologia',emoji:'📱',cor:'#0EA5E9'},
+  {nome:'Filhos',emoji:'👶',cor:'#F472B6'},
+  {nome:'Presentes',emoji:'🎁',cor:'#FB923C'},
+  {nome:'Veículo',emoji:'🚘',cor:'#64748B'},
+  {nome:'Impostos',emoji:'🧾',cor:'#78716C'},
+  {nome:'Assinaturas',emoji:'📺',cor:'#A78BFA'},
+  {nome:'Salário',emoji:'💰',cor:'#10B981'},
+  {nome:'Freelance',emoji:'💼',cor:'#34D399'},
+  {nome:'Investimento',emoji:'📈',cor:'#3B6FF0'},
+  {nome:'Academia',emoji:'🏋️',cor:'#EF4444'},
+  {nome:'Farmácia',emoji:'💊',cor:'#10B981'},
+  {nome:'Restaurante',emoji:'🍴',cor:'#F97316'},
+  {nome:'Delivery',emoji:'🛵',cor:'#F59E0B'},
+  {nome:'Mercado',emoji:'🛒',cor:'#6366F1'},
+  {nome:'Viagem',emoji:'✈️',cor:'#0EA5E9'},
+  {nome:'Hotel',emoji:'🏨',cor:'#8B5CF6'},
+  {nome:'Combustível',emoji:'⛽',cor:'#64748B'},
+  {nome:'Estacionamento',emoji:'🅿️',cor:'#78716C'},
+  {nome:'Cinema',emoji:'🎬',cor:'#EC4899'},
+  {nome:'Shows',emoji:'🎵',cor:'#A78BFA'},
+  {nome:'Esportes',emoji:'⚽',cor:'#10B981'},
+  {nome:'Livros',emoji:'📖',cor:'#F59E0B'},
+  {nome:'Cursos',emoji:'🎓',cor:'#3B6FF0'},
+  {nome:'Dentista',emoji:'🦷',cor:'#14B8A6'},
+  {nome:'Psicólogo',emoji:'🧘',cor:'#8B5CF6'},
+  {nome:'Cabelo',emoji:'💇',cor:'#EC4899'},
+  {nome:'Outros',emoji:'📦',cor:'#9CA3AF'},
+];
+
 function renderCats(){
-  const cats=MES_DATA.categorias||[];
-  document.getElementById('catSubtitle').textContent=`Gastos por categoria em ${getMesNome()}`;
+  const txMes=MES_DATA.txMes||[];
   const lims={...LIMS_DEF,...LIMS_LOCAL};
+
+  // Monta lista completa: padrão + custom, enriquecida com gastos
+  const gastoMap={};
+  txMes.filter(t=>t.valor<0).forEach(t=>{
+    gastoMap[t.categoria]=(gastoMap[t.categoria]||0)+Math.abs(t.valor);
+  });
+
+  // Pega categorias com gasto OU todas as padrão
+  const padrao=CATS_PADRAO_EXTRA.map(c=>({
+    ...c,
+    gasto:gastoMap[c.nome]||0,
+    limite:lims[c.nome]||0,
+    pct:lims[c.nome]>0?(gastoMap[c.nome]||0)/lims[c.nome]*100:0,
+    status:(gastoMap[c.nome]||0)===0?'zerado':((lims[c.nome]>0&&(gastoMap[c.nome]||0)>=lims[c.nome])?'estourou':((lims[c.nome]>0&&(gastoMap[c.nome]||0)>=lims[c.nome]*0.8)?'atencao':'ok')),
+    custom:false
+  }));
+
+  // Aplica filtro
+  let visivel=padrao;
+  if(CAT_FILTRO==='estourou') visivel=padrao.filter(c=>c.status==='estourou');
+  else if(CAT_FILTRO==='atencao') visivel=padrao.filter(c=>c.status==='atencao');
+  else if(CAT_FILTRO==='ok') visivel=padrao.filter(c=>c.status==='ok'&&c.gasto>0);
+  else if(CAT_FILTRO==='zerado') visivel=padrao.filter(c=>c.gasto===0);
+
+  // Aplica ordenação
+  const ordem=(document.getElementById('catOrdem')||{}).value||'gasto';
+  if(ordem==='gasto') visivel.sort((a,b)=>b.gasto-a.gasto);
+  else if(ordem==='nome') visivel.sort((a,b)=>a.nome.localeCompare(b.nome));
+  else if(ordem==='pct') visivel.sort((a,b)=>b.pct-a.pct);
+
+  // Subtítulo
+  document.getElementById('catSubtitle').textContent=`${getMesNome()} — ${visivel.filter(c=>c.gasto>0).length} categorias com gastos`;
+
+  // KPIs rápidos
+  const totalGasto=padrao.reduce((s,c)=>s+c.gasto,0);
+  const nEstourou=padrao.filter(c=>c.status==='estourou').length;
+  const nAtencao=padrao.filter(c=>c.status==='atencao').length;
+  const nOk=padrao.filter(c=>c.status==='ok'&&c.gasto>0).length;
+  document.getElementById('catsKpis').innerHTML=`
+    <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(totalGasto)}</div><div class="kpi-l">Total gasto em ${getMesNome()}</div></div>
+    <div class="kpi r" style="cursor:pointer" onclick="setCatFiltro('estourou',document.querySelector('[data-f=estourou]'))"><div class="kpi-top"><div class="kpi-ic">🔴</div></div><div class="kpi-v">${nEstourou}</div><div class="kpi-l">Categorias estouradas</div></div>
+    <div class="kpi y" style="cursor:pointer" onclick="setCatFiltro('atencao',document.querySelector('[data-f=atencao]'))"><div class="kpi-top"><div class="kpi-ic">🟡</div></div><div class="kpi-v">${nAtencao}</div><div class="kpi-l">Em atenção (>80%)</div></div>
+    <div class="kpi g" style="cursor:pointer" onclick="setCatFiltro('ok',document.querySelector('[data-f=ok]'))"><div class="kpi-top"><div class="kpi-ic">🟢</div></div><div class="kpi-v">${nOk}</div><div class="kpi-l">Dentro do limite</div></div>`;
+
+  // Grid principal
   const el=document.getElementById('catsGrid');if(!el)return;
-  if(!cats.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">📂</div><h3>Sem gastos em ${getMesNome()}</h3></div></div>`;return;}
-  el.innerHTML=cats.map(c=>`<div class="card" style="padding:14px;text-align:center;cursor:pointer;transition:all .2s" onclick="go('transacoes')" onmouseenter="this.style.borderColor='var(--azul)'" onmouseleave="this.style.borderColor='var(--border)'">
-    <div style="font-size:26px;margin-bottom:7px">${c.emoji}</div>
-    <div style="font-size:12px;font-weight:800;color:var(--txt2);margin-bottom:3px">${c.nome}</div>
-    <div style="font-size:15px;font-weight:900;color:var(--verm)">${fmt(c.gasto)}</div>
-    <div style="font-size:10px;color:var(--muted)">${lims[c.nome]>0?'Limite: '+fmt(lims[c.nome]):'Sem limite'}</div>
-  </div>`).join('');
-  // Detalhe
-  document.getElementById('catsDetail').innerHTML=cats.map(c=>{
-    const lim=lims[c.nome]||0;const pct=lim>0?Math.min(c.pct,105):0;
-    const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':c.status==='ok'?'var(--verde)':'var(--muted2)';
-    const nTx=(MES_DATA.txMes||[]).filter(t=>t.categoria===c.nome).length;
-    return `<div style="display:grid;grid-template-columns:22px 1fr 85px 85px 120px 70px 60px;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:14px">${c.emoji}</span>
-      <div style="font-size:13px;font-weight:700">${c.nome}</div>
-      <div style="font-size:13px;font-weight:800;color:var(--verm)">${fmt(c.gasto)}</div>
-      <div style="font-size:12px;color:var(--muted)">${lim>0?fmt(lim):'Sem limite'}</div>
-      <div><div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${bCor};border-radius:100px"></div></div></div>
-      <div style="font-size:11px;font-weight:700">${c.status==='estourou'?'🔴 Estourou':c.status==='atencao'?'🟡 Atenção':c.status==='ok'?`🟢 ${Math.round(c.pct)}%`:'♾️ Livre'}</div>
-      <div style="font-size:11px;color:var(--azul);font-weight:700;text-align:right">${nTx} tx</div>
-    </div>`;
-  }).join('');
+  if(!visivel.length){
+    el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">🔍</div><h3>Nenhuma categoria neste filtro</h3></div></div>`;
+  } else {
+    el.innerHTML=visivel.map(c=>{
+      const bPct=c.limite>0?Math.min(c.pct,100):0;
+      const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':c.status==='ok'?'var(--verde)':'var(--muted2)';
+      const stIco=c.status==='estourou'?'🔴':c.status==='atencao'?'🟡':c.status==='ok'?'🟢':'';
+      const nTx=txMes.filter(t=>t.categoria===c.nome).length;
+      return `<div class="cat-card-item" onclick="filtrarPorCategoria('${c.nome}')" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'}">
+        ${stIco?`<span class="cc-st">${stIco}</span>`:''}
+        <div class="cc-em">${c.emoji}</div>
+        <div class="cc-nm">${c.nome}</div>
+        <div class="cc-vl" style="color:${c.gasto>0?'var(--verm)':'var(--muted2)'}">${c.gasto>0?fmt(c.gasto):'R$ 0,00'}</div>
+        <div class="cc-lm">${c.limite>0?'Limite: '+fmt(c.limite):'Sem limite'}${nTx>0?' · '+nTx+' tx':''}</div>
+        ${c.limite>0?`<div class="cc-bar"><div class="cc-fill" style="width:0%;background:${bCor}" data-w="${bPct}%"></div></div>`:''}
+      </div>`;
+    }).join('');
+    setTimeout(()=>el.querySelectorAll('[data-w]').forEach(b=>b.style.width=b.dataset.w),100);
+  }
+
+  // Tabela análise detalhada — só cats com gasto
+  const comGasto=padrao.filter(c=>c.gasto>0).sort((a,b)=>b.gasto-a.gasto);
+  const detEl=document.getElementById('catsDetail');if(!detEl)return;
+  if(!comGasto.length){
+    detEl.innerHTML='<div class="empty" style="padding:24px"><p>Sem gastos registrados neste mês</p></div>';
+  } else {
+    detEl.innerHTML=`
+      <div style="overflow-x:auto">
+      <table class="st" style="font-size:12px">
+        <thead><tr><th>Categoria</th><th>Gasto</th><th>Limite</th><th>Restante</th><th>Progresso</th><th>Status</th><th>Transações</th><th>Média/tx</th></tr></thead>
+        <tbody>`+comGasto.map(c=>{
+      const lim=c.limite;
+      const rest=lim>0?Math.max(lim-c.gasto,0):null;
+      const nTx=txMes.filter(t=>t.categoria===c.nome&&t.valor<0).length;
+      const media=nTx>0?c.gasto/nTx:0;
+      const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':'var(--verde)';
+      return `<tr style="cursor:pointer" onclick="filtrarPorCategoria('${c.nome}')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
+        <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${c.emoji}</span><strong>${c.nome}</strong></div></td>
+        <td class="vn">${fmt(c.gasto)}</td>
+        <td style="color:var(--muted)">${lim>0?fmt(lim):'—'}</td>
+        <td style="color:var(--verde);font-weight:700">${rest!==null?fmt(rest):'—'}</td>
+        <td style="min-width:100px"><div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(c.pct,100)}%;background:${bCor};border-radius:100px"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px">${c.pct.toFixed(1)}%</div></td>
+        <td>${c.status==='estourou'?'🔴 Estourou':c.status==='atencao'?'🟡 Atenção':c.status==='ok'?'🟢 OK':'♾️ Livre'}</td>
+        <td style="color:var(--azul);font-weight:700">${nTx}</td>
+        <td style="color:var(--muted)">${nTx>0?fmt(media):'—'}</td>
+      </tr>`;
+    }).join('')+`</tbody></table></div>`;
+  }
+
+  // Categorias personalizadas
+  const customEl=document.getElementById('catsCustom');if(!customEl)return;
+  if(!CATS_CUSTOM.length){
+    customEl.innerHTML='<div class="empty" style="padding:24px"><div class="empty-ic">⭐</div><h3>Nenhuma categoria personalizada</h3><p>Adicione categorias que não existem na lista padrão</p><button class="btn bp" style="margin-top:12px" onclick="abrirModalCat()">+ Adicionar categoria</button></div>';
+  } else {
+    customEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">`+
+    CATS_CUSTOM.map((c,i)=>{
+      const gasto=gastoMap[c.nome]||0;
+      return `<div class="cat-card-item" style="border-top:3px solid ${c.cor}">
+        <div class="cc-em">${c.emoji}</div>
+        <div class="cc-nm">${c.nome}</div>
+        <div class="cc-vl" style="color:${gasto>0?'var(--verm)':'var(--muted2)'}">${gasto>0?fmt(gasto):'R$ 0,00'}</div>
+        <div class="cc-lm">${c.limite>0?'Limite: '+fmt(c.limite):'Sem limite'}</div>
+        <div style="display:flex;gap:4px;margin-top:8px;justify-content:center">
+          <button class="btn bg btn-xs" onclick="event.stopPropagation();abrirModalCat(${i})">✏️</button>
+          <button class="btn bd btn-xs" onclick="event.stopPropagation();delCatCustom(${i})">🗑️</button>
+        </div>
+      </div>`;
+    }).join('')+`</div>`;
+  }
+}
+
+function filtrarPorCategoria(cat){
+  // Vai para transações já filtrado pela categoria
+  go('transacoes');
+  setTimeout(()=>{
+    const sel=document.getElementById('fCat');
+    if(sel){ sel.value=cat; filterTx(); }
+  },100);
 }
 
 // ════════════════════════════════════════════════
@@ -1563,6 +1896,8 @@ function init(){
   METAS=ls('sf_metas',[]);
   INVESTIMENTOS=ls('sf_inv',[]);
   CARTOES=ls('sf_cartoes',[]);
+  CATS_CUSTOM=ls('sf_cats',[]);
+  atualizarSelectCats();
   atualizaMesUI();
   reload();
   setInterval(()=>reload(),180000);
