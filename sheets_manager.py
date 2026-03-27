@@ -117,20 +117,21 @@ class SheetsManager:
             pt = int(dados.get("total_parcelas", 0) or 0)
 
             self.aba_transacoes.append_row([
-                dados.get("data",  agora.strftime("%d/%m/%Y")),
-                dados.get("hora",  agora.strftime("%H:%M")),
-                float(dados.get("valor", 0)),
-                dados.get("tipo",         "Gasto"),
-                dados.get("categoria",    "Outros"),
-                dados.get("subcategoria", ""),
-                dados.get("descricao",    ""),
-                dados.get("localizacao",  ""),
-                dados.get("metodo_pagamento", ""),
-                pa if pt > 0 else "",
-                pt if pt > 0 else "",
-                "Telegram",
-                mes_ano,
-                "✅"
+                dados.get("data",  agora.strftime("%d/%m/%Y")),  # A
+                dados.get("hora",  agora.strftime("%H:%M")),     # B
+                float(dados.get("valor", 0)),                    # C
+                dados.get("tipo",         "Gasto"),              # D
+                dados.get("categoria",    "Outros"),             # E
+                dados.get("subcategoria", ""),                   # F
+                dados.get("descricao",    ""),                   # G
+                dados.get("localizacao",  ""),                   # H
+                dados.get("metodo_pagamento", ""),               # I
+                pa if pt > 0 else "",                            # J
+                pt if pt > 0 else "",                            # K
+                "Telegram",                                      # L
+                mes_ano,                                         # M
+                "✅",                                             # N
+                dados.get("cartao", ""),                         # O — nome do cartão
             ], value_input_option="USER_ENTERED")
             logger.info(f"✅ {dados.get('descricao')} R${dados.get('valor')}")
             return self.get_saldo_mes()
