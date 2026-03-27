@@ -719,7 +719,7 @@ function calcularMes(){
       s+=Math.abs(v);
       cats[t.categoria]=(cats[t.categoria]||0)+Math.abs(v);
       if(t.metodo) mets[t.metodo]=(mets[t.metodo]||0)+Math.abs(v);
-      if(t.cartao) carts[t.cartao]=(carts[t.cartao]||0)+Math.abs(v);
+      if(t.cartao&&t.cartao.trim()) carts[t.cartao.trim()]=(carts[t.cartao.trim()]||0)+Math.abs(v);
     }
   });
 
@@ -872,7 +872,7 @@ function renderDashTxs(txMes){
     const neg=t.valor<0;
     return `<div style="display:flex;align-items:center;gap:9px;padding:9px 18px;border-bottom:1px solid var(--border);cursor:pointer" onclick="go('transacoes')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
       <div style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;background:${t.cor}22;flex-shrink:0">${t.emoji}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.descricao||t.categoria}</div><div style="font-size:10px;color:var(--muted)">${t.categoria}${t.cartao?' · '+t.cartao:''}</div></div>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.descricao||t.categoria}</div><div style="font-size:10px;color:var(--muted)">${t.categoria}${t.metodo&&t.cartao?' · '+t.metodo+' / '+t.cartao:t.cartao?' · '+t.cartao:''}</div></div>
       <div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:800;color:${neg?'var(--verm)':'var(--verde)'}">${neg?'−':'+'}${fmt(t.valor)}</div><div style="font-size:10px;color:var(--muted2)">${t.data}</div></div>
     </div>`;
   }).join('');
@@ -881,7 +881,8 @@ function renderDashTxs(txMes){
 function renderCartoesDash(){
   const el=document.getElementById('dashCartoes');if(!el)return;
   if(!CARTOES.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">💳</div><p>Nenhum cartão</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'cartoes\')">Adicionar cartão</button></div>';return;}
-  const gastos=MES_DATA.gastosPorCartao||{};
+  const rawG=MES_DATA.gastosPorCartao||{};
+  const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
     const usado=gastos[c.nome]||0;
     const pct=c.limite>0?Math.min(usado/c.limite*100,100):0;
@@ -1054,7 +1055,9 @@ function renderTxTable(){
       <td><div style="display:flex;align-items:center;gap:7px"><div style="width:26px;height:26px;border-radius:7px;background:${t.cor}22;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${t.emoji}</div><div><div style="font-weight:700;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.descricao||t.categoria}</div>${t.localizacao?`<div style="font-size:10px;color:var(--muted)">📍 ${t.localizacao}</div>`:''}</div></div></td>
       <td><span class="pill pcat">${t.emoji} ${t.categoria}</span>${t.subcategoria?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${t.subcategoria}</div>`:''}</td>
       <td class="${neg?'vn':'vp'}">${neg?'−':'+'}${fmt(t.valor)}</td>
-      <td style="font-size:12px">${t.metodo||'—'}${t.cartao?`<div style="font-size:11px;color:var(--azul);font-weight:700">💳 ${t.cartao}</div>`:''}</td>
+      <td style="font-size:12px">
+        ${t.metodo&&t.cartao ? `<span style="font-weight:700">${t.metodo}</span> <span style="color:var(--azul);font-weight:700">/ ${t.cartao}</span>` : t.metodo||'—'}
+      </td>
       <td>${t.parcelas>0?`<span class="pill pparc">${t.parcelas}x</span>`:'—'}</td>
       <td><span class="${tp}">${t.tipo}</span></td>
       <td><div style="display:flex;gap:3px">
@@ -1099,7 +1102,8 @@ function saveCt(){
 
 function renderCartoes(){
   document.getElementById('ctMesLabel').textContent=getMesNome();
-  const gastos=MES_DATA.gastosPorCartao||{};
+  const rawG=MES_DATA.gastosPorCartao||{};
+  const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
   // KPIs gerais
   const fatTotal=Object.values(gastos).reduce((s,v)=>s+v,0);
   const dispTotal=CARTOES.reduce((s,c)=>s+c.limite,0)-fatTotal;
