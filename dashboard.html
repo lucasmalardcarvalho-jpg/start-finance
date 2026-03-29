@@ -1866,14 +1866,19 @@ async function saveTx(){
   const cartao=document.getElementById('txMetodo').value==='Cartão crédito'?document.getElementById('txCartaoSel').value:'';
   const totalParc=parseInt(document.getElementById('txParc').value)||0;
   const mesAno=document.getElementById('txMesAno').value||getMesChave();
+  // Valor bruto digitado
+  const valorBruto = tipo==='Gasto' ? -Math.abs(valor) : Math.abs(valor);
+  // Se parcelado: divide pelo número de parcelas para salvar o valor unitário por mês
+  const valorSalvar = totalParc > 1 ? valorBruto / totalParc : valorBruto;
+
   const dados={
     data:document.getElementById('txData').value,
     hora:document.getElementById('txHora').value,
-    valor:tipo==='Gasto'?-Math.abs(valor):Math.abs(valor),
+    valor: valorSalvar,                     // ✅ valor unitário da parcela
     tipo,
     categoria:document.getElementById('txCat').value,
     subcategoria:document.getElementById('txSub').value,
-    descricao:document.getElementById('txDesc').value,
+    descricao:document.getElementById('txDesc').value, // ✅ sem "(1/N)" na descrição
     localizacao:document.getElementById('txLocal').value,
     metodo_pagamento:document.getElementById('txMetodo').value,
     total_parcelas:totalParc,
@@ -1890,13 +1895,17 @@ async function saveTx(){
       // ─── Propagar parcelas para meses futuros ───
       if(totalParc>1){
         const erros=[];
+        // dados.valor já contém o valor unitário (dividido por totalParc antes de salvar)
+        const valorUnitario = dados.valor; // ex: -1500/3 = -500 por parcela
+
         for(let p=2;p<=totalParc;p++){
           const mesParc=somarMes(mesAno,p-1);
           const dadosParc={
             ...dados,
+            valor: valorUnitario,          // ✅ valor da parcela, não o total
             parcela_atual:p,
             mes_ano:mesParc,
-            descricao:(dados.descricao||dados.categoria)+` (${p}/${totalParc})`,
+            descricao: dados.descricao||dados.categoria, // ✅ sem "(2/3)" na descrição
           };
           try{
             const rp=await(await fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dadosParc)})).json();
