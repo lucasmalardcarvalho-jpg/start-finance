@@ -714,10 +714,13 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
         <div id="dashDonut"></div>
       </div>
 
-      <!-- Narrativa compacta -->
-      <div class="card" style="background:linear-gradient(135deg,#3B6FF008,#10B98108);border-color:#3B6FF018">
-        <div class="ch"><div><div class="ct">📖 Resumo do Mês</div></div></div>
-        <div style="padding:0 18px 16px;font-family:'Lora',serif;font-style:italic;font-size:12.5px;color:var(--txt2);line-height:1.7" id="dashNarr">Carregando...</div>
+      <!-- Resumo do mês profissional -->
+      <div class="card" id="dashResumoCard" style="border-color:#3B6FF018">
+        <div class="ch">
+          <div><div class="ct">📋 Resumo do Mês</div><div class="cs" id="dashResumoSub">—</div></div>
+          <span id="dashResumoStatus" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--verde-l);color:var(--verde-d)">—</span>
+        </div>
+        <div id="dashNarr" style="padding:0 18px 16px"></div>
       </div>
 
     </div>
@@ -1293,8 +1296,8 @@ function renderDash(){
   renderCatListDash(d.categorias);
   // Txs recentes
   renderDashTxs(d.txMes);
-  // Narrativa
-  document.getElementById('dashNarr').innerHTML=d.narrativa.replace(/(R\$\s*[\d.,]+)/g,'<b>$1</b>').replace(/(\d+\s*transações?)/gi,'<b>$1</b>');
+  // Resumo do mês profissional
+  renderResumoMes(d, mes);
   // Cartões
   renderCartoesDash();
   // Dívidas
@@ -2993,6 +2996,97 @@ const DICAS = [
 function getDicaHoje(){
   const idx = new Date().getDate() % DICAS.length;
   return DICAS[idx];
+}
+
+function renderResumoMes(d, mes){
+  const el  = document.getElementById('dashNarr');
+  const sub = document.getElementById('dashResumoSub');
+  const st  = document.getElementById('dashResumoStatus');
+  const card= document.getElementById('dashResumoCard');
+  if(!el) return;
+
+  const saldo   = d.saldo;
+  const positivo = saldo >= 0;
+  const txs     = d.txMes || [];
+  const cats    = d.categorias || [];
+  const top     = cats.slice(0,3);
+  const fixasPend = FIXAS.filter(f=>f.status!=='Pago').length;
+  const dividasMes = DIVIDAS.reduce((s,dv)=>s+parseFloat(dv.mensal||0),0);
+  const taxaPoup = d.entradas>0 ? (saldo/d.entradas*100) : 0;
+  const nCartoes = CARTOES.length;
+
+  // Sub e status badge
+  if(sub) sub.textContent = mes;
+  if(st){
+    st.textContent = positivo ? '💚 No azul' : '🔴 No vermelho';
+    st.style.background = positivo ? 'var(--verde-l)' : 'var(--verm-l)';
+    st.style.color      = positivo ? 'var(--verde-d)' : 'var(--verm)';
+  }
+  // Borda do card
+  if(card) card.style.borderColor = positivo ? '#10B98133' : '#EF444433';
+
+  // Alertas automáticos
+  const alertas = [];
+  if(fixasPend>0) alertas.push({ico:'⚠️',txt:`${fixasPend} despesa(s) fixa(s) pendente(s)`,cor:'var(--amar)',bg:'var(--amar-l)'});
+  if(!positivo)   alertas.push({ico:'🔴',txt:`Gastos superaram receitas em ${fmt(Math.abs(saldo))}`,cor:'var(--verm)',bg:'var(--verm-l)'});
+  if(taxaPoup>20) alertas.push({ico:'🏆',txt:`Taxa de poupança de ${taxaPoup.toFixed(0)}% — ótimo desempenho!`,cor:'var(--verde-d)',bg:'var(--verde-l)'});
+  if(dividasMes>0) alertas.push({ico:'📅',txt:`${fmt(dividasMes)}/mês em parcelas de dívidas`,cor:'var(--muted)',bg:'var(--bg)'});
+  if(cats.find(c=>c.status==='estourou')) alertas.push({ico:'🔴',txt:`Limite estourado em: ${cats.filter(c=>c.status==='estourou').map(c=>c.nome).join(', ')}`,cor:'var(--verm)',bg:'var(--verm-l)'});
+
+  el.innerHTML = `
+    <!-- KPIs mini -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px">
+      <div style="padding:10px 14px;border-right:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Transações</div>
+        <div style="font-size:18px;font-weight:900;color:var(--azul)">${d.registros}</div>
+        <div style="font-size:10px;color:var(--muted)">${txs.filter(t=>t.valor<0).length} gastos · ${txs.filter(t=>t.valor>0).length} receitas</div>
+      </div>
+      <div style="padding:10px 14px;border-right:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Taxa de poupança</div>
+        <div style="font-size:18px;font-weight:900;color:${taxaPoup>=20?'var(--verde)':taxaPoup>=10?'var(--lara)':'var(--verm)'}">${taxaPoup.toFixed(1)}%</div>
+        <div style="font-size:10px;color:var(--muted)">${fmt(saldo)} economizados</div>
+      </div>
+      <div style="padding:10px 14px">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Média/transação</div>
+        <div style="font-size:18px;font-weight:900;color:var(--txt)">${d.registros>0?fmt(d.saidas/Math.max(txs.filter(t=>t.valor<0).length,1)):'—'}</div>
+        <div style="font-size:10px;color:var(--muted)">por gasto registrado</div>
+      </div>
+    </div>
+
+    <!-- Top categorias -->
+    ${top.length ? `
+    <div style="margin-bottom:12px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Top categorias</div>
+      ${top.map(c=>{
+        const pct = d.saidas>0 ? (c.gasto/d.saidas*100) : 0;
+        return `<div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+          <span style="font-size:14px">${c.emoji}</span>
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">
+              <span>${c.nome}</span>
+              <span style="color:var(--verm)">${fmt(c.gasto)} <span style="font-weight:400;color:var(--muted)">${pct.toFixed(0)}%</span></span>
+            </div>
+            <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${c.cor};border-radius:100px"></div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : ''}
+
+    <!-- Alertas -->
+    ${alertas.length ? `
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${alertas.slice(0,3).map(a=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:${a.bg};border-radius:var(--r-xs);border-left:3px solid ${a.cor}">
+          <span style="font-size:14px">${a.ico}</span>
+          <span style="font-size:12px;font-weight:600;color:var(--txt2)">${a.txt}</span>
+        </div>`).join('')}
+    </div>` : `
+    <div style="text-align:center;padding:10px 0;color:var(--verde-d);font-size:13px;font-weight:700">
+      🎉 Tudo sob controle este mês!
+    </div>`}
+  `;
 }
 
 function renderDicaDia(){
