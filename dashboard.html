@@ -303,6 +303,14 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .dica-title{font-size:12px;font-weight:800;color:var(--amar);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
 .dica-text{font-size:13px;color:var(--txt2);line-height:1.5}
 
+/* ════ AVATAR PICKER ════ */
+.av-opt{font-size:22px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid transparent;transition:all .15s;display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px}
+.av-opt:hover,.av-opt.sel{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.15)}
+.cor-login{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;flex-shrink:0}
+.cor-login:hover,.cor-login.sel{border-color:#fff;transform:scale(1.2)}
+/* ════ TOOLTIP FIX ════ */
+.hist-tip{pointer-events:none;z-index:999;position:fixed!important}
+
 /* ════ MOBILE ════ */
 @media(max-width:768px){
   .login-box{margin:16px;padding:32px 24px}
@@ -317,42 +325,106 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 <!-- ════ LOGIN SCREEN ════ -->
 <div id="loginScreen">
-  <!-- Background orbs -->
   <div class="login-bg-orb" style="width:400px;height:400px;background:#3B6FF0;top:-100px;right:-100px;animation-delay:0s"></div>
   <div class="login-bg-orb" style="width:300px;height:300px;background:#8B5CF6;bottom:-50px;left:-50px;animation-delay:3s"></div>
   <div class="login-bg-orb" style="width:200px;height:200px;background:#10B981;top:50%;left:30%;animation-delay:5s"></div>
 
-  <div class="login-box">
+  <div class="login-box" id="loginBox">
     <div class="login-logo">
       <div class="login-logo-icon">🌅</div>
       <div class="login-logo-name">Start Finance</div>
       <div class="login-logo-sub">Seu universo financeiro</div>
     </div>
 
-    <!-- Acesso rápido por usuário -->
-    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase">Acesso rápido</div>
-    <div class="login-users" id="loginUserBtns"></div>
-
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
-      <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
-      <span style="font-size:11px;color:rgba(255,255,255,.35)">ou entre com email</span>
-      <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+    <!-- TABS: Entrar / Cadastrar -->
+    <div style="display:flex;background:rgba(255,255,255,.08);border-radius:10px;padding:3px;margin-bottom:22px">
+      <button id="tabLogin" onclick="mostrarTab('login')" style="flex:1;padding:8px;border:none;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:rgba(255,255,255,.15);color:#fff;transition:all .2s">Entrar</button>
+      <button id="tabCadastro" onclick="mostrarTab('cadastro')" style="flex:1;padding:8px;border:none;border-radius:8px;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;cursor:pointer;background:none;color:rgba(255,255,255,.5);transition:all .2s">Criar conta</button>
     </div>
 
-    <div class="login-field">
-      <label class="login-label">Email</label>
-      <input class="login-input" type="email" id="loginEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')fazerLogin()">
-    </div>
-    <div class="login-field">
-      <label class="login-label">Senha</label>
-      <input class="login-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    <!-- ── FORM LOGIN ── -->
+    <div id="formLogin">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase">Acesso rápido</div>
+      <div class="login-users" id="loginUserBtns"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+        <span style="font-size:11px;color:rgba(255,255,255,.35)">ou entre com email</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+      </div>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="loginEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Senha</label>
+        <input class="login-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+      </div>
+      <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no Start Finance</button>
+      <div class="login-err" id="loginErr"></div>
+      <div style="text-align:center;margin-top:14px">
+        <span style="font-size:12px;color:rgba(255,255,255,.45)">Não tem conta? </span>
+        <button onclick="mostrarTab('cadastro')" style="background:none;border:none;color:rgba(255,255,255,.75);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:'Cabinet Grotesk',sans-serif">Criar conta grátis</button>
+      </div>
     </div>
 
-    <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no Start Finance</button>
-    <div class="login-err" id="loginErr">❌ Email ou senha incorretos</div>
-
-    <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,.3)">
-      Não tem acesso? Fale com o administrador do sistema.
+    <!-- ── FORM CADASTRO ── -->
+    <div id="formCadastro" style="display:none">
+      <div style="font-size:12px;color:rgba(255,255,255,.6);margin-bottom:18px;text-align:center">Crie sua conta para acessar seus dados exclusivos</div>
+      <div class="login-field">
+        <label class="login-label">Seu nome</label>
+        <input class="login-input" type="text" id="regNome" placeholder="Ex: Lucas">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Email</label>
+        <input class="login-input" type="email" id="regEmail" placeholder="seu@email.com">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Senha</label>
+        <input class="login-input" type="password" id="regSenha" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Confirmar senha</label>
+        <input class="login-input" type="password" id="regSenha2" placeholder="Repita a senha" onkeydown="if(event.key==='Enter')criarConta()">
+      </div>
+      <!-- Avatar picker -->
+      <div class="login-field">
+        <label class="login-label">Escolha seu avatar</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+          <span class="av-opt sel" onclick="selAvatar(this,'🧑‍💼')">🧑‍💼</span>
+          <span class="av-opt" onclick="selAvatar(this,'👩‍💼')">👩‍💼</span>
+          <span class="av-opt" onclick="selAvatar(this,'🧑‍💻')">🧑‍💻</span>
+          <span class="av-opt" onclick="selAvatar(this,'👩‍💻')">👩‍💻</span>
+          <span class="av-opt" onclick="selAvatar(this,'🦁')">🦁</span>
+          <span class="av-opt" onclick="selAvatar(this,'🐯')">🐯</span>
+          <span class="av-opt" onclick="selAvatar(this,'🦊')">🦊</span>
+          <span class="av-opt" onclick="selAvatar(this,'🐺')">🐺</span>
+          <span class="av-opt" onclick="selAvatar(this,'🦄')">🦄</span>
+          <span class="av-opt" onclick="selAvatar(this,'🐉')">🐉</span>
+          <span class="av-opt" onclick="selAvatar(this,'🌟')">🌟</span>
+          <span class="av-opt" onclick="selAvatar(this,'🔥')">🔥</span>
+        </div>
+        <input type="hidden" id="regAvatar" value="🧑‍💼">
+      </div>
+      <!-- Cor -->
+      <div class="login-field">
+        <label class="login-label">Cor do perfil</label>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <div class="cor-login sel" style="background:#3B6FF0" onclick="selCorLogin(this,'#3B6FF0')"></div>
+          <div class="cor-login" style="background:#EC4899" onclick="selCorLogin(this,'#EC4899')"></div>
+          <div class="cor-login" style="background:#10B981" onclick="selCorLogin(this,'#10B981')"></div>
+          <div class="cor-login" style="background:#F97316" onclick="selCorLogin(this,'#F97316')"></div>
+          <div class="cor-login" style="background:#8B5CF6" onclick="selCorLogin(this,'#8B5CF6')"></div>
+          <div class="cor-login" style="background:#EF4444" onclick="selCorLogin(this,'#EF4444')"></div>
+          <div class="cor-login" style="background:#F59E0B" onclick="selCorLogin(this,'#F59E0B')"></div>
+          <div class="cor-login" style="background:#0EA5E9" onclick="selCorLogin(this,'#0EA5E9')"></div>
+        </div>
+        <input type="hidden" id="regCor" value="#3B6FF0">
+      </div>
+      <button class="login-btn" id="regBtn" onclick="criarConta()">🚀 Criar minha conta</button>
+      <div class="login-err" id="regErr"></div>
+      <div style="text-align:center;margin-top:14px">
+        <button onclick="mostrarTab('login')" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif">← Voltar ao login</button>
+      </div>
     </div>
   </div>
 </div>
@@ -552,10 +624,11 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
             <div style="font-size:13px;font-weight:800" id="umName">—</div>
             <div style="font-size:11px;color:var(--muted)" id="umEmail">—</div>
           </div>
+          <div class="user-menu-item" onclick="abrirPerfil();toggleUserMenu()">✏️ Editar perfil</div>
           <div class="user-menu-item" onclick="go('relatorios');toggleUserMenu()">📑 Meus relatórios</div>
           <div class="user-menu-item" onclick="exportRelCSV();toggleUserMenu()">⬇️ Exportar dados</div>
           <div class="user-menu-sep"></div>
-          <div class="user-menu-item danger" onclick="confirmarLogout()">🚪 Sair</div>
+          <div class="user-menu-item danger" onclick="confirmarLogout()">🚪 Sair da conta</div>
         </div>
       </div>
     </div>
@@ -1298,10 +1371,11 @@ function renderEvolucaoAnual(el, h, histParam){
           const isAtual  = hh.atual;
           const saldoPos = hh.saldo >= 0;
           return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:${h+20}px;justify-content:flex-end;position:relative;min-width:36px"
-            onmouseenter="showHistTooltip(this,'${hh.label}',${hh.entradas},${hh.saidas},${hh.saldo},'${isFuturo}')"
+            onmouseenter="showHistTooltip(this,'${hh.label}',${hh.entradas},${hh.saidas},${hh.saldo},'${isFuturo}',event)"
+            onmousemove="showHistTooltip(this,'${hh.label}',${hh.entradas},${hh.saidas},${hh.saldo},'${isFuturo}',event)"
             onmouseleave="hideHistTooltip()">
             <!-- Tooltip -->
-            <div class="hist-tip" style="display:none;position:absolute;top:-70px;left:50%;transform:translateX(-50%);background:var(--txt);color:#fff;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:600;white-space:nowrap;z-index:10;pointer-events:none;text-align:center">
+            <div class="hist-tip" style="display:none;position:fixed;background:var(--txt);color:#fff;border-radius:8px;padding:8px 12px;font-size:11px;font-weight:600;white-space:nowrap;z-index:9999;pointer-events:none;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.3)">
               <div style="font-weight:800">${hh.label}</div>
               <div style="color:#4ade80">↑ ${fmtSm(hh.entradas)}</div>
               <div style="color:#f87171">↓ ${fmtSm(hh.saidas)}</div>
@@ -1358,10 +1432,19 @@ function renderEvolucaoAnual(el, h, histParam){
   }, 150);
 }
 
-function showHistTooltip(el, label, e, s, sd, futuro){
+function showHistTooltip(el, label, e, s, sd, futuro, event){
   if(futuro==='true') return;
   const tip = el.querySelector('.hist-tip');
-  if(tip) tip.style.display = 'block';
+  if(!tip) return;
+  tip.style.display='block';
+  // Position near mouse, never cut off
+  const ev = event || window.event;
+  if(ev){
+    const x = Math.min(ev.clientX+12, window.innerWidth-160);
+    const y = Math.max(ev.clientY-70, 8);
+    tip.style.left = x+'px';
+    tip.style.top  = y+'px';
+  }
 }
 function hideHistTooltip(){
   document.querySelectorAll('.hist-tip').forEach(t => t.style.display='none');
@@ -1440,8 +1523,25 @@ function renderCartoesDash(){
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
     const usado=gastos[c.nome]||0;
     const pct=c.limite>0?Math.min(usado/c.limite*100,100):0;
-    const cor=pct>80?'var(--verm)':pct>60?'var(--lara)':'var(--verde)';
-    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px"><span>💳 ${c.nome}</span><span style="color:var(--verm)">${fmt(usado)} / ${fmt(c.limite)}</span></div><div class="pw"><div class="pf2" style="width:${pct}%;background:${cor}"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px">${pct.toFixed(1)}% do limite usado</div></div>`;
+    const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
+    const cardCor=c.cor||'linear-gradient(135deg,#3B6FF0,#2451C7)';
+    const dispColor=pct>80?'var(--verm)':'var(--verde)';
+    return `<div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;align-items:center">
+        <span style="display:flex;align-items:center;gap:6px">
+          <span style="width:12px;height:12px;border-radius:3px;background:${cardCor};display:inline-block;flex-shrink:0"></span>
+          ${c.nome}
+        </span>
+        <span><span style="color:var(--verm)">${fmt(usado)}</span><span style="color:var(--muted)"> / </span><span style="color:var(--verde)">${fmt(c.limite)}</span></span>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:100px;overflow:hidden">
+        <div style="height:100%;width:${pct}%;background:${barCor};border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px">
+        <span style="color:var(--muted)">${pct.toFixed(1)}% usado</span>
+        <span style="color:${dispColor};font-weight:700">${fmt(c.limite-usado)} disponível</span>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -1449,9 +1549,25 @@ function renderDividasDash(){
   const el=document.getElementById('dashDividas');if(!el)return;
   if(!DIVIDAS.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">⛓️</div><p>Nenhuma dívida</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'dividas\')">Adicionar dívida</button></div>';return;}
   el.innerHTML=DIVIDAS.slice(0,3).map(d=>{
-    const rest=parseInt(d.parcelas)-parseInt(d.pagas||0);
-    const pct=Math.min((parseInt(d.pagas||0)/parseInt(d.parcelas))*100,100);
-    return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px"><span>${d.nome}</span><span style="color:var(--muted);font-size:11px">${rest} restantes</span></div><div class="pw"><div class="pf2" style="width:${pct}%;background:var(--verde)"></div></div></div>`;
+    const total=parseInt(d.parcelas)||1;
+    const pagas=parseInt(d.pagas||0);
+    const rest=Math.max(total-pagas,0);
+    const pct=Math.min((pagas/total)*100,100);
+    const valRest=rest*parseFloat(d.mensal||0);
+    const barCor=pct>=100?'var(--verde)':pct>=60?'var(--azul)':'var(--lara)';
+    return `<div style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:all .15s" onclick="go('dividas')" onmouseenter="this.style.background='var(--azul-l)'" onmouseleave="this.style.background='var(--bg)'">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span style="font-size:12px;font-weight:800">${d.nome}</span>
+        <span style="font-size:10px;color:var(--muted)">${pagas}/${total} parcelas</span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:4px">
+        <div style="height:100%;width:${pct}%;background:${barCor};border-radius:100px"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px">
+        <span style="color:var(--verm);font-weight:700">${fmt(parseFloat(d.mensal||0))}/mês</span>
+        <span style="color:var(--muted)">${rest>0?'Falta '+fmt(valRest):'✅ Quitada!'}</span>
+      </div>
+    </div>`;
   }).join('');
 }
 
@@ -1650,7 +1766,7 @@ function saveCt(){
   const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseFloat(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value};
   if(!c.nome)return toast('Preencha o nome','warning');
   if(idx>=0)CARTOES[idx]=c;else CARTOES.push(c);
-  save('sf_cartoes',CARTOES);CM('ovCt');renderCartoes();toast('✅ Cartão salvo!','success');
+  salvarCartoes();CM('ovCt');renderCartoes();toast('✅ Cartão salvo!','success');
   // Atualiza selector de cartões no modal de tx
 }
 
@@ -1721,7 +1837,7 @@ function renderCtTxTable(gastos){
   }).join('')+`</tbody></table>`;
 }
 
-function delCt(i){CARTOES.splice(i,1);save('sf_cartoes',CARTOES);renderCartoes();toast('🗑️ Cartão removido','info')}
+function delCt(i){CARTOES.splice(i,1);salvarCartoes();renderCartoes();toast('🗑️ Cartão removido','info')}
 
 // ════════════════════════════════════════════════
 // DESPESAS FIXAS
@@ -1737,11 +1853,11 @@ function saveFx(){
   const f={desc:document.getElementById('fxDesc').value,valor:parseFloat(document.getElementById('fxValor').value)||0,cat:document.getElementById('fxCat').value,venc:document.getElementById('fxVenc').value,status:document.getElementById('fxStatus').value,obs:document.getElementById('fxObs').value};
   if(!f.desc||!f.valor)return toast('Preencha descrição e valor','warning');
   if(i>=0)FIXAS[i]=f;else FIXAS.push(f);
-  save('sf_fixas',FIXAS);CM('ovFx');renderFixas();toast('✅ Salva!','success');
+  salvarFixas();CM('ovFx');renderFixas();toast('✅ Salva!','success');
 }
-function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';save('sf_fixas',FIXAS);renderFixas();}
-function delFx(i){FIXAS.splice(i,1);save('sf_fixas',FIXAS);renderFixas();toast('🗑️ Removida','info')}
-function marcarTodasPagas(){FIXAS.forEach(f=>f.status='Pago');save('sf_fixas',FIXAS);renderFixas();toast('✅ Todas pagas!','success')}
+function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';salvarFixas();renderFixas();}
+function delFx(i){FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')}
+function marcarTodasPagas(){FIXAS.forEach(f=>f.status='Pago');salvarFixas();renderFixas();toast('✅ Todas pagas!','success')}
 
 function renderFixas(){
   const emjs={Contas:'⚡',Moradia:'🏠',Saúde:'❤️',Educação:'📚',Assinaturas:'📺',Transporte:'🚗',Outros:'📦'};
@@ -1782,10 +1898,10 @@ function saveDv(){
   const d={nome:document.getElementById('dvNome').value,total:parseFloat(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseFloat(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value};
   if(!d.nome||!d.total)return toast('Preencha nome e valor','warning');
   if(i>=0)DIVIDAS[i]=d;else DIVIDAS.push(d);
-  save('sf_dividas',DIVIDAS);CM('ovDv');renderDividas();toast('✅ Salva!','success');
+  salvarDividas();CM('ovDv');renderDividas();toast('✅ Salva!','success');
 }
-function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;save('sf_dividas',DIVIDAS);renderDividas();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
-function delDv(i){DIVIDAS.splice(i,1);save('sf_dividas',DIVIDAS);renderDividas();toast('🗑️ Removida','info')}
+function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
+function delDv(i){DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')}
 
 function renderDividas(){
   const tot=DIVIDAS.reduce((s,d)=>s+d.total,0);
@@ -1830,10 +1946,10 @@ function saveMt(){
   const m={nome:document.getElementById('mtNome').value,emoji:document.getElementById('mtEmoji').value,total:parseFloat(document.getElementById('mtTotal').value)||0,atual:parseFloat(document.getElementById('mtAtual').value)||0,mensal:parseFloat(document.getElementById('mtMensal').value)||0,desc:document.getElementById('mtDesc').value};
   if(!m.nome||!m.total)return toast('Preencha nome e valor','warning');
   if(i>=0)METAS[i]=m;else METAS.push(m);
-  save('sf_metas',METAS);CM('ovMt');renderMetas();toast('✅ Meta salva!','success');
+  salvarMetas();CM('ovMt');renderMetas();toast('✅ Meta salva!','success');
 }
-function depositarMeta(i){const v=parseFloat(prompt(`Depositar na meta "${METAS[i].nome}"?\nDigite o valor:`)||'0');if(v>0){METAS[i].atual=(METAS[i].atual||0)+v;save('sf_metas',METAS);renderMetas();toast(`💰 ${fmt(v)} depositado!`,'success');}}
-function delMt(i){METAS.splice(i,1);save('sf_metas',METAS);renderMetas();toast('🗑️ Meta removida','info')}
+function depositarMeta(i){const v=parseFloat(prompt(`Depositar na meta "${METAS[i].nome}"?\nDigite o valor:`)||'0');if(v>0){METAS[i].atual=(METAS[i].atual||0)+v;salvarMetas();renderMetas();toast(`💰 ${fmt(v)} depositado!`,'success');}}
+function delMt(i){METAS.splice(i,1);salvarMetas();renderMetas();toast('🗑️ Meta removida','info')}
 
 function renderMetas(){
   const el=document.getElementById('metasGrid');if(!el)return;
@@ -1873,9 +1989,9 @@ function saveIv(){
   const v={nome:document.getElementById('ivNome').value,tipo:document.getElementById('ivTipo').value,valor:parseFloat(document.getElementById('ivValor').value)||0,atual:parseFloat(document.getElementById('ivAtual').value)||0,rent:parseFloat(document.getElementById('ivRent').value)||0};
   if(!v.nome||!v.valor)return toast('Preencha nome e valor','warning');
   if(i>=0)INVESTIMENTOS[i]=v;else INVESTIMENTOS.push(v);
-  save('sf_inv',INVESTIMENTOS);CM('ovIv');renderInv();toast('✅ Salvo!','success');
+  salvarInv();CM('ovIv');renderInv();toast('✅ Salvo!','success');
 }
-function delIv(i){INVESTIMENTOS.splice(i,1);save('sf_inv',INVESTIMENTOS);renderInv();toast('🗑️ Removido','info')}
+function delIv(i){INVESTIMENTOS.splice(i,1);salvarInv();renderInv();toast('🗑️ Removido','info')}
 
 function renderInv(){
   const totI=INVESTIMENTOS.reduce((s,i)=>s+i.valor,0);
@@ -2002,7 +2118,7 @@ function salvarCatCustom(){
   if(!c.nome)return toast('Digite o nome da categoria','warning');
   if(idx>=0) CATS_CUSTOM[idx]=c;
   else CATS_CUSTOM.push(c);
-  save('sf_cats',CATS_CUSTOM);
+  salvarCats();
   CM('ovCatModal');
   renderCats();
   // Atualiza dropdown de categorias nos formulários de tx
@@ -2012,7 +2128,7 @@ function salvarCatCustom(){
 
 function delCatCustom(idx){
   CATS_CUSTOM.splice(idx,1);
-  save('sf_cats',CATS_CUSTOM);
+  salvarCats();
   renderCats();
   atualizarSelectCats();
   toast('🗑️ Categoria removida','info');
@@ -2354,7 +2470,7 @@ function renderLimits(){
 }
 
 function buildSegments(gasto, limite) { return []; }
-function saveLimits(){save('sf_limites',LIMS_LOCAL);renderLimits();toast('💾 Limites salvos!','success')}
+function saveLimits(){salvarLimsLocal();renderLimits();toast('💾 Limites salvos!','success')}
 
 // ════════════════════════════════════════════════
 // RELATÓRIOS — COMPLETO COM DADOS REAIS
@@ -2468,100 +2584,248 @@ function exportRelCSV(){
 // INICIALIZAÇÃO
 // ════════════════════════════════════════════════
 // ════════════════════════════════════════════════
-// AUTH — LOGIN / LOGOUT
+// AUTH — SISTEMA COMPLETO MULTI-USUÁRIO
+// Dados isolados por user_id via localStorage
 // ════════════════════════════════════════════════
+
 let AUTH_TOKEN = null;
 let AUTH_USER  = null;
+const USERS_KEY = 'sf_users_db'; // banco local de usuários
 
-async function carregarUsuariosLogin(){
-  try{
-    const r = await fetch('/api/users').catch(()=>null);
-    if(!r||!r.ok) return usarUsariosFallback();
-    const d = await r.json();
-    renderLoginUsers(d.users||[]);
-  }catch(e){ usarUsariosFallback(); }
+// ── Banco de usuários no localStorage ──────────
+function getUsers(){
+  try{ return JSON.parse(localStorage.getItem(USERS_KEY)||'[]'); }catch{ return []; }
+}
+function saveUsers(users){
+  try{ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }catch{}
+}
+function getUserById(id){
+  return getUsers().find(u=>u.id===id)||null;
 }
 
-function usarUsariosFallback(){
-  renderLoginUsers([
-    {name:'Lucas',email:'lucas@startfinance.com',avatar:'🧑‍💼',color:'#3B6FF0'},
-    {name:'Hellen',email:'hellen@startfinance.com',avatar:'👩‍💼',color:'#EC4899'},
-  ]);
+// Seed: garante que usuários padrão existam no primeiro acesso
+function seedUsers(){
+  const users = getUsers();
+  const defaults = [
+    {id:'lucas-default',name:'Lucas',email:'lucas@startfinance.com',password:'start123',avatar:'🧑‍💼',color:'#3B6FF0',createdAt:new Date().toISOString()},
+    {id:'hellen-default',name:'Hellen',email:'hellen@startfinance.com',password:'start123',avatar:'👩‍💼',color:'#EC4899',createdAt:new Date().toISOString()},
+  ];
+  let changed = false;
+  defaults.forEach(d=>{
+    if(!users.find(u=>u.email===d.email)){
+      users.push(d);
+      changed=true;
+    }
+  });
+  if(changed) saveUsers(users);
 }
 
-function renderLoginUsers(users){
+// ── Funções de namespace por usuário ───────────
+function userKey(k){
+  const uid = AUTH_USER?.id || 'anonymous';
+  return `sf_${uid}_${k}`;
+}
+// Override das funções ls/save para ser namespace-aware
+const _ls_raw = k => { try{ return JSON.parse(localStorage.getItem(k)||'null'); }catch{ return null; } };
+const _save_raw = (k,v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} };
+
+// Redefinir ls() e save() para usar namespace de usuário
+// NOTA: as funções originais ls() e save() são mantidas abaixo para compatibilidade
+// mas as de dados financeiros usam userKey()
+
+function lsUser(k, def=null){
+  return _ls_raw(userKey(k)) ?? def;
+}
+function saveUser(k, v){
+  _save_raw(userKey(k), v);
+}
+
+// ── Interface: tabs login/cadastro ─────────────
+function mostrarTab(tab){
+  const isLogin = tab==='login';
+  document.getElementById('formLogin').style.display   = isLogin?'':'none';
+  document.getElementById('formCadastro').style.display = isLogin?'none':'';
+  const tL = document.getElementById('tabLogin');
+  const tC = document.getElementById('tabCadastro');
+  if(tL) { tL.style.background = isLogin?'rgba(255,255,255,.15)':'none'; tL.style.color=isLogin?'#fff':'rgba(255,255,255,.5)'; }
+  if(tC) { tC.style.background = !isLogin?'rgba(255,255,255,.15)':'none'; tC.style.color=!isLogin?'#fff':'rgba(255,255,255,.5)'; }
+  // Limpa erros
+  ['loginErr','regErr'].forEach(id=>{ const el=document.getElementById(id); if(el){el.textContent='';el.classList.remove('show');} });
+}
+
+function selAvatar(el, emoji){
+  document.querySelectorAll('.av-opt').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('regAvatar').value = emoji;
+}
+function selCorLogin(el, cor){
+  document.querySelectorAll('.cor-login').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('regCor').value = cor;
+}
+
+// ── Acesso rápido (mostra usuários cadastrados) ──
+function carregarUsuariosLogin(){
+  seedUsers();
+  const users = getUsers();
   const el = document.getElementById('loginUserBtns');
   if(!el) return;
-  el.innerHTML = users.map(u=>`
-    <button class="login-user-btn" onclick="loginRapido('${u.email}')">
-      <span class="lu-av">${u.avatar||'🙂'}</span>
-      <span class="lu-nm">${u.name}</span>
+  if(!users.length){ el.innerHTML=''; return; }
+  el.innerHTML = users.slice(0,4).map(u=>`
+    <button class="login-user-btn" onclick="loginRapido('${u.email}','${u.password}')">
+      <span class="lu-av" style="font-size:24px;display:block;margin-bottom:4px">${u.avatar||'🙂'}</span>
+      <span class="lu-nm" style="font-size:12px;font-weight:700">${u.name}</span>
     </button>`).join('');
 }
 
-function loginRapido(email){
+function loginRapido(email, senha){
   document.getElementById('loginEmail').value = email;
-  document.getElementById('loginSenha').value = 'start123';
-  document.getElementById('loginSenha').focus();
+  document.getElementById('loginSenha').value = senha;
+  fazerLogin();
 }
 
-async function fazerLogin(){
+// ── Criar conta ────────────────────────────────
+function criarConta(){
+  const btn    = document.getElementById('regBtn');
+  const errEl  = document.getElementById('regErr');
+  const nome   = document.getElementById('regNome').value.trim();
+  const email  = document.getElementById('regEmail').value.trim().toLowerCase();
+  const senha  = document.getElementById('regSenha').value;
+  const senha2 = document.getElementById('regSenha2').value;
+  const avatar = document.getElementById('regAvatar').value || '🙂';
+  const cor    = document.getElementById('regCor').value || '#3B6FF0';
+
+  errEl.classList.remove('show'); errEl.textContent='';
+
+  if(!nome)  { errEl.textContent='⚠️ Digite seu nome'; errEl.classList.add('show'); return; }
+  if(!email) { errEl.textContent='⚠️ Digite seu email'; errEl.classList.add('show'); return; }
+  if(senha.length<6) { errEl.textContent='⚠️ Senha deve ter pelo menos 6 caracteres'; errEl.classList.add('show'); return; }
+  if(senha!==senha2) { errEl.textContent='❌ As senhas não coincidem'; errEl.classList.add('show'); return; }
+
+  const users = getUsers();
+  if(users.find(u=>u.email===email)){ errEl.textContent='❌ Este email já está cadastrado'; errEl.classList.add('show'); return; }
+
+  btn.disabled=true; btn.textContent='⏳ Criando conta...';
+
+  const novoUser = {
+    id: 'u_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+    name: nome, email, password: senha,
+    avatar, color: cor,
+    createdAt: new Date().toISOString()
+  };
+  users.push(novoUser);
+  saveUsers(users);
+
+  setTimeout(()=>{
+    AUTH_USER = novoUser;
+    ls_save('sf_token', novoUser.id);
+    ls_save('sf_user', JSON.stringify(novoUser));
+    carregarUsuariosLogin();
+    entrarNoSistema();
+    btn.disabled=false; btn.textContent='🚀 Criar minha conta';
+  }, 600);
+}
+
+// ── Login ──────────────────────────────────────
+function fazerLogin(){
   const btn   = document.getElementById('loginBtn');
-  const email = document.getElementById('loginEmail').value.trim();
-  const senha = document.getElementById('loginSenha').value.trim();
   const errEl = document.getElementById('loginErr');
-  errEl.classList.remove('show');
+  const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+  const senha = document.getElementById('loginSenha').value;
+  errEl.classList.remove('show'); errEl.textContent='';
 
   if(!email||!senha){ errEl.textContent='⚠️ Preencha email e senha'; errEl.classList.add('show'); return; }
 
-  btn.disabled = true; btn.textContent = 'Entrando...';
-  try{
-    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})});
-    const d = await r.json();
-    if(!r.ok){ errEl.textContent = '❌ '+d.erro; errEl.classList.add('show'); return; }
-    AUTH_TOKEN = d.token;
-    AUTH_USER  = d.user;
-    ls_save('sf_token', AUTH_TOKEN);
-    ls_save('sf_user',  JSON.stringify(AUTH_USER));
-    entrarNoSistema();
-  }catch(e){
-    // Se API de auth não estiver disponível, tenta modo offline
-    const USERS_OFFLINE = [{name:'Lucas',email:'lucas@startfinance.com',password:'start123',avatar:'🧑‍💼',color:'#3B6FF0',id:'1'},{name:'Hellen',email:'hellen@startfinance.com',password:'start123',avatar:'👩‍💼',color:'#EC4899',id:'2'}];
-    const user = USERS_OFFLINE.find(u=>u.email.toLowerCase()===email.toLowerCase()&&u.password===senha);
-    if(user){ AUTH_USER=user; AUTH_TOKEN='offline'; ls_save('sf_token','offline'); ls_save('sf_user',JSON.stringify(user)); entrarNoSistema(); }
-    else{ errEl.textContent='❌ Email ou senha incorretos'; errEl.classList.add('show'); }
-  }finally{
-    btn.disabled=false; btn.textContent='Entrar no Start Finance';
+  btn.disabled=true; btn.textContent='Entrando...';
+
+  // Busca nos usuários locais primeiro
+  const users = getUsers();
+  const user = users.find(u=>u.email===email && u.password===senha);
+
+  if(user){
+    AUTH_USER  = user;
+    AUTH_TOKEN = user.id;
+    ls_save('sf_token', user.id);
+    ls_save('sf_user', JSON.stringify(user));
+    setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no Start Finance'; }, 400);
+    return;
   }
+
+  // Tenta API remota
+  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.token){
+        AUTH_TOKEN = d.token;
+        AUTH_USER  = d.user;
+        // Salva no banco local também
+        const users2 = getUsers();
+        if(!users2.find(u=>u.email===d.user.email)) { users2.push({...d.user,password:senha}); saveUsers(users2); }
+        ls_save('sf_token', d.token);
+        ls_save('sf_user', JSON.stringify(d.user));
+        entrarNoSistema();
+      } else {
+        errEl.textContent='❌ Email ou senha incorretos';
+        errEl.classList.add('show');
+      }
+    })
+    .catch(()=>{
+      errEl.textContent='❌ Email ou senha incorretos';
+      errEl.classList.add('show');
+    })
+    .finally(()=>{ btn.disabled=false; btn.textContent='Entrar no Start Finance'; });
 }
 
+// ── Entrar no sistema ──────────────────────────
 function entrarNoSistema(){
   document.getElementById('loginScreen').classList.add('hidden');
+  carregarDadosUsuario(); // Carrega dados deste usuário do localStorage
   atualizarUIUsuario();
   init();
 }
 
+// ── Carrega dados financeiros do usuário ──────
+function carregarDadosUsuario(){
+  // Todos os dados financeiros são namespaced por user_id
+  LIMS_LOCAL   = lsUser('limites', {});
+  FIXAS        = lsUser('fixas', []);
+  DIVIDAS      = lsUser('dividas', []);
+  METAS        = lsUser('metas', []);
+  INVESTIMENTOS= lsUser('inv', []);
+  CARTOES      = lsUser('cartoes', []);
+  CATS_CUSTOM  = lsUser('cats', []);
+}
+
+// ── Salvar dados do usuário ──────────────────
+function salvarFixas()    { saveUser('fixas', FIXAS); }
+function salvarDividas()  { saveUser('dividas', DIVIDAS); }
+function salvarMetas()    { saveUser('metas', METAS); }
+function salvarInv()      { saveUser('inv', INVESTIMENTOS); }
+function salvarCartoes()  { saveUser('cartoes', CARTOES); }
+function salvarCats()     { saveUser('cats', CATS_CUSTOM); }
+function salvarLimsLocal(){ saveUser('limites', LIMS_LOCAL); }
+
+// ── UI do usuário ──────────────────────────────
 function atualizarUIUsuario(){
   if(!AUTH_USER) return;
   const u = AUTH_USER;
+  const setEl = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
+  const setStyle = (id, prop, val) => { const el=document.getElementById(id); if(el) el.style[prop]=val; };
+
   // Sidebar
   const sbAv = document.getElementById('sbUserAvatar');
-  const sbNm = document.getElementById('sbUserName');
-  const sbEm = document.getElementById('sbUserEmail');
   if(sbAv){ sbAv.textContent=u.avatar||'🙂'; sbAv.style.background=(u.color||'#3B6FF0')+'22'; }
-  if(sbNm) sbNm.textContent = u.name;
-  if(sbEm) sbEm.textContent = u.email;
+  setEl('sbUserName', u.name);
+  setEl('sbUserEmail', u.email);
+
   // Topbar
   const tbAv = document.getElementById('tbUserAvatar');
-  const tbNm = document.getElementById('tbUserName');
   if(tbAv){ tbAv.textContent=u.avatar||'🙂'; tbAv.style.background=(u.color||'#3B6FF0')+'22'; }
-  if(tbNm) tbNm.textContent = u.name;
-  // Menu
-  const umN = document.getElementById('umName');
-  const umE = document.getElementById('umEmail');
-  if(umN) umN.textContent = u.name;
-  if(umE) umE.textContent = u.email;
-  // Saudação dashboard
+  setEl('tbUserName', u.name);
+  setEl('umName', u.name);
+  setEl('umEmail', u.email);
+
+  // Saudação
   const greet = document.getElementById('dashGreet');
   if(greet) greet.textContent = `Olá, ${u.name.split(' ')[0]} ${u.avatar||'👋'}`;
 }
@@ -2570,28 +2834,49 @@ function toggleUserMenu(){
   document.getElementById('userMenu')?.classList.toggle('open');
 }
 document.addEventListener('click', e=>{
-  const menu = document.getElementById('userMenu');
-  if(menu&&!menu.closest('#topbarUserArea')?.contains(e.target)) menu.classList.remove('open');
+  const menu=document.getElementById('userMenu');
+  if(menu&&!document.getElementById('topbarUserArea')?.contains(e.target)) menu.classList.remove('open');
 });
 
 function confirmarLogout(){
-  if(!confirm('Tem certeza que quer sair?')) return;
+  if(!confirm(`Sair da conta de ${AUTH_USER?.name||'usuário'}?`)) return;
   logout();
 }
-
 function logout(){
-  AUTH_TOKEN = null; AUTH_USER = null;
+  AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
+  // Limpa estado financeiro
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[];
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
   document.getElementById('loginSenha').value='';
+  document.getElementById('loginErr').textContent='';
   document.getElementById('loginErr').classList.remove('show');
   document.getElementById('userMenu')?.classList.remove('open');
+  mostrarTab('login');
+  carregarUsuariosLogin();
 }
 
 function ls_save(k,v){try{localStorage.setItem(k,v)}catch{}}
 function ls_get(k){try{return localStorage.getItem(k)||''}catch{return''}}
 
+// ── Perfil de usuário: trocar senha ──────────
+function abrirPerfil(){
+  const nome  = prompt('Seu nome atual:', AUTH_USER?.name||'');
+  if(nome===null) return;
+  const nova  = prompt('Nova senha (deixe vazio para manter):');
+  const users = getUsers();
+  const idx   = users.findIndex(u=>u.id===AUTH_USER?.id);
+  if(idx>=0){
+    if(nome) users[idx].name=nome.trim();
+    if(nova&&nova.length>=6) users[idx].password=nova.trim();
+    saveUsers(users);
+    AUTH_USER = users[idx];
+    ls_save('sf_user', JSON.stringify(AUTH_USER));
+    atualizarUIUsuario();
+    toast('✅ Perfil atualizado!','success');
+  }
+}
 
 // ════════════════════════════════════════════════
 // CHART PERIOD FILTER
@@ -2655,13 +2940,7 @@ function renderDicaDia(){
 function function_placeholder_do_not_remove(){}
 
 function init(){
-  LIMS_LOCAL=ls('sf_limites',{});
-  FIXAS=ls('sf_fixas',[]);
-  DIVIDAS=ls('sf_dividas',[]);
-  METAS=ls('sf_metas',[]);
-  INVESTIMENTOS=ls('sf_inv',[]);
-  CARTOES=ls('sf_cartoes',[]);
-  CATS_CUSTOM=ls('sf_cats',[]);
+  // Dados já carregados em carregarDadosUsuario() antes de init()
   atualizarSelectCats();
   atualizaMesUI();
   reload();
@@ -2670,26 +2949,29 @@ function init(){
 }
 
 function iniciar(){
-  // Verifica se já tem token salvo
-  const token = ls_get('sf_token');
+  seedUsers(); // garante usuários padrão
+  const token   = ls_get('sf_token');
   const userStr = ls_get('sf_user');
   if(token && token !== '' && userStr){
     try{
-      AUTH_TOKEN = token;
       AUTH_USER  = JSON.parse(userStr);
+      AUTH_TOKEN = token;
+      // Valida que o usuário ainda existe no banco local
+      const userNoDb = getUserById(AUTH_USER.id);
+      if(userNoDb){ AUTH_USER=userNoDb; } // usa dados mais recentes
       document.getElementById('loginScreen').classList.add('hidden');
+      carregarDadosUsuario();
       atualizarUIUsuario();
       init();
-    }catch(e){ mostrarLogin(); }
-  } else {
-    mostrarLogin();
+      return;
+    }catch(e){ console.warn('Token inválido, redirecionando para login'); }
   }
+  mostrarLogin();
 }
 
 function mostrarLogin(){
   document.getElementById('loginScreen').classList.remove('hidden');
   carregarUsuariosLogin();
-  // Esconde loading
   setTimeout(()=>{
     document.getElementById('loading').style.opacity='0';
     setTimeout(()=>document.getElementById('loading').style.display='none',300);
