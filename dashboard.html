@@ -246,9 +246,116 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 @media(max-width:1400px){.kg{grid-template-columns:repeat(5,1fr)}}@media(max-width:1100px){.kg{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:1050px){.g2,.g2e,.g3,.g32,.g4{grid-template-columns:1fr}.kg{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:720px){.sidebar{display:none}.main{margin-left:0}.kg{grid-template-columns:1fr 1fr}}
+
+/* ════ LOGIN ════ */
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1e1b4b 100%);display:flex;align-items:center;justify-content:center;z-index:9000;overflow:hidden}
+#loginScreen.hidden{display:none}
+.login-bg-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.25;animation:orb 8s ease-in-out infinite}
+.login-box{background:rgba(255,255,255,.06);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:44px 40px;width:100%;max-width:420px;position:relative;z-index:1;box-shadow:0 32px 80px rgba(0,0,0,.4)}
+.login-logo{text-align:center;margin-bottom:32px}
+.login-logo-icon{width:60px;height:60px;background:linear-gradient(135deg,var(--azul),var(--azul-d));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;box-shadow:0 8px 24px rgba(59,111,240,.5)}
+.login-logo-name{font-size:24px;font-weight:900;color:#fff;letter-spacing:-.5px}
+.login-logo-sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
+.login-field{margin-bottom:16px}
+.login-label{font-size:12px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:6px;display:block}
+.login-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:14px;font-family:'Cabinet Grotesk',sans-serif;outline:none;transition:all .2s}
+.login-input::placeholder{color:rgba(255,255,255,.35)}
+.login-input:focus{border-color:var(--azul);background:rgba(59,111,240,.15);box-shadow:0 0 0 3px rgba(59,111,240,.2)}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--azul),var(--azul-d));border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;margin-top:8px;letter-spacing:.02em}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(59,111,240,.4)}
+.login-btn:active{transform:translateY(0)}
+.login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.login-err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;color:#fca5a5;font-size:13px;margin-top:12px;display:none}
+.login-err.show{display:block}
+.login-users{display:flex;gap:8px;margin-bottom:24px;justify-content:center}
+.login-user-btn{flex:1;padding:10px 8px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:10px;cursor:pointer;color:#fff;font-family:'Cabinet Grotesk',sans-serif;text-align:center;transition:all .2s;font-size:12px}
+.login-user-btn:hover{background:rgba(255,255,255,.13);border-color:rgba(255,255,255,.3)}
+.login-user-btn .lu-av{font-size:22px;display:block;margin-bottom:4px}
+.login-user-btn .lu-nm{font-weight:700}
+@keyframes orb{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(30px,-20px) scale(1.1)}66%{transform:translate(-20px,30px) scale(.9)}}
+
+/* ════ TOPBAR USER ════ */
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:5px 14px 5px 6px;cursor:pointer;transition:all .15s}
+.user-pill:hover{background:var(--azul-l);border-color:var(--azul)}
+.user-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.user-name{font-size:12px;font-weight:700;color:var(--txt2)}
+.user-menu{position:absolute;top:100%;right:0;margin-top:8px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--sh-lg);padding:6px;min-width:180px;z-index:200;display:none}
+.user-menu.open{display:block}
+.user-menu-item{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:var(--r-xs);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;color:var(--txt2)}
+.user-menu-item:hover{background:var(--bg)}
+.user-menu-item.danger{color:var(--verm)}
+.user-menu-item.danger:hover{background:var(--verm-l)}
+.user-menu-sep{height:1px;background:var(--border);margin:4px 0}
+
+/* ════ CHART IMPROVEMENTS ════ */
+.chart-period-bar{display:flex;gap:6px;padding:10px 18px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.cpb{padding:5px 12px;border-radius:100px;font-size:12px;font-weight:700;border:1px solid var(--border);background:none;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'Cabinet Grotesk',sans-serif}
+.cpb:hover{background:var(--bg);color:var(--txt)}
+.cpb.active{background:var(--azul);color:#fff;border-color:var(--azul)}
+
+/* ════ KPI IMPROVEMENTS ════ */
+.kpi-arrow{font-size:12px;font-weight:800}
+.kpi-arrow.up{color:var(--verde)}.kpi-arrow.dn{color:var(--verm)}
+
+/* ════ INSIGHT WIDGET ════ */
+.dica-card{background:linear-gradient(135deg,var(--amar-l),#fffde7);border:1px solid rgba(245,158,11,.25);border-radius:var(--r);padding:14px 18px;display:flex;align-items:flex-start;gap:12px}
+.dica-icon{font-size:22px;flex-shrink:0;margin-top:1px}
+.dica-title{font-size:12px;font-weight:800;color:var(--amar);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.dica-text{font-size:13px;color:var(--txt2);line-height:1.5}
+
+/* ════ MOBILE ════ */
+@media(max-width:768px){
+  .login-box{margin:16px;padding:32px 24px}
+  .sidebar{display:none}
+  .main{margin-left:0}
+  .kg{grid-template-columns:1fr 1fr}
+  #topbarUserArea{display:none}
+}
 </style>
 </head>
 <body>
+
+<!-- ════ LOGIN SCREEN ════ -->
+<div id="loginScreen">
+  <!-- Background orbs -->
+  <div class="login-bg-orb" style="width:400px;height:400px;background:#3B6FF0;top:-100px;right:-100px;animation-delay:0s"></div>
+  <div class="login-bg-orb" style="width:300px;height:300px;background:#8B5CF6;bottom:-50px;left:-50px;animation-delay:3s"></div>
+  <div class="login-bg-orb" style="width:200px;height:200px;background:#10B981;top:50%;left:30%;animation-delay:5s"></div>
+
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🌅</div>
+      <div class="login-logo-name">Start Finance</div>
+      <div class="login-logo-sub">Seu universo financeiro</div>
+    </div>
+
+    <!-- Acesso rápido por usuário -->
+    <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-align:center;margin-bottom:10px;letter-spacing:.05em;text-transform:uppercase">Acesso rápido</div>
+    <div class="login-users" id="loginUserBtns"></div>
+
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
+      <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+      <span style="font-size:11px;color:rgba(255,255,255,.35)">ou entre com email</span>
+      <div style="flex:1;height:1px;background:rgba(255,255,255,.12)"></div>
+    </div>
+
+    <div class="login-field">
+      <label class="login-label">Email</label>
+      <input class="login-input" type="email" id="loginEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')fazerLogin()">
+    </div>
+    <div class="login-field">
+      <label class="login-label">Senha</label>
+      <input class="login-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
+    </div>
+
+    <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no Start Finance</button>
+    <div class="login-err" id="loginErr">❌ Email ou senha incorretos</div>
+
+    <div style="text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,.3)">
+      Não tem acesso? Fale com o administrador do sistema.
+    </div>
+  </div>
+</div>
 
 <div id="loading">
   <div class="l-logo">🌅</div>
@@ -365,11 +472,22 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 <!-- SIDEBAR -->
 <nav class="sidebar">
   <div class="sb-top">
-    <div class="logo">
-      <div class="logo-ic">🌅</div>
-      <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-        <div class="logo-nm"><span>Start</span> Finance</div>
-        <span class="logo-vr">Ultimate</span>
+    <div class="logo" style="flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:9px">
+        <div class="logo-ic">🌅</div>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <div class="logo-nm"><span>Start</span> Finance</div>
+          <span class="logo-vr">Ultimate</span>
+        </div>
+      </div>
+      <!-- User info no sidebar -->
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:var(--r-sm);padding:8px 10px;border:1px solid var(--border)">
+        <div id="sbUserAvatar" style="width:30px;height:30px;border-radius:50%;background:var(--azul-l);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🙂</div>
+        <div style="flex:1;min-width:0">
+          <div id="sbUserName" style="font-size:12px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="sbUserEmail" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+        </div>
+        <button onclick="confirmarLogout()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px;border-radius:5px;transition:all .15s" title="Sair" onmouseenter="this.style.background='var(--verm-l)';this.style.color='var(--verm)'" onmouseleave="this.style.background='none';this.style.color='var(--muted)'">⬆️</button>
       </div>
     </div>
     <div class="mes-ctrl">
@@ -422,34 +540,72 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
     <div class="pa">
       <button class="btn bs" onclick="reload(true)" id="btnReload">🔄 Atualizar</button>
       <button class="btn bp" onclick="OM('ovTx');resetTxForm()">+ Lançar</button>
+      <!-- User pill topbar -->
+      <div style="position:relative" id="topbarUserArea">
+        <div class="user-pill" onclick="toggleUserMenu()">
+          <div class="user-avatar" id="tbUserAvatar" style="background:var(--azul-l)">🙂</div>
+          <span class="user-name" id="tbUserName">—</span>
+          <span style="font-size:10px;color:var(--muted)">▾</span>
+        </div>
+        <div class="user-menu" id="userMenu">
+          <div style="padding:8px 12px 10px;border-bottom:1px solid var(--border)">
+            <div style="font-size:13px;font-weight:800" id="umName">—</div>
+            <div style="font-size:11px;color:var(--muted)" id="umEmail">—</div>
+          </div>
+          <div class="user-menu-item" onclick="go('relatorios');toggleUserMenu()">📑 Meus relatórios</div>
+          <div class="user-menu-item" onclick="exportRelCSV();toggleUserMenu()">⬇️ Exportar dados</div>
+          <div class="user-menu-sep"></div>
+          <div class="user-menu-item danger" onclick="confirmarLogout()">🚪 Sair</div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- ── LINHA 1: KPIs ── -->
   <div class="kg">
-    <div class="kpi g" onclick="go('transacoes')">
-      <div class="kpi-top"><div class="kpi-ic">💰</div><span class="kpi-tr up" id="k1t">—</span></div>
-      <div class="kpi-v" id="k1">R$ —</div><div class="kpi-l">Receitas do mês</div>
-      <div class="kpi-h">↗ Ver transações</div>
+    <div class="kpi g" onclick="go('transacoes')" title="Ver transações">
+      <div class="kpi-top">
+        <div class="kpi-ic">💰</div>
+        <span class="kpi-tr up" id="k1t">Receitas</span>
+      </div>
+      <div class="kpi-v" id="k1" style="color:var(--verde)">R$ —</div>
+      <div class="kpi-l">Receitas do mês</div>
+      <div class="kpi-h" id="k1h">↗ Ver transações</div>
     </div>
-    <div class="kpi r" onclick="go('transacoes')">
-      <div class="kpi-top"><div class="kpi-ic">💸</div><span class="kpi-tr dn" id="k2t">—</span></div>
-      <div class="kpi-v" id="k2">R$ —</div><div class="kpi-l">Gastos do mês</div>
-      <div class="kpi-h">↗ Ver transações</div>
+    <div class="kpi r" onclick="go('transacoes')" title="Ver transações">
+      <div class="kpi-top">
+        <div class="kpi-ic">💸</div>
+        <span class="kpi-tr dn" id="k2t">Gastos</span>
+      </div>
+      <div class="kpi-v" id="k2" style="color:var(--verm)">− R$ —</div>
+      <div class="kpi-l">Gastos do mês</div>
+      <div class="kpi-h" id="k2h">↗ Ver transações</div>
     </div>
-    <div class="kpi b">
-      <div class="kpi-top"><div class="kpi-ic">⚖️</div><span class="kpi-tr nu" id="k3t">Saldo</span></div>
-      <div class="kpi-v" id="k3">R$ —</div><div class="kpi-l">Disponível</div>
+    <div class="kpi b" title="Diferença entre receitas e gastos">
+      <div class="kpi-top">
+        <div class="kpi-ic">⚖️</div>
+        <span class="kpi-tr nu" id="k3t">Saldo</span>
+      </div>
+      <div class="kpi-v" id="k3">R$ —</div>
+      <div class="kpi-l">Saldo do mês</div>
       <div class="kpi-h" id="k3h"></div>
     </div>
-    <div class="kpi y" onclick="go('fixas')">
-      <div class="kpi-top"><div class="kpi-ic">📌</div><span class="kpi-tr nu">Fixas</span></div>
-      <div class="kpi-v" id="k4">R$ —</div><div class="kpi-l">Despesas fixas</div>
+    <div class="kpi y" onclick="go('fixas')" title="Ir para despesas fixas">
+      <div class="kpi-top">
+        <div class="kpi-ic">📌</div>
+        <span class="kpi-tr nu" id="k4t">Fixas</span>
+      </div>
+      <div class="kpi-v" id="k4">R$ —</div>
+      <div class="kpi-l">Despesas fixas</div>
       <div class="kpi-h">↗ Ver despesas fixas</div>
     </div>
-    <div class="kpi p" onclick="go('investimentos')">
-      <div class="kpi-top"><div class="kpi-ic">📈</div><span class="kpi-tr up" id="k5t">Portfólio</span></div>
-      <div class="kpi-v" id="k5">R$ —</div><div class="kpi-l">Investimentos</div>
+    <div class="kpi p" onclick="go('investimentos')" title="Ver investimentos">
+      <div class="kpi-top">
+        <div class="kpi-ic">📈</div>
+        <span class="kpi-tr up" id="k5t">Portfólio</span>
+      </div>
+      <div class="kpi-v" id="k5">R$ —</div>
+      <div class="kpi-l">Investimentos</div>
       <div class="kpi-h">↗ Ver carteira</div>
     </div>
   </div>
@@ -462,6 +618,16 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
       <div class="ch">
         <div><div class="ct">Evolução Mensal</div><div class="cs" id="dashChartSub">Jan → Dez — passe o mouse para detalhes</div></div>
         <button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button>
+      </div>
+      <!-- Period filter bar -->
+      <div class="chart-period-bar">
+        <button class="cpb" onclick="setChartPeriod('3m',this)">3 meses</button>
+        <button class="cpb active" onclick="setChartPeriod('ano',this)">Ano completo</button>
+        <button class="cpb" onclick="setChartPeriod('rec',this)">Com dados</button>
+        <div style="flex:1"></div>
+        <button class="cpb" id="cpbE" onclick="toggleChartLayer('entradas',this)" style="color:var(--verde);border-color:var(--verde)">● Entradas</button>
+        <button class="cpb" id="cpbS" onclick="toggleChartLayer('saidas',this)" style="color:var(--verm);border-color:var(--verm)">● Saídas</button>
+        <button class="cpb" id="cpbSd" onclick="toggleChartLayer('saldo',this)" style="color:var(--azul);border-color:var(--azul)">● Saldo</button>
       </div>
       <div id="dashChart"></div>
     </div>
@@ -539,7 +705,10 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
   </div>
 
-  <!-- ── LINHA 5: Telegram banner compacto ── -->
+  <!-- ── LINHA 5: Dica do Dia ── -->
+  <div id="dashDica" style="margin-bottom:15px"></div>
+
+  <!-- ── LINHA 6: Telegram banner compacto ── -->
   <div style="background:linear-gradient(135deg,#2AABEE,#229ED9);border-radius:var(--r);padding:18px 22px;color:#fff;box-shadow:0 8px 24px rgba(42,171,238,.3);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
     <div>
       <div style="font-size:14px;font-weight:800;margin-bottom:10px">🤖 Registre pelo Telegram — o bot entende qualquer forma de falar</div>
@@ -1002,15 +1171,40 @@ function renderDash(){
   // Subtítulo
   document.getElementById('dashSubtitle').textContent=`Dados de ${mes}`;
   // KPIs
-  document.getElementById('k1').textContent=fmt(d.entradas);
-  document.getElementById('k2').textContent=fmt(d.saidas);
+  // KPI Receitas
+  document.getElementById('k1').textContent = fmt(d.entradas);
+  document.getElementById('k1').style.color = 'var(--verde)';
+  // Compara com mês anterior
+  const mesAnt = HISTORICO[HISTORICO.length-2];
+  if(mesAnt && mesAnt.entradas > 0){
+    const diffE = ((d.entradas - mesAnt.entradas)/mesAnt.entradas*100).toFixed(1);
+    const arrowE = diffE >= 0 ? '↑' : '↓';
+    document.getElementById('k1t').textContent = `${arrowE} ${Math.abs(diffE)}% vs mês ant.`;
+    document.getElementById('k1t').className = `kpi-tr ${diffE>=0?'up':'dn'}`;
+    document.getElementById('k1h').textContent = `↗ ${diffE>=0?'Alta':'Queda'} vs ${mesAnt.label}`;
+  } else {
+    document.getElementById('k1t').textContent = mes;
+  }
+
+  // KPI Gastos
+  document.getElementById('k2').textContent = '− '+fmt(d.saidas);
+  document.getElementById('k2').style.color = 'var(--verm)';
+  if(mesAnt && mesAnt.saidas > 0){
+    const diffS = ((d.saidas - mesAnt.saidas)/mesAnt.saidas*100).toFixed(1);
+    const arrowS = diffS >= 0 ? '↑' : '↓';
+    document.getElementById('k2t').textContent = `${arrowS} ${Math.abs(diffS)}% vs mês ant.`;
+    document.getElementById('k2t').className = `kpi-tr ${diffS>=0?'dn':'up'}`;
+    document.getElementById('k2h').textContent = diffS>0?`⚠️ Gastos subiram ${diffS}%`:`✅ Gastos reduziram ${Math.abs(diffS)}%`;
+  } else {
+    document.getElementById('k2t').textContent = mes;
+  }
+
+  // KPI Saldo
   const sd=d.saldo;
   document.getElementById('k3').textContent=fmt(sd);
   document.getElementById('k3').style.color=sd>=0?'var(--verde)':'var(--verm)';
   document.getElementById('k3t').textContent=sd>=0?'💚 Positivo':'🔴 Negativo';
   document.getElementById('k3t').className=`kpi-tr ${sd>=0?'up':'dn'}`;
-  document.getElementById('k1t').textContent=mes;
-  document.getElementById('k2t').textContent=mes;
   document.getElementById('k3h').textContent=sd>=0?`💡 ${fmt(sd)} disponível`:`⚠️ ${fmt(Math.abs(sd))} negativos`;
   // Fixas KPI
   const totFx=FIXAS.reduce((s,f)=>s+parseFloat(f.valor||0),0);
@@ -1034,6 +1228,8 @@ function renderDash(){
   renderDividasDash();
   // Metas
   renderMetasDash();
+  // Dica do dia
+  renderDicaDia();
 }
 
 function renderHistChart(elId, h=80){
@@ -1041,27 +1237,26 @@ function renderHistChart(elId, h=80){
   const el = document.getElementById(elId);
   if(!el) return;
   el.innerHTML = '';
-
-  // Se for o chart do dashboard principal, usa versão rica
   if(elId === 'dashChart'){
-    renderEvolucaoAnual(el, h);
+    renderEvolucaoAnual(el, h, getHistoricoFiltrado());
   } else {
-    // Versão simples para planejamento/relatórios
-    const max = Math.max(...HISTORICO.flatMap(h=>[h.entradas,h.saidas]),1);
+    const hist = HISTORICO;
+    const max  = Math.max(...hist.flatMap(h=>[h.entradas,h.saidas]),1);
     el.style.height = h+'px';
-    el.innerHTML = HISTORICO.map(hh=>`
+    el.innerHTML = hist.map(hh=>`
       <div class="bc"><div class="bf ${hh.atual?'at':'ga'}" style="height:${Math.max(hh.saidas/max*100,3)}%;opacity:${hh.futuro?'.25':'1'}" title="${hh.label} Saídas: ${fmt(hh.saidas)}"></div><div class="bl">${hh.label.slice(0,3)}</div></div>
       <div class="bc"><div class="bf ri" style="height:${Math.max(hh.entradas/max*100,3)}%;opacity:${hh.futuro?'.2':'1'}" title="${hh.label} Entradas: ${fmt(hh.entradas)}"></div><div class="bl" style="${hh.atual?'color:var(--verde);font-weight:800':''}"></div></div>
     `).join('');
   }
 }
 
-function renderEvolucaoAnual(el, h){
+
+function renderEvolucaoAnual(el, h, histParam){
   // Container pai completo — não apenas barras simples
   const wrap = el.closest('.card') || el.parentElement;
 
   // Envolve em um container dedicado
-  const hist = HISTORICO;
+  const hist = histParam || HISTORICO;
   const max  = Math.max(...hist.map(hh => Math.max(hh.entradas, hh.saidas)), 1);
 
   // Totais do ano
@@ -1174,7 +1369,10 @@ function hideHistTooltip(){
 
 
 function renderDonut(elId,cats){
-  if(!cats||!cats.length){document.getElementById(elId).innerHTML='<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Sem gastos neste mês</div>';return;}
+  if(!cats||!cats.length){
+    document.getElementById(elId).innerHTML='<div style="padding:28px 20px;text-align:center"><div style="font-size:32px;margin-bottom:8px">🎉</div><div style="font-size:13px;font-weight:700;color:var(--txt2)">Sem gastos registrados</div><div style="font-size:11px;color:var(--muted);margin-top:4px">Registre via Telegram!</div></div>';
+    return;
+  }
   const top=cats.slice(0,5),tot=top.reduce((s,c)=>s+c.gasto,0)||1,totAll=cats.reduce((s,c)=>s+c.gasto,0);
   const circ=2*Math.PI*40;let off=0;
   let svg=`<svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" stroke-width="14"/>`;
@@ -1196,9 +1394,12 @@ function renderCatListDash(cats){
     const stIco=c.status==='estourou'?'🔴':c.status==='atencao'?'🟡':c.status==='ok'?'🟢':'♾️';
     return `<div style="display:grid;grid-template-columns:22px 1fr 65px 20px;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:13px">${c.emoji}</span>
-      <div><div style="font-size:12px;font-weight:700;color:var(--txt2)">${c.nome}</div>
-        <div style="height:5px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:2px"><div style="height:100%;width:0%;background:${bCor};border-radius:100px;transition:width 1s" data-w="${bPct}%"></div></div></div>
-      <div style="font-size:12px;font-weight:800;text-align:right;color:var(--verm)">${fmt(c.gasto)}</div>
+      <div><div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:12px;font-weight:700;color:var(--txt2)">${c.nome}</div>
+          <div style="font-size:10px;color:${bCor};font-weight:700">${c.limite>0?Math.round(c.pct)+'%':''}</div>
+        </div>
+        <div style="height:5px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:3px"><div style="height:100%;width:0%;background:${bCor};border-radius:100px;transition:width 1s" data-w="${bPct}%"></div></div></div>
+      <div style="font-size:12px;font-weight:800;text-align:right;color:${c.gasto>0?'var(--verm)':'var(--muted2)'}">${c.gasto>0?fmt(c.gasto):'—'}</div>
       <div style="text-align:center;font-size:12px">${stIco}</div>
     </div>`;
   }).join('')+`</div>`;
@@ -1211,10 +1412,21 @@ function renderDashTxs(txMes){
   if(!recentes.length){el.innerHTML='<div class="empty" style="padding:24px"><p>Sem transações neste mês</p></div>';return;}
   el.innerHTML=recentes.map(t=>{
     const neg=t.valor<0;
-    return `<div style="display:flex;align-items:center;gap:9px;padding:9px 18px;border-bottom:1px solid var(--border);cursor:pointer" onclick="go('transacoes')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
-      <div style="width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;background:${t.cor}22;flex-shrink:0">${t.emoji}</div>
-      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.descricao||t.categoria}</div><div style="font-size:10px;color:var(--muted)">${t.categoria}${t.metodo&&t.cartao?' · '+t.metodo+' / '+t.cartao:t.cartao?' · '+t.cartao:''}</div></div>
-      <div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:800;color:${neg?'var(--verm)':'var(--verde)'}">${neg?'−':'+'}${fmt(t.valor)}</div><div style="font-size:10px;color:var(--muted2)">${t.data}</div></div>
+    const metIcon={'Cartão crédito':'💳','Cartão débito':'💳','Pix':'📲','Dinheiro':'💵','Boleto':'📄','Cartão':'💳'}[t.metodo]||'';
+    return `<div style="display:flex;align-items:center;gap:9px;padding:9px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onclick="go('transacoes')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
+      <div style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;background:${t.cor}20;border:1px solid ${t.cor}30;flex-shrink:0">${t.emoji}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)">${t.descricao||t.categoria}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:4px">
+          <span>${t.categoria}${t.subcategoria?' · '+t.subcategoria:''}</span>
+          ${metIcon?`<span style="background:var(--bg);border-radius:4px;padding:1px 5px;border:1px solid var(--border)">${metIcon} ${t.cartao||t.metodo}</span>`:''}
+          ${t.parcelas>0?`<span style="background:var(--lara-l);color:var(--lara);border-radius:4px;padding:1px 5px;font-weight:700">${t.parcelas}x</span>`:''}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:13px;font-weight:800;color:${neg?'var(--verm)':'var(--verde)'}">${neg?'−':'+'}${fmt(t.valor)}</div>
+        <div style="font-size:10px;color:var(--muted2)">${t.data} ${t.hora}</div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -2255,6 +2467,193 @@ function exportRelCSV(){
 // ════════════════════════════════════════════════
 // INICIALIZAÇÃO
 // ════════════════════════════════════════════════
+// ════════════════════════════════════════════════
+// AUTH — LOGIN / LOGOUT
+// ════════════════════════════════════════════════
+let AUTH_TOKEN = null;
+let AUTH_USER  = null;
+
+async function carregarUsuariosLogin(){
+  try{
+    const r = await fetch('/api/users').catch(()=>null);
+    if(!r||!r.ok) return usarUsariosFallback();
+    const d = await r.json();
+    renderLoginUsers(d.users||[]);
+  }catch(e){ usarUsariosFallback(); }
+}
+
+function usarUsariosFallback(){
+  renderLoginUsers([
+    {name:'Lucas',email:'lucas@startfinance.com',avatar:'🧑‍💼',color:'#3B6FF0'},
+    {name:'Hellen',email:'hellen@startfinance.com',avatar:'👩‍💼',color:'#EC4899'},
+  ]);
+}
+
+function renderLoginUsers(users){
+  const el = document.getElementById('loginUserBtns');
+  if(!el) return;
+  el.innerHTML = users.map(u=>`
+    <button class="login-user-btn" onclick="loginRapido('${u.email}')">
+      <span class="lu-av">${u.avatar||'🙂'}</span>
+      <span class="lu-nm">${u.name}</span>
+    </button>`).join('');
+}
+
+function loginRapido(email){
+  document.getElementById('loginEmail').value = email;
+  document.getElementById('loginSenha').value = 'start123';
+  document.getElementById('loginSenha').focus();
+}
+
+async function fazerLogin(){
+  const btn   = document.getElementById('loginBtn');
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value.trim();
+  const errEl = document.getElementById('loginErr');
+  errEl.classList.remove('show');
+
+  if(!email||!senha){ errEl.textContent='⚠️ Preencha email e senha'; errEl.classList.add('show'); return; }
+
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try{
+    const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})});
+    const d = await r.json();
+    if(!r.ok){ errEl.textContent = '❌ '+d.erro; errEl.classList.add('show'); return; }
+    AUTH_TOKEN = d.token;
+    AUTH_USER  = d.user;
+    ls_save('sf_token', AUTH_TOKEN);
+    ls_save('sf_user',  JSON.stringify(AUTH_USER));
+    entrarNoSistema();
+  }catch(e){
+    // Se API de auth não estiver disponível, tenta modo offline
+    const USERS_OFFLINE = [{name:'Lucas',email:'lucas@startfinance.com',password:'start123',avatar:'🧑‍💼',color:'#3B6FF0',id:'1'},{name:'Hellen',email:'hellen@startfinance.com',password:'start123',avatar:'👩‍💼',color:'#EC4899',id:'2'}];
+    const user = USERS_OFFLINE.find(u=>u.email.toLowerCase()===email.toLowerCase()&&u.password===senha);
+    if(user){ AUTH_USER=user; AUTH_TOKEN='offline'; ls_save('sf_token','offline'); ls_save('sf_user',JSON.stringify(user)); entrarNoSistema(); }
+    else{ errEl.textContent='❌ Email ou senha incorretos'; errEl.classList.add('show'); }
+  }finally{
+    btn.disabled=false; btn.textContent='Entrar no Start Finance';
+  }
+}
+
+function entrarNoSistema(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  atualizarUIUsuario();
+  init();
+}
+
+function atualizarUIUsuario(){
+  if(!AUTH_USER) return;
+  const u = AUTH_USER;
+  // Sidebar
+  const sbAv = document.getElementById('sbUserAvatar');
+  const sbNm = document.getElementById('sbUserName');
+  const sbEm = document.getElementById('sbUserEmail');
+  if(sbAv){ sbAv.textContent=u.avatar||'🙂'; sbAv.style.background=(u.color||'#3B6FF0')+'22'; }
+  if(sbNm) sbNm.textContent = u.name;
+  if(sbEm) sbEm.textContent = u.email;
+  // Topbar
+  const tbAv = document.getElementById('tbUserAvatar');
+  const tbNm = document.getElementById('tbUserName');
+  if(tbAv){ tbAv.textContent=u.avatar||'🙂'; tbAv.style.background=(u.color||'#3B6FF0')+'22'; }
+  if(tbNm) tbNm.textContent = u.name;
+  // Menu
+  const umN = document.getElementById('umName');
+  const umE = document.getElementById('umEmail');
+  if(umN) umN.textContent = u.name;
+  if(umE) umE.textContent = u.email;
+  // Saudação dashboard
+  const greet = document.getElementById('dashGreet');
+  if(greet) greet.textContent = `Olá, ${u.name.split(' ')[0]} ${u.avatar||'👋'}`;
+}
+
+function toggleUserMenu(){
+  document.getElementById('userMenu')?.classList.toggle('open');
+}
+document.addEventListener('click', e=>{
+  const menu = document.getElementById('userMenu');
+  if(menu&&!menu.closest('#topbarUserArea')?.contains(e.target)) menu.classList.remove('open');
+});
+
+function confirmarLogout(){
+  if(!confirm('Tem certeza que quer sair?')) return;
+  logout();
+}
+
+function logout(){
+  AUTH_TOKEN = null; AUTH_USER = null;
+  ls_save('sf_token',''); ls_save('sf_user','');
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('loginEmail').value='';
+  document.getElementById('loginSenha').value='';
+  document.getElementById('loginErr').classList.remove('show');
+  document.getElementById('userMenu')?.classList.remove('open');
+}
+
+function ls_save(k,v){try{localStorage.setItem(k,v)}catch{}}
+function ls_get(k){try{return localStorage.getItem(k)||''}catch{return''}}
+
+
+// ════════════════════════════════════════════════
+// CHART PERIOD FILTER
+// ════════════════════════════════════════════════
+let CHART_PERIOD = 'ano';
+let CHART_LAYERS = {entradas:true, saidas:true, saldo:false};
+
+function setChartPeriod(period, el){
+  CHART_PERIOD = period;
+  document.querySelectorAll('.chart-period-bar .cpb:not(#cpbE):not(#cpbS):not(#cpbSd)').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderHistChart('dashChart',60);
+}
+
+function toggleChartLayer(layer, el){
+  CHART_LAYERS[layer] = !CHART_LAYERS[layer];
+  el.style.opacity = CHART_LAYERS[layer] ? '1' : '0.4';
+  renderHistChart('dashChart',60);
+}
+
+function getHistoricoFiltrado(){
+  if(!HISTORICO.length) return [];
+  const agora = new Date().getMonth(); // 0-11
+  if(CHART_PERIOD==='3m'){
+    return HISTORICO.slice(Math.max(0, agora-2), agora+1);
+  } else if(CHART_PERIOD==='rec'){
+    return HISTORICO.filter(h=>h.entradas>0||h.saidas>0);
+  }
+  return HISTORICO; // ano completo
+}
+
+
+// ════════════════════════════════════════════════
+// DICA DO DIA
+// ════════════════════════════════════════════════
+const DICAS = [
+  "💡 Revise suas assinaturas mensais — pequenos valores acumulam muito!",
+  "📊 Compare seus gastos com o mês anterior nos Relatórios.",
+  "🎯 Metas menores e mais frequentes têm maior chance de sucesso.",
+  "💳 Sempre que parcelar, anote no cartão correto para não perder o controle.",
+  "🔄 Despesas fixas configuradas evitam esquecimentos e surpresas.",
+  "📈 Investimentos regulares, mesmo pequenos, fazem diferença no longo prazo.",
+  "⚡ Revisar limites mensais ajuda a manter o orçamento equilibrado.",
+  "🏆 Você já registrou transações este mês — continue assim!",
+];
+function getDicaHoje(){
+  const idx = new Date().getDate() % DICAS.length;
+  return DICAS[idx];
+}
+
+function renderDicaDia(){
+  const el = document.getElementById('dashDica');
+  if(!el) return;
+  el.innerHTML = `
+    <div class="dica-card">
+      <div class="dica-icon">💡</div>
+      <div><div class="dica-title">Dica do dia</div><div class="dica-text">${getDicaHoje()}</div></div>
+    </div>`;
+}
+
+function function_placeholder_do_not_remove(){}
+
 function init(){
   LIMS_LOCAL=ls('sf_limites',{});
   FIXAS=ls('sf_fixas',[]);
@@ -2270,8 +2669,35 @@ function init(){
   setTimeout(()=>{document.getElementById('loading').style.opacity='0';setTimeout(()=>document.getElementById('loading').style.display='none',500)},2500);
 }
 
+function iniciar(){
+  // Verifica se já tem token salvo
+  const token = ls_get('sf_token');
+  const userStr = ls_get('sf_user');
+  if(token && token !== '' && userStr){
+    try{
+      AUTH_TOKEN = token;
+      AUTH_USER  = JSON.parse(userStr);
+      document.getElementById('loginScreen').classList.add('hidden');
+      atualizarUIUsuario();
+      init();
+    }catch(e){ mostrarLogin(); }
+  } else {
+    mostrarLogin();
+  }
+}
+
+function mostrarLogin(){
+  document.getElementById('loginScreen').classList.remove('hidden');
+  carregarUsuariosLogin();
+  // Esconde loading
+  setTimeout(()=>{
+    document.getElementById('loading').style.opacity='0';
+    setTimeout(()=>document.getElementById('loading').style.display='none',300);
+  },500);
+}
+
 document.getElementById('loading').style.transition='opacity .5s';
-init();
+iniciar();
 </script>
 </body>
 </html>
