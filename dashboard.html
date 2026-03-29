@@ -465,7 +465,9 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mh"><div class="mt" id="txTitle">Nova Transação</div><button class="mc" onclick="CM('ovTx')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Data</label><input class="fi" id="txData" placeholder="DD/MM/YYYY"></div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="txValor" step="0.01" placeholder="0,00"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div><div class="fg"><label class="fl">Parcelas</label><input type="number" class="fi" id="txParc" min="0" value="0"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="txValor" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
+    <!-- txParc hidden — gerenciado pelo sistema de parcelamento -->
+    <input type="hidden" id="txParc" value="0">
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="txCat"><option>Alimentação</option><option>Transporte</option><option>Contas</option><option>Lazer</option><option>Saúde</option><option>Educação</option><option>Moradia</option><option>Beleza</option><option>Vestuário</option><option>Pet</option><option>Tecnologia</option><option>Filhos</option><option>Presentes</option><option>Veículo</option><option>Impostos</option><option>Assinaturas</option><option>Salário</option><option>Freelance</option><option>Investimento</option><option>Outros</option></select></div><div class="fg"><label class="fl">Subcategoria</label><input class="fi" id="txSub" placeholder="Ex: Almoço, Uber..."></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="txDesc" placeholder="Descreva a transação"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Localização</label><input class="fi" id="txLocal" placeholder="Ex: Shopping, Contagem..."></div><div class="fg"><label class="fl">Método de Pagamento</label><select class="fs" id="txMetodo" onchange="txMetChange()"><option value="">— Nenhum —</option><option>Cartão crédito</option><option>Cartão débito</option><option>Pix</option><option>Dinheiro</option><option>Boleto</option></select></div></div>
@@ -513,13 +515,13 @@ input:checked+.slider:before{transform:translateX(16px)}
             <div style="font-size:11px;color:var(--muted)" id="txParcLabel">por mês</div>
           </div>
         </div></div>
-        <div id="txMesesInfo" style="background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-top:8px"></div>
+        <div id="txMesesInfo" style="display:none;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-top:8px"></div>
       </div>
     </div>
     <input type="hidden" id="txIdx" value="-1">
     <!-- Mês/Ano selecionável -->
     <div class="fr one"><div class="fg"><label class="fl">📅 Mês de referência</label>
-      <select class="fs" id="txMesAno">
+      <select class="fs" id="txMesAno" onchange="onMesAnoChange()">
         <option value="jan./2026">Janeiro 2026</option>
         <option value="fev./2026">Fevereiro 2026</option>
         <option value="mar./2026" selected>Março 2026</option>
@@ -1725,9 +1727,12 @@ function renderCartoesDash(){
   if(!CARTOES.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">💳</div><p>Nenhum cartão</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'cartoes\')">Adicionar cartão</button></div>';return;}
   const rawG=MES_DATA.gastosPorCartao||{};
   const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
+  const limUsoD=MES_DATA.cartoesLimiteUso||{};
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
-    const usado=gastos[c.nome]||0;
-    const pct=c.limite>0?Math.min(usado/c.limite*100,100):0;
+    const fatMes=gastos[c.nome]||0;           // fatura do mês atual
+    const comprometido=limUsoD[c.nome]||fatMes; // total comprometido no limite
+    const usado=comprometido;
+    const pct=c.limite>0?Math.min(comprometido/c.limite*100,100):0;
     const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
     const cardCor=c.cor||'linear-gradient(135deg,#3B6FF0,#2451C7)';
     const dispColor=pct>80?'var(--verm)':'var(--verde)';
@@ -1737,7 +1742,7 @@ function renderCartoesDash(){
           <span style="width:12px;height:12px;border-radius:3px;background:${cardCor};display:inline-block;flex-shrink:0"></span>
           ${c.nome}
         </span>
-        <span><span style="color:var(--verm)">${fmt(usado)}</span><span style="color:var(--muted)"> / </span><span style="color:var(--verde)">${fmt(c.limite)}</span></span>
+        <span><span style="color:var(--verm)">${fmt(fatMes)}</span><span style="color:var(--muted);font-size:10px"> fatura</span></span>
       </div>
       <div style="height:8px;background:var(--border);border-radius:100px;overflow:hidden">
         <div style="height:100%;width:${pct}%;background:${barCor};border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)"></div>
@@ -1860,28 +1865,42 @@ function txParcToggle(){
   const isParc=document.getElementById('txIsParc').checked;
   document.getElementById('txParcRow').style.display=isParc?'':'none';
   document.getElementById('txParc').value=isParc?TX_PARC_SEL:0;
-  if(isParc) atualizarValorParc();
+  const miEl=document.getElementById('txMesesInfo');
+  if(miEl) miEl.style.display=isParc&&TX_PARC_SEL>1?'block':'none';
+  if(isParc && TX_PARC_SEL>0) atualizarValorParc();
 }
 
 function selParc(n){
+  if(!n||n<1) return;
   TX_PARC_SEL=n;
   document.getElementById('txParc').value=n;
-  // Visual: marcar botão selecionado
   document.querySelectorAll('.parc-btn').forEach(b=>{
     const bN=parseInt(b.textContent);
     b.classList.toggle('sel', bN===n);
   });
+  // Mostra a info de meses
+  const miEl=document.getElementById('txMesesInfo');
+  if(miEl) miEl.style.display='block';
   atualizarValorParc();
+}
+
+function onMesAnoChange(){
+  // Quando o mês de referência muda, atualiza info de parcelas e corte do cartão
+  txCartaoChange(); // reavalia corte do cartão
+  atualizarValorParc(); // reavalia info de meses das parcelas
 }
 
 function atualizarValorParc(){
   const valor=parseFloat(document.getElementById('txValor').value)||0;
   const n=TX_PARC_SEL||1;
+  if(n<2||!document.getElementById('txIsParc')?.checked) return;
+
   const porParc=valor/n;
-  const sel=document.getElementById('txCartaoSel');
-  const cartaoNome=sel?.value||'';
   const mesBase=document.getElementById('txMesAno').value||getMesChave();
   const mesFim=somarMes(mesBase,n-1);
+
+  // Formata mês legível: "abr./2026" → "Abr/2026"
+  const fmtMes=m=>m.replace(/\./g,'').replace(/([a-z])/,(c,i)=>i===0?c.toUpperCase():c);
 
   const vpEl=document.getElementById('txValorParc');
   const plEl=document.getElementById('txParcLabel');
@@ -1889,9 +1908,11 @@ function atualizarValorParc(){
 
   if(vpEl) vpEl.textContent=fmt(porParc);
   if(plEl) plEl.textContent=`por mês × ${n} parcelas = ${fmt(valor)} total`;
-  if(miEl && n>1) miEl.textContent=`📅 Parcelas de ${mesBase.replace('.','')} até ${mesFim.replace('.','')} — ${n} meses`;
+  if(miEl){
+    miEl.textContent=`📅 Parcelas de ${fmtMes(mesBase)} até ${fmtMes(mesFim)} — ${n} meses`;
+    miEl.style.display='block';
+  }
 
-  // Destaca valor no campo principal com o valor da parcela
   const vEl=document.getElementById('txValor');
   if(vEl) vEl.title=`Valor total: ${fmt(valor)} | Por parcela: ${fmt(porParc)}`;
 }
@@ -2013,39 +2034,122 @@ let delIdx=null;
 function promptDel(idx){
   delIdx=idx;
   const t=TX_FILT[idx];
-  document.getElementById('delMsg').innerHTML=`Excluir <strong>${t.descricao||t.categoria}</strong> de <strong>${fmt(t.valor)}</strong>?<br><span style="font-size:11px;color:var(--muted)">Esta ação não pode ser desfeita.</span>`;
+  const isParc=parseInt(t.parcelas)>1;
+  DEL_MODO='so_esta';
+
+  if(isParc){
+    const pa=parseInt(t.parcela_atual)||1;
+    const pt=parseInt(t.parcelas);
+    document.getElementById('delMsg').innerHTML=`
+      <div style="margin-bottom:12px">
+        Excluir <strong>${t.descricao||t.categoria}</strong> — parcela <strong>${pa}/${pt}</strong> de <strong>${fmt(Math.abs(t.valor))}</strong>?
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;border:1px solid var(--border)" onclick="DEL_MODO='so_esta';this.style.borderColor='var(--azul)';document.querySelector('.del-opt-todas').style.borderColor='var(--border)'">
+          <input type="radio" name="delOpt" value="so_esta" checked style="accent-color:var(--azul)">
+          <div><div style="font-size:13px;font-weight:700">Excluir só esta parcela (${pa}/${pt})</div><div style="font-size:11px;color:var(--muted)">As demais parcelas permanecem</div></div>
+        </label>
+        <label class="del-opt-todas" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--verm-l);border-radius:var(--r-sm);cursor:pointer;border:1px solid rgba(239,68,68,.2)" onclick="DEL_MODO='todas';this.style.borderColor='var(--verm)';document.querySelector('[value=so_esta]').parentElement.style.borderColor='var(--border)'">
+          <input type="radio" name="delOpt" value="todas" style="accent-color:var(--verm)">
+          <div><div style="font-size:13px;font-weight:700;color:var(--verm)">🗑️ Excluir todas as ${pt} parcelas</div><div style="font-size:11px;color:var(--muted)">Remove da ${t.cartao?'fatura do '+t.cartao:''} e de todos os meses</div></div>
+        </label>
+      </div>`;
+  } else {
+    document.getElementById('delMsg').innerHTML=`Excluir <strong>${t.descricao||t.categoria}</strong> de <strong>${fmt(Math.abs(t.valor))}</strong>?<br><span style="font-size:11px;color:var(--muted)">Esta ação não pode ser desfeita.</span>`;
+  }
   OM('ovDel');
 }
 
 async function confirmDel(){
-  const btn=document.getElementById('btnDel');btn.disabled=true;btn.textContent='⏳...';
+  const btn=document.getElementById('btnDel');btn.disabled=true;
+  const t=TX_FILT[delIdx];
+  const isParcelada = parseInt(t.parcelas)>1;
+
+  if(isParcelada && DEL_MODO==='so_esta'){
+    btn.textContent='⏳ Excluindo...';
+    await deletarUmaTx(t);
+    CM('ovDel');
+    toast('🗑️ Esta parcela excluída!','success');
+    setTimeout(()=>reload(), 1200);
+    return;
+  }
+
+  if(isParcelada && DEL_MODO==='todas'){
+    btn.textContent='⏳ Excluindo todas...';
+    await deletarTodasParcelas(t);
+    CM('ovDel');
+    toast('🗑️ Todas as parcelas excluídas!','success');
+    setTimeout(()=>reload(), 1200);
+    return;
+  }
+
+  // Transação normal (não parcelada)
+  btn.textContent='⏳...';
+  await deletarUmaTx(t);
+  CM('ovDel');
+  toast('🗑️ Excluído!','success');
+  setTimeout(()=>reload(), 1200);
+  btn.disabled=false; btn.textContent='🗑️ Excluir';
+}
+
+let DEL_MODO = 'so_esta'; // 'so_esta' | 'todas'
+
+async function deletarUmaTx(t){
+  const realIdx=t.idx;
   try{
-    const t=TX_FILT[delIdx];
-    const realIdx=t.idx; // índice real no Sheets (0-based, linha = idx+4)
     const r=await(await fetch(`/api/transacao/${realIdx}`,{method:'DELETE'})).json();
     if(r.erro)throw new Error(r.erro);
-
-    // Remove imediatamente da lista local para evitar reaparecer
-    // TODAS_TX está invertida (mais recente primeiro), precisamos remover pelo idx real
-    const posLocal=TODAS_TX.findIndex(tx=>tx.idx===realIdx);
-    if(posLocal>=0){
-      TODAS_TX.splice(posLocal,1);
-      // Reindexar: após remover da linha X, todos os idx abaixo sobem 1
-      TODAS_TX.forEach(tx=>{
-        if(tx.idx > realIdx) tx.idx--;
-      });
+    // Remove local imediatamente
+    const pos=TODAS_TX.findIndex(tx=>tx.idx===realIdx);
+    if(pos>=0){
+      TODAS_TX.splice(pos,1);
+      TODAS_TX.forEach(tx=>{ if(tx.idx>realIdx) tx.idx--; });
     }
+    calcularMes(); renderTxPage();
+  }catch(e){ toast('❌ '+e.message,'error'); }
+}
 
-    // Recalcula e re-renderiza sem precisar de reload completo
-    calcularMes();
-    renderTxPage();
-    CM('ovDel');
-    toast('🗑️ Excluído!','success');
+async function deletarTodasParcelas(t){
+  // Encontra todas as parcelas da mesma compra:
+  // mesmo descricao (sem "(X/Y)"), mesmo cartao, mesmo valor, parcelas>1
+  const descBase = t.descricao||t.categoria;
+  const cartao   = t.cartao||'';
+  const valor    = Math.abs(parseFloat(t.valor)||0);
+  const totalParc= parseInt(t.parcelas)||0;
 
-    // Reload em background para sincronizar com Sheets
-    setTimeout(()=>reload(), 1500);
-  }catch(e){toast('❌ '+e.message,'error')}
-  finally{btn.disabled=false;btn.textContent='🗑️ Excluir'}
+  // Busca todos os lançamentos relacionados em TODAS as transações
+  const relacionadas = TODAS_TX.filter(tx=>{
+    const txDesc  = tx.descricao||tx.categoria;
+    const txValor = Math.abs(parseFloat(tx.valor)||0);
+    const txParc  = parseInt(tx.parcelas)||0;
+    return txParc===totalParc
+        && Math.abs(txValor-valor)<0.01
+        && tx.cartao===cartao
+        && txDesc===descBase;
+  });
+
+  if(!relacionadas.length){ await deletarUmaTx(t); return; }
+
+  // Ordena por idx decrescente para deletar de trás pra frente (não afeta índices)
+  const sorted=[...relacionadas].sort((a,b)=>b.idx-a.idx);
+  let erros=0;
+  for(const tx of sorted){
+    try{
+      const r=await(await fetch(`/api/transacao/${tx.idx}`,{method:'DELETE'})).json();
+      if(r.erro) erros++;
+    }catch{ erros++; }
+  }
+
+  // Remove todas da lista local de uma vez
+  const idxSet=new Set(relacionadas.map(tx=>tx.idx));
+  // Rebuild TODAS_TX sem as relacionadas
+  const novas=TODAS_TX.filter(tx=>!idxSet.has(tx.idx));
+  // Reindexar
+  TODAS_TX.length=0;
+  novas.sort((a,b)=>b.idx-a.idx).forEach((tx,i)=>{ tx.idx=novas.length-1-i; TODAS_TX.push(tx); });
+
+  calcularMes(); renderTxPage();
+  if(erros>0) toast(`⚠️ ${erros} parcelas com erro ao excluir`,'warning');
 }
 
 async function saveTx(){
@@ -2122,12 +2226,18 @@ async function saveTx(){
 
 // Soma N meses a um mes_ano ("mar./2026" + 2 = "mai./2026")
 function somarMes(mesAno, n){
+  if(!mesAno) return getMesChave();
   const parts=mesAno.split('/');
   if(parts.length<2) return mesAno;
   const mesIdx=MESES_PT.indexOf(parts[0]);
-  if(mesIdx<0) return mesAno;
-  const ano=parseInt(parts[1]);
-  const d=new Date(ano, mesIdx+n, 1);
+  if(mesIdx<0){
+    // Tenta encontrar por nome completo
+    const mi2=MESES_PT.findIndex(m=>mesAno.toLowerCase().startsWith(m.slice(0,-1)));
+    if(mi2<0) return mesAno;
+  }
+  const idx2=mesIdx>=0?mesIdx:0;
+  const ano=parseInt(parts[1])||new Date().getFullYear();
+  const d=new Date(ano, idx2+n, 1);
   return `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
 }
 
@@ -2231,8 +2341,8 @@ function limparCalendario(){
 }
 
 function renderTxPage(){
-  // Popula filtros com dados de TODAS
-  const cats=[...new Set(TODAS_TX.map(t=>t.categoria))].sort();
+  // Popula filtros
+  const cats=[...new Set((TODAS_TX||[]).map(t=>t.categoria))].sort();
   const cards=[...new Set(TODAS_TX.map(t=>t.cartao).filter(Boolean))].sort();
   document.getElementById('fCat').innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option>${c}</option>`).join('');
   document.getElementById('fCartao').innerHTML='<option value="">Todos os cartões</option>'+cards.map(c=>`<option>${c}</option>`).join('');
