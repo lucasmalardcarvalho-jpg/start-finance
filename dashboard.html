@@ -308,7 +308,16 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .av-opt:hover,.av-opt.sel{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.15)}
 .cor-login{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;flex-shrink:0}
 .cor-login:hover,.cor-login.sel{border-color:#fff;transform:scale(1.2)}
-/* ════ TOOLTIP FIX ════ */
+/* ════ CALENDÁRIO FILTRO ════ */
+.cal-day{width:100%;aspect-ratio:1;border-radius:6px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:var(--txt2);display:flex;align-items:center;justify-content:center;transition:all .15s}
+.cal-day:hover{background:var(--azul-l);color:var(--azul)}
+.cal-day.active{background:var(--azul);color:#fff;font-weight:800}
+.cal-day.has-tx{font-weight:800;color:var(--txt)}
+.cal-day.has-tx::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--verde);margin:0 auto;position:absolute;bottom:2px}
+.cal-day.empty{cursor:default}
+.cal-day.hoje{border:1.5px solid var(--azul);color:var(--azul)}
+
+/* ════ TOOLTIP FIX ════ *//* ════ TOOLTIP FIX ════ */
 .hist-tip{pointer-events:none;z-index:999;position:fixed!important}
 
 /* ════ MOBILE ════ */
@@ -832,9 +841,31 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
     <select class="sf-f" id="fTipo" onchange="filterTx()"><option value="">Todos os tipos</option><option>Gasto</option><option>Receita</option></select>
     <select class="sf-f" id="fCat" onchange="filterTx()"><option value="">Todas as categorias</option></select>
     <select class="sf-f" id="fCartao" onchange="filterTx()"><option value="">Todos os cartões</option></select>
-    <select class="sf-f" id="fDia" onchange="filterTx()" style="width:auto" title="Filtrar por dia do mês">
-      <option value="">📅 Dia</option>
-    </select>
+    <!-- Filtro por dia — calendário popup -->
+    <div style="position:relative" id="calWrap">
+      <button class="btn bs btn-sm" id="calBtn" onclick="toggleCal(event)" style="gap:5px;font-size:12px;white-space:nowrap">
+        <span id="calBtnIco">📅</span>
+        <span id="calBtnLbl">Dia</span>
+        <span style="font-size:10px;color:var(--muted)">▾</span>
+      </button>
+      <div id="calPop" style="display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);padding:14px;z-index:300;min-width:220px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:12px;font-weight:800;color:var(--txt)" id="calTitle">—</div>
+          <button onclick="limparCalendario()" style="font-size:11px;color:var(--azul);background:none;border:none;cursor:pointer;font-weight:700">Limpar</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:6px">
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">D</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">S</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">T</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">Q</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">Q</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">S</div>
+          <div style="font-size:9px;font-weight:700;color:var(--muted);text-align:center">S</div>
+        </div>
+        <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+      </div>
+    </div>
+    <input type="hidden" id="fDia" value="">
   </div>
   <div class="tw">
     <table class="st">
@@ -1901,6 +1932,105 @@ function somarMes(mesAno, n){
   return `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
 }
 
+// ════════════════════════════════════════════════
+// CALENDÁRIO FILTRO DE DIA
+// ════════════════════════════════════════════════
+let CAL_DIA_SEL = ''; // dia selecionado "29" ou ""
+
+function toggleCal(e){
+  e.stopPropagation();
+  const pop = document.getElementById('calPop');
+  const isOpen = pop.style.display !== 'none';
+  if(isOpen){ pop.style.display='none'; return; }
+  buildCalendario();
+  pop.style.display='block';
+}
+
+// Fecha ao clicar fora
+document.addEventListener('click', e=>{
+  const wrap = document.getElementById('calWrap');
+  if(wrap && !wrap.contains(e.target)){
+    const pop = document.getElementById('calPop');
+    if(pop) pop.style.display='none';
+  }
+});
+
+function buildCalendario(){
+  const txMes = MES_DATA.txMes || [];
+  // Dias que têm transações neste mês
+  const diasComTx = new Set(txMes.map(t=>parseInt(t.data.split('/')[0])).filter(Boolean));
+
+  // Mês/ano em exibição
+  const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + MES_OFF);
+  const ano  = d.getFullYear();
+  const mes  = d.getMonth(); // 0-11
+  const hoje = new Date();
+
+  document.getElementById('calTitle').textContent =
+    MESES_NM[mes] + ' ' + ano;
+
+  // Primeiro dia da semana do mês (0=Dom)
+  const primeiroDia = new Date(ano, mes, 1).getDay();
+  const ultimoDia   = new Date(ano, mes+1, 0).getDate();
+
+  let html = '';
+
+  // Espaços em branco antes do dia 1
+  for(let i=0; i<primeiroDia; i++){
+    html += '<div class="cal-day empty"></div>';
+  }
+
+  for(let dia=1; dia<=ultimoDia; dia++){
+    const diaStr  = String(dia).padStart(2,'0');
+    const hasTx   = diasComTx.has(dia);
+    const isHoje  = (hoje.getFullYear()===ano && hoje.getMonth()===mes && hoje.getDate()===dia);
+    const isSel   = CAL_DIA_SEL === diaStr;
+    const classes = ['cal-day',
+      hasTx   ? 'has-tx'  : '',
+      isHoje  ? 'hoje'    : '',
+      isSel   ? 'active'  : '',
+    ].filter(Boolean).join(' ');
+
+    // Indicador ponto se tem tx
+    const dot = hasTx
+      ? `<span style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:${isSel?'#fff':'var(--verde)'}"></span>`
+      : '';
+
+    html += `<div class="${classes}" style="position:relative" onclick="selecionarDia('${diaStr}')" title="${hasTx?diasComTx.size+' transações':'Sem transações'}">
+      ${dia}${dot}
+    </div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function selecionarDia(diaStr){
+  if(CAL_DIA_SEL === diaStr){
+    // Clicou no mesmo — deseleciona
+    limparCalendario();
+    return;
+  }
+  CAL_DIA_SEL = diaStr;
+  document.getElementById('fDia').value = diaStr;
+  document.getElementById('calBtnLbl').textContent = 'Dia '+parseInt(diaStr);
+  document.getElementById('calBtn').style.background = 'var(--azul)';
+  document.getElementById('calBtn').style.color = '#fff';
+  document.getElementById('calBtn').style.borderColor = 'var(--azul)';
+  document.getElementById('calBtnIco').textContent = '📅';
+  document.getElementById('calPop').style.display='none';
+  filterTx();
+}
+
+function limparCalendario(){
+  CAL_DIA_SEL = '';
+  document.getElementById('fDia').value = '';
+  document.getElementById('calBtnLbl').textContent = 'Dia';
+  const btn = document.getElementById('calBtn');
+  btn.style.background=''; btn.style.color=''; btn.style.borderColor='';
+  document.getElementById('calPop').style.display='none';
+  filterTx();
+}
+
 function renderTxPage(){
   // Popula filtros com dados de TODAS
   const cats=[...new Set(TODAS_TX.map(t=>t.categoria))].sort();
@@ -1913,6 +2043,9 @@ function renderTxPage(){
   const fDia=document.getElementById('fDia');
   if(fDia) fDia.innerHTML='<option value="">📅 Dia</option>'+dias.map(d=>`<option value="${d}">Dia ${parseInt(d)}</option>`).join('');
   document.getElementById('txSubtitle').textContent=`Transações de ${getMesNome()}`;
+  // Reset calendário ao trocar de mês
+  if(CAL_DIA_SEL){ limparCalendario(); }
+  else { buildCalendario && setTimeout(()=>{},0); } // rebuild se aberto
   TX_FILT=MES_DATA.txMes?[...MES_DATA.txMes]:[];
   filterTx();
 }
