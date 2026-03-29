@@ -16,6 +16,7 @@ from telegram.ext import (
 )
 
 from sheets_manager import SheetsManager
+from auth import registrar_rotas_auth
 from ai_extractor import AIExtractor
 import web_server
 
