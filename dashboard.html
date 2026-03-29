@@ -452,7 +452,27 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
     <!-- Cartão selector - aparece só quando método = cartão crédito -->
     <div class="fr one" id="txCartaoRow" style="display:none"><div class="fg"><label class="fl">💳 Qual cartão de crédito?</label><select class="fs" id="txCartaoSel"><option value="">— Selecione o cartão —</option></select></div></div>
     <input type="hidden" id="txIdx" value="-1">
-    <input type="hidden" id="txMesAno" value="">
+    <!-- Mês/Ano selecionável -->
+    <div class="fr one"><div class="fg"><label class="fl">📅 Mês de referência</label>
+      <select class="fs" id="txMesAno">
+        <option value="jan./2026">Janeiro 2026</option>
+        <option value="fev./2026">Fevereiro 2026</option>
+        <option value="mar./2026" selected>Março 2026</option>
+        <option value="abr./2026">Abril 2026</option>
+        <option value="mai./2026">Maio 2026</option>
+        <option value="jun./2026">Junho 2026</option>
+        <option value="jul./2026">Julho 2026</option>
+        <option value="ago./2026">Agosto 2026</option>
+        <option value="set./2026">Setembro 2026</option>
+        <option value="out./2026">Outubro 2026</option>
+        <option value="nov./2026">Novembro 2026</option>
+        <option value="dez./2026">Dezembro 2026</option>
+        <option value="jan./2025">Janeiro 2025</option>
+        <option value="fev./2025">Fevereiro 2025</option>
+        <option value="mar./2025">Março 2025</option>
+        <option value="dez./2025">Dezembro 2025</option>
+      </select>
+    </div></div>
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovTx')">Cancelar</button><button class="btn bp" id="btnSvTx" onclick="saveTx()">💾 Salvar</button></div>
 </div></div>
@@ -611,7 +631,7 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
     </div>
     <div class="pa">
       <button class="btn bs" onclick="reload(true)" id="btnReload">🔄 Atualizar</button>
-      <button class="btn bp" onclick="OM('ovTx');resetTxForm()">+ Lançar</button>
+      <button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Lançar</button>
       <!-- User pill topbar -->
       <div style="position:relative" id="topbarUserArea">
         <div class="user-pill" onclick="toggleUserMenu()">
@@ -806,12 +826,15 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 <!-- ═══ TRANSAÇÕES ═══ -->
 <div class="page" id="page-transacoes">
   <div class="ph"><div><h1>💸 Transações</h1><p id="txSubtitle">Todos os lançamentos — editáveis e pesquisáveis</p></div>
-  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bp" onclick="OM('ovTx');resetTxForm()">+ Nova</button></div></div>
+  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
   <div class="tb">
     <input type="text" class="sf-s" id="srch" placeholder="🔍 Buscar descrição, categoria, local..." oninput="filterTx()">
     <select class="sf-f" id="fTipo" onchange="filterTx()"><option value="">Todos os tipos</option><option>Gasto</option><option>Receita</option></select>
     <select class="sf-f" id="fCat" onchange="filterTx()"><option value="">Todas as categorias</option></select>
     <select class="sf-f" id="fCartao" onchange="filterTx()"><option value="">Todos os cartões</option></select>
+    <select class="sf-f" id="fDia" onchange="filterTx()" style="width:auto" title="Filtrar por dia do mês">
+      <option value="">📅 Dia</option>
+    </select>
   </div>
   <div class="tw">
     <table class="st">
@@ -1137,10 +1160,8 @@ document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.
 // ════════════════════════════════════════════════
 // MÊS — LÓGICA CENTRAL
 // ════════════════════════════════════════════════
-function getMesChave(){
-  const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+MES_OFF);
-  return `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
-}
+// getMesChave: see resetTxForm for new version
+
 function getMesNome(){
   const d=new Date();d.setDate(1);d.setMonth(d.getMonth()+MES_OFF);
   return `${MESES_NM[d.getMonth()]} ${d.getFullYear()}`;
@@ -1669,27 +1690,87 @@ function txMetChange(){
   }else{row.style.display='none';}
 }
 
+function populateMesSelector(){
+  const sel=document.getElementById('txMesAno');
+  if(!sel) return;
+  const now=new Date();
+  const ano=now.getFullYear();
+  const opts=[];
+  // Meses do ano atual
+  for(let m=0;m<12;m++){
+    const val=`${MESES_PT[m]}/${ano}`;
+    const nome=MESES_NM[m]+' '+ano;
+    opts.push({val,nome});
+  }
+  // 6 meses anteriores do ano passado
+  for(let m=6;m<12;m++){
+    const val=`${MESES_PT[m]}/${ano-1}`;
+    const nome=MESES_NM[m]+' '+(ano-1);
+    opts.push({val,nome});
+  }
+  sel.innerHTML=opts.map(o=>`<option value="${o.val}">${o.nome}</option>`).join('');
+  // Seleciona o mês que está sendo visualizado
+  const mesVis=getMesChave();
+  let found=false;
+  for(let i=0;i<sel.options.length;i++){
+    if(sel.options[i].value===mesVis){sel.selectedIndex=i;found=true;break;}
+  }
+  if(!found && sel.options.length) sel.selectedIndex=now.getMonth(); // fallback
+}
+
 function resetTxForm(){
   document.getElementById('txTitle').textContent='Nova Transação';
   document.getElementById('txIdx').value='-1';
-  document.getElementById('txMesAno').value=getMesChave();
-  const d=new Date();
-  document.getElementById('txData').value=d.toLocaleDateString('pt-BR');
-  document.getElementById('txHora').value=d.toTimeString().slice(0,5);
+
+  // Sincroniza o seletor de mês com o mês que está sendo visualizado
+  const mesAtual = getMesChave();
+  const selMes = document.getElementById('txMesAno');
+  if(selMes){
+    // Tenta selecionar o mês atual; se não achar, deixa o padrão
+    let found = false;
+    for(let i=0;i<selMes.options.length;i++){
+      if(selMes.options[i].value === mesAtual){ selMes.selectedIndex=i; found=true; break; }
+    }
+    if(!found) selMes.value = mesAtual; // adiciona dinamicamente se necessário
+  }
+
+  // Data: usa o 1o dia do mês selecionado se não for o mês atual
+  const hoje = new Date();
+  const mesHoje = getMesChave(0); // mês real de hoje
+  const d = mesAtual === mesHoje ? hoje : new Date();
+  document.getElementById('txData').value=hoje.toLocaleDateString('pt-BR');
+  document.getElementById('txHora').value=hoje.toTimeString().slice(0,5);
   document.getElementById('txValor').value='';
   document.getElementById('txTipo').value='Gasto';
   document.getElementById('txCat').value='Alimentação';
-  document.getElementById('txSub').value='';document.getElementById('txDesc').value='';
-  document.getElementById('txLocal').value='';document.getElementById('txMetodo').value='';
+  document.getElementById('txSub').value='';
+  document.getElementById('txDesc').value='';
+  document.getElementById('txLocal').value='';
+  document.getElementById('txMetodo').value='';
   document.getElementById('txParc').value='0';
   document.getElementById('txCartaoRow').style.display='none';
+}
+
+// getMesChave com offset customizável
+function getMesChave(offset){
+  const o = offset !== undefined ? offset : MES_OFF;
+  const dt=new Date(); dt.setDate(1); dt.setMonth(dt.getMonth()+o);
+  return `${MESES_PT[dt.getMonth()]}/${dt.getFullYear()}`;
 }
 
 function editTx(idx){
   const t=TX_FILT[idx];
   document.getElementById('txTitle').textContent='✏️ Editar Transação';
   document.getElementById('txIdx').value=t.idx;// índice real no Sheets
-  document.getElementById('txMesAno').value=t.mes_ano;
+  // Seleciona o mês correto no dropdown
+  const selMesEdit=document.getElementById('txMesAno');
+  if(selMesEdit){
+    let foundEdit=false;
+    for(let i=0;i<selMesEdit.options.length;i++){
+      if(selMesEdit.options[i].value===t.mes_ano){selMesEdit.selectedIndex=i;foundEdit=true;break;}
+    }
+    if(!foundEdit) selMesEdit.value=t.mes_ano;
+  }
   document.getElementById('txData').value=t.data;
   document.getElementById('txHora').value=t.hora;
   document.getElementById('txValor').value=Math.abs(t.valor);
@@ -1703,6 +1784,7 @@ function editTx(idx){
   // Cartão
   txMetChange();
   if(t.cartao)document.getElementById('txCartaoSel').value=t.cartao;
+  populateMesSelector();
   OM('ovTx');
 }
 
@@ -1718,9 +1800,29 @@ async function confirmDel(){
   const btn=document.getElementById('btnDel');btn.disabled=true;btn.textContent='⏳...';
   try{
     const t=TX_FILT[delIdx];
-    const r=await(await fetch(`/api/transacao/${t.idx}`,{method:'DELETE'})).json();
+    const realIdx=t.idx; // índice real no Sheets (0-based, linha = idx+4)
+    const r=await(await fetch(`/api/transacao/${realIdx}`,{method:'DELETE'})).json();
     if(r.erro)throw new Error(r.erro);
-    CM('ovDel');await reload();renderTxPage();toast('🗑️ Excluído!','success');
+
+    // Remove imediatamente da lista local para evitar reaparecer
+    // TODAS_TX está invertida (mais recente primeiro), precisamos remover pelo idx real
+    const posLocal=TODAS_TX.findIndex(tx=>tx.idx===realIdx);
+    if(posLocal>=0){
+      TODAS_TX.splice(posLocal,1);
+      // Reindexar: após remover da linha X, todos os idx abaixo sobem 1
+      TODAS_TX.forEach(tx=>{
+        if(tx.idx > realIdx) tx.idx--;
+      });
+    }
+
+    // Recalcula e re-renderiza sem precisar de reload completo
+    calcularMes();
+    renderTxPage();
+    CM('ovDel');
+    toast('🗑️ Excluído!','success');
+
+    // Reload em background para sincronizar com Sheets
+    setTimeout(()=>reload(), 1500);
   }catch(e){toast('❌ '+e.message,'error')}
   finally{btn.disabled=false;btn.textContent='🗑️ Excluir'}
 }
@@ -1731,54 +1833,102 @@ async function saveTx(){
   const tipo=document.getElementById('txTipo').value;
   const valor=parseFloat(document.getElementById('txValor').value)||0;
   const cartao=document.getElementById('txMetodo').value==='Cartão crédito'?document.getElementById('txCartaoSel').value:'';
+  const totalParc=parseInt(document.getElementById('txParc').value)||0;
+  const mesAno=document.getElementById('txMesAno').value||getMesChave();
   const dados={
     data:document.getElementById('txData').value,
     hora:document.getElementById('txHora').value,
     valor:tipo==='Gasto'?-Math.abs(valor):Math.abs(valor),
-    tipo,categoria:document.getElementById('txCat').value,
+    tipo,
+    categoria:document.getElementById('txCat').value,
     subcategoria:document.getElementById('txSub').value,
     descricao:document.getElementById('txDesc').value,
     localizacao:document.getElementById('txLocal').value,
     metodo_pagamento:document.getElementById('txMetodo').value,
-    total_parcelas:parseInt(document.getElementById('txParc').value)||0,
-    parcela_atual:1,cartao,
-    mes_ano:document.getElementById('txMesAno').value||getMesChave(),
+    total_parcelas:totalParc,
+    parcela_atual:1,
+    cartao,
+    mes_ano:mesAno,
   };
   try{
-    const ep=idx===-1?'/api/transacao/nova':`/api/transacao/${idx}`;
-    const mt=idx===-1?'POST':'PUT';
-    const r=await(await fetch(ep,{method:mt,headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)})).json();
-    if(r.erro)throw new Error(r.erro);
-    CM('ovTx');await reload();renderTxPage();toast(idx===-1?'✅ Lançado!':'✅ Atualizado!','success');
+    if(idx===-1){
+      // Nova transação
+      const r=await(await fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)})).json();
+      if(r.erro)throw new Error(r.erro);
+
+      // ─── Propagar parcelas para meses futuros ───
+      if(totalParc>1){
+        const erros=[];
+        for(let p=2;p<=totalParc;p++){
+          const mesParc=somarMes(mesAno,p-1);
+          const dadosParc={
+            ...dados,
+            parcela_atual:p,
+            mes_ano:mesParc,
+            descricao:(dados.descricao||dados.categoria)+` (${p}/${totalParc})`,
+          };
+          try{
+            const rp=await(await fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dadosParc)})).json();
+            if(rp.erro) erros.push(`Parcela ${p}: ${rp.erro}`);
+          }catch(ep){ erros.push(`Parcela ${p}: erro de rede`); }
+        }
+        if(erros.length) toast(`⚠️ Parcelas salvas com avisos: ${erros.join(', ')}`, 'warning');
+        else toast(`✅ Lançado! ${totalParc} parcelas adicionadas (${mesAno} → ${somarMes(mesAno,totalParc-1)})`,'success');
+      } else {
+        toast('✅ Lançado!','success');
+      }
+    } else {
+      // Editar existente
+      const r=await(await fetch(`/api/transacao/${idx}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)})).json();
+      if(r.erro)throw new Error(r.erro);
+      toast('✅ Atualizado!','success');
+    }
+    CM('ovTx');
+    await reload();
+    renderTxPage();
   }catch(e){toast('❌ '+e.message,'error')}
   finally{btn.disabled=false;btn.textContent='💾 Salvar'}
 }
 
+// Soma N meses a um mes_ano ("mar./2026" + 2 = "mai./2026")
+function somarMes(mesAno, n){
+  const parts=mesAno.split('/');
+  if(parts.length<2) return mesAno;
+  const mesIdx=MESES_PT.indexOf(parts[0]);
+  if(mesIdx<0) return mesAno;
+  const ano=parseInt(parts[1]);
+  const d=new Date(ano, mesIdx+n, 1);
+  return `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+}
+
 function renderTxPage(){
-  if(!TODAS_TX.length)return;
   // Popula filtros com dados de TODAS
   const cats=[...new Set(TODAS_TX.map(t=>t.categoria))].sort();
   const cards=[...new Set(TODAS_TX.map(t=>t.cartao).filter(Boolean))].sort();
   document.getElementById('fCat').innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option>${c}</option>`).join('');
   document.getElementById('fCartao').innerHTML='<option value="">Todos os cartões</option>'+cards.map(c=>`<option>${c}</option>`).join('');
-  // Filtra pelo mês atual por padrão
+  // Popula filtro de dias com dias que têm transações no mês
+  const txMes=MES_DATA.txMes||[];
+  const dias=[...new Set(txMes.map(t=>t.data.split('/')[0]).filter(Boolean))].sort((a,b)=>parseInt(a)-parseInt(b));
+  const fDia=document.getElementById('fDia');
+  if(fDia) fDia.innerHTML='<option value="">📅 Dia</option>'+dias.map(d=>`<option value="${d}">Dia ${parseInt(d)}</option>`).join('');
   document.getElementById('txSubtitle').textContent=`Transações de ${getMesNome()}`;
   TX_FILT=MES_DATA.txMes?[...MES_DATA.txMes]:[];
   filterTx();
 }
 
 function filterTx(){
-  const mes=getMesChave();
   const q=document.getElementById('srch').value.toLowerCase();
   const tp=document.getElementById('fTipo').value;
   const ct=document.getElementById('fCat').value;
   const cd=document.getElementById('fCartao').value;
-  // Parte das txs do mês atual
+  const dia=document.getElementById('fDia')?.value||'';
   TX_FILT=(MES_DATA.txMes||[]).filter(t=>{
     if(q&&!(t.descricao+t.categoria+t.localizacao+t.cartao).toLowerCase().includes(q))return false;
     if(tp&&t.tipo!==tp)return false;
     if(ct&&t.categoria!==ct)return false;
     if(cd&&t.cartao!==cd)return false;
+    if(dia&&!t.data.startsWith(dia+'/'))return false;
     return true;
   });
   renderTxTable();
