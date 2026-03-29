@@ -100,22 +100,29 @@ def api_todas():
                 if len(raw_row) > 14:
                     cartao_val = str(raw_row[14]).strip()
 
+            # Parcela atual (coluna J)
+            try:
+                pa = int(float(str(col(row,"PARCELA","parcela_atual") or 0)))
+            except:
+                pa = 0
+
             txs.append({
-                "idx":         i,
-                "data":        str(col(row,"DATA")).strip(),
-                "hora":        str(col(row,"HORA")).strip(),
-                "valor":       round(valor, 2),
-                "tipo":        str(col(row,"TIPO")).strip(),
-                "categoria":   cat,
-                "subcategoria":str(col(row,"SUBCATEGORIA")).strip(),
-                "descricao":   str(col(row,"DESCRIÇÃO","DESCRICAO")).strip(),
-                "localizacao": str(col(row,"LOCALIZAÇÃO","LOCALIZACAO")).strip(),
-                "metodo":      str(col(row,"MÉTODO","METODO")).strip(),
-                "cartao":      cartao_val,
-                "parcelas":    pt,
-                "mes_ano":     str(col(row,"MÊS/ANO","MES/ANO")).strip(),
-                "emoji":       EMOJIS.get(cat,"📦"),
-                "cor":         CORES.get(cat,"#9CA3AF"),
+                "idx":           i,
+                "data":          str(col(row,"DATA")).strip(),
+                "hora":          str(col(row,"HORA")).strip(),
+                "valor":         round(valor, 2),
+                "tipo":          str(col(row,"TIPO")).strip(),
+                "categoria":     cat,
+                "subcategoria":  str(col(row,"SUBCATEGORIA")).strip(),
+                "descricao":     str(col(row,"DESCRIÇÃO","DESCRICAO")).strip(),
+                "localizacao":   str(col(row,"LOCALIZAÇÃO","LOCALIZACAO")).strip(),
+                "metodo":        str(col(row,"MÉTODO","METODO")).strip(),
+                "cartao":        cartao_val,
+                "parcela_atual": pa,   # coluna J
+                "parcelas":      pt,   # coluna K (total)
+                "mes_ano":       str(col(row,"MÊS/ANO","MES/ANO")).strip(),
+                "emoji":         EMOJIS.get(cat,"📦"),
+                "cor":           CORES.get(cat,"#9CA3AF"),
             })
 
         txs.reverse()
