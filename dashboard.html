@@ -1274,7 +1274,7 @@ function renderDash(){
 
   // KPI Saldo
   const sd=d.saldo;
-  document.getElementById('k3').textContent=fmt(sd);
+  document.getElementById('k3').textContent=(sd<0?'− ':'')+fmt(sd);
   document.getElementById('k3').style.color=sd>=0?'var(--verde)':'var(--verm)';
   document.getElementById('k3t').textContent=sd>=0?'💚 Positivo':'🔴 Negativo';
   document.getElementById('k3t').className=`kpi-tr ${sd>=0?'up':'dn'}`;
