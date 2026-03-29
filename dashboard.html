@@ -481,8 +481,8 @@ input:checked+.slider:before{transform:translateX(16px)}
       </div></div>
       <!-- Info de corte do cartão -->
       <div id="txCorteInfo" style="display:none;background:var(--azul-l);border:1px solid var(--azul);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-bottom:10px"></div>
-      <!-- Toggle parcelamento -->
-      <div class="fr one"><div class="fg">
+      <!-- Toggle parcelamento — só para crédito -->
+      <div id="txIsParcArea" class="fr one"><div class="fg">
         <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border)">
           <label class="switch"><input type="checkbox" id="txIsParc" onchange="txParcToggle()"><span class="slider"></span></label>
           <span style="font-size:13px;font-weight:700;color:var(--txt2)">Esta compra é parcelada?</span>
@@ -521,24 +521,7 @@ input:checked+.slider:before{transform:translateX(16px)}
     <input type="hidden" id="txIdx" value="-1">
     <!-- Mês/Ano selecionável -->
     <div class="fr one"><div class="fg"><label class="fl">📅 Mês de referência</label>
-      <select class="fs" id="txMesAno" onchange="onMesAnoChange()">
-        <option value="jan./2026">Janeiro 2026</option>
-        <option value="fev./2026">Fevereiro 2026</option>
-        <option value="mar./2026" selected>Março 2026</option>
-        <option value="abr./2026">Abril 2026</option>
-        <option value="mai./2026">Maio 2026</option>
-        <option value="jun./2026">Junho 2026</option>
-        <option value="jul./2026">Julho 2026</option>
-        <option value="ago./2026">Agosto 2026</option>
-        <option value="set./2026">Setembro 2026</option>
-        <option value="out./2026">Outubro 2026</option>
-        <option value="nov./2026">Novembro 2026</option>
-        <option value="dez./2026">Dezembro 2026</option>
-        <option value="jan./2025">Janeiro 2025</option>
-        <option value="fev./2025">Fevereiro 2025</option>
-        <option value="mar./2025">Março 2025</option>
-        <option value="dez./2025">Dezembro 2025</option>
-      </select>
+      <select class="fs" id="txMesAno" onchange="onMesAnoChange()"></select>
     </div></div>
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovTx')">Cancelar</button><button class="btn bp" id="btnSvTx" onclick="saveTx()">💾 Salvar</button></div>
@@ -1804,18 +1787,33 @@ function txTipoChange(){
 function txMetChange(){
   const met=document.getElementById('txMetodo').value;
   const row=document.getElementById('txCartaoRow');
-  if(met==='Cartão crédito'){
+  const isParcArea=document.getElementById('txIsParcArea');
+
+  if(met==='Cartão crédito' || met==='Cartão débito'){
     row.style.display='';
     const sel=document.getElementById('txCartaoSel');
     sel.innerHTML='<option value="">— Selecione o cartão —</option>'+
       CARTOES.map(c=>`<option value="${c.nome}" data-fech="${c.fech||0}">${c.nome} (${c.bandeira})</option>`).join('');
-    // Reset parcelamento
-    document.getElementById('txIsParc').checked=false;
-    document.getElementById('txParcRow').style.display='none';
-    txCartaoChange();
+
+    if(met==='Cartão crédito'){
+      // Crédito: mostra opção de parcelamento + corte
+      if(isParcArea) isParcArea.style.display='';
+      document.getElementById('txIsParc').checked=false;
+      document.getElementById('txParcRow').style.display='none';
+      const miEl=document.getElementById('txMesesInfo');
+      if(miEl) miEl.style.display='none';
+      txCartaoChange();
+    } else {
+      // Débito: só mostra seletor de cartão, sem parcelamento e sem info de corte
+      if(isParcArea) isParcArea.style.display='none';
+      document.getElementById('txIsParc').checked=false;
+      document.getElementById('txParcRow').style.display='none';
+      const corteEl=document.getElementById('txCorteInfo');
+      if(corteEl) corteEl.style.display='none';
+    }
   } else {
     row.style.display='none';
-    // Usa campo Parcelas normal quando não é cartão crédito
+    if(isParcArea) isParcArea.style.display='none';
   }
 }
 
@@ -1931,26 +1929,42 @@ function populateMesSelector(){
   const now=new Date();
   const ano=now.getFullYear();
   const opts=[];
-  // Meses do ano atual
+
+  // 6 meses passados (ano anterior)
+  for(let i=5;i>=0;i--){
+    const d=new Date(now.getFullYear(),now.getMonth()-6+i,1);
+    if(d.getFullYear()<ano){
+      opts.push({val:`${MESES_PT[d.getMonth()]}/${d.getFullYear()}`,nome:`${MESES_NM[d.getMonth()]} ${d.getFullYear()}`});
+    }
+  }
+  // 12 meses a partir de Janeiro do ano atual
   for(let m=0;m<12;m++){
-    const val=`${MESES_PT[m]}/${ano}`;
-    const nome=MESES_NM[m]+' '+ano;
-    opts.push({val,nome});
+    opts.push({val:`${MESES_PT[m]}/${ano}`,nome:`${MESES_NM[m]} ${ano}`});
   }
-  // 6 meses anteriores do ano passado
-  for(let m=6;m<12;m++){
-    const val=`${MESES_PT[m]}/${ano-1}`;
-    const nome=MESES_NM[m]+' '+(ano-1);
-    opts.push({val,nome});
+  // 12 meses do próximo ano
+  for(let m=0;m<12;m++){
+    opts.push({val:`${MESES_PT[m]}/${ano+1}`,nome:`${MESES_NM[m]} ${ano+1}`});
   }
-  sel.innerHTML=opts.map(o=>`<option value="${o.val}">${o.nome}</option>`).join('');
-  // Seleciona o mês que está sendo visualizado
+
+  // Remove duplicatas mantendo ordem
+  const seen=new Set();
+  const unique=opts.filter(o=>{if(seen.has(o.val))return false;seen.add(o.val);return true;});
+
+  sel.innerHTML=unique.map(o=>`<option value="${o.val}">${o.nome}</option>`).join('');
+
+  // Seleciona o mês que está sendo visualizado no dashboard
   const mesVis=getMesChave();
   let found=false;
   for(let i=0;i<sel.options.length;i++){
     if(sel.options[i].value===mesVis){sel.selectedIndex=i;found=true;break;}
   }
-  if(!found && sel.options.length) sel.selectedIndex=now.getMonth(); // fallback
+  if(!found){
+    // Fallback: seleciona mês atual real
+    const mesHoje=`${MESES_PT[now.getMonth()]}/${now.getFullYear()}`;
+    for(let i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===mesHoje){sel.selectedIndex=i;break;}
+    }
+  }
 }
 
 function resetTxForm(){
@@ -1987,10 +2001,16 @@ function resetTxForm(){
   document.getElementById('txParcRow').style.display='none';
   const isParcEl=document.getElementById('txIsParc');
   if(isParcEl) isParcEl.checked=false;
+  const isParcArea=document.getElementById('txIsParcArea');
+  if(isParcArea) isParcArea.style.display='none';
   const corteEl=document.getElementById('txCorteInfo');
   if(corteEl) corteEl.style.display='none';
+  const miEl=document.getElementById('txMesesInfo');
+  if(miEl) miEl.style.display='none';
   TX_PARC_SEL=0;
   document.querySelectorAll('.parc-btn').forEach(b=>b.classList.remove('sel'));
+  const custEl=document.getElementById('txParcCustom');
+  if(custEl) custEl.value='';
 }
 
 // getMesChave com offset customizável
@@ -2025,7 +2045,10 @@ function editTx(idx){
   document.getElementById('txParc').value=t.parcelas||0;
   // Cartão
   txMetChange();
-  if(t.cartao)document.getElementById('txCartaoSel').value=t.cartao;
+  if(t.cartao){
+    const ctSel=document.getElementById('txCartaoSel');
+    if(ctSel) ctSel.value=t.cartao;
+  }
   populateMesSelector();
   OM('ovTx');
 }
