@@ -112,7 +112,8 @@ class SheetsManager:
     def registrar_transacao(self, dados: dict) -> float:
         try:
             agora   = datetime.now()
-            mes_ano = get_mes_ano(agora)
+            # IMPORTANTE: usa o mes_ano enviado pelo frontend (parcelas de meses futuros)
+            mes_ano = dados.get("mes_ano") or get_mes_ano(agora)
             pa = int(dados.get("parcela_atual",  0) or 0)
             pt = int(dados.get("total_parcelas", 0) or 0)
 
@@ -129,7 +130,7 @@ class SheetsManager:
                 pa if pt > 0 else "",                            # J
                 pt if pt > 0 else "",                            # K
                 "Telegram",                                      # L
-                mes_ano,                                         # M
+                mes_ano,                                         # M — mês correto da parcela
                 "✅",                                             # N
                 dados.get("cartao", ""),                         # O — nome do cartão
             ], value_input_option="USER_ENTERED")
