@@ -308,6 +308,17 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .av-opt:hover,.av-opt.sel{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.15)}
 .cor-login{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;flex-shrink:0}
 .cor-login:hover,.cor-login.sel{border-color:#fff;transform:scale(1.2)}
+/* ════ PARCELAMENTO BUTTONS ════ */
+.parc-btn{padding:6px 12px;border:2px solid var(--border);border-radius:var(--r-xs);background:var(--card);cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);transition:all .15s;font-family:'Cabinet Grotesk',sans-serif}
+.parc-btn:hover{border-color:var(--azul);color:var(--azul);background:var(--azul-l)}
+.parc-btn.sel{border-color:var(--azul);background:var(--azul);color:#fff}
+/* ════ SWITCH TOGGLE ════ */
+.switch{position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0}
+.switch input{opacity:0;width:0;height:0}
+.slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border);transition:.3s;border-radius:100px}
+.slider:before{position:absolute;content:"";height:16px;width:16px;left:3px;bottom:3px;background:#fff;transition:.3s;border-radius:50%}
+input:checked+.slider{background:var(--verde)}
+input:checked+.slider:before{transform:translateX(16px)}
 /* ════ CALENDÁRIO FILTRO ════ */
 .cal-day{width:100%;aspect-ratio:1;border-radius:6px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:600;color:var(--txt2);display:flex;align-items:center;justify-content:center;transition:all .15s}
 .cal-day:hover{background:var(--azul-l);color:var(--azul)}
@@ -458,8 +469,53 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="txCat"><option>Alimentação</option><option>Transporte</option><option>Contas</option><option>Lazer</option><option>Saúde</option><option>Educação</option><option>Moradia</option><option>Beleza</option><option>Vestuário</option><option>Pet</option><option>Tecnologia</option><option>Filhos</option><option>Presentes</option><option>Veículo</option><option>Impostos</option><option>Assinaturas</option><option>Salário</option><option>Freelance</option><option>Investimento</option><option>Outros</option></select></div><div class="fg"><label class="fl">Subcategoria</label><input class="fi" id="txSub" placeholder="Ex: Almoço, Uber..."></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="txDesc" placeholder="Descreva a transação"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Localização</label><input class="fi" id="txLocal" placeholder="Ex: Shopping, Contagem..."></div><div class="fg"><label class="fl">Método de Pagamento</label><select class="fs" id="txMetodo" onchange="txMetChange()"><option value="">— Nenhum —</option><option>Cartão crédito</option><option>Cartão débito</option><option>Pix</option><option>Dinheiro</option><option>Boleto</option></select></div></div>
-    <!-- Cartão selector - aparece só quando método = cartão crédito -->
-    <div class="fr one" id="txCartaoRow" style="display:none"><div class="fg"><label class="fl">💳 Qual cartão de crédito?</label><select class="fs" id="txCartaoSel"><option value="">— Selecione o cartão —</option></select></div></div>
+    <!-- Cartão + parcelamento — aparece só quando método = cartão crédito -->
+    <div id="txCartaoRow" style="display:none">
+      <div class="fr one"><div class="fg">
+        <label class="fl">💳 Qual cartão de crédito?</label>
+        <select class="fs" id="txCartaoSel" onchange="txCartaoChange()">
+          <option value="">— Selecione o cartão —</option>
+        </select>
+      </div></div>
+      <!-- Info de corte do cartão -->
+      <div id="txCorteInfo" style="display:none;background:var(--azul-l);border:1px solid var(--azul);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-bottom:10px"></div>
+      <!-- Toggle parcelamento -->
+      <div class="fr one"><div class="fg">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border)">
+          <label class="switch"><input type="checkbox" id="txIsParc" onchange="txParcToggle()"><span class="slider"></span></label>
+          <span style="font-size:13px;font-weight:700;color:var(--txt2)">Esta compra é parcelada?</span>
+        </div>
+      </div></div>
+      <!-- Parcelas (aparece só se parcelado) -->
+      <div id="txParcRow" style="display:none">
+        <div class="fr"><div class="fg">
+          <label class="fl">Número de parcelas</label>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="txParcBtns">
+            <button type="button" class="parc-btn" onclick="selParc(2)">2x</button>
+            <button type="button" class="parc-btn" onclick="selParc(3)">3x</button>
+            <button type="button" class="parc-btn" onclick="selParc(4)">4x</button>
+            <button type="button" class="parc-btn" onclick="selParc(5)">5x</button>
+            <button type="button" class="parc-btn" onclick="selParc(6)">6x</button>
+            <button type="button" class="parc-btn" onclick="selParc(7)">7x</button>
+            <button type="button" class="parc-btn" onclick="selParc(8)">8x</button>
+            <button type="button" class="parc-btn" onclick="selParc(10)">10x</button>
+            <button type="button" class="parc-btn" onclick="selParc(12)">12x</button>
+            <button type="button" class="parc-btn" onclick="selParc(18)">18x</button>
+            <button type="button" class="parc-btn" onclick="selParc(24)">24x</button>
+            <input type="number" class="fi" id="txParcCustom" placeholder="Outro" min="2" max="96"
+              style="width:80px;font-size:13px" oninput="selParc(parseInt(this.value)||0)">
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Valor por parcela</label>
+          <div style="padding:9px 12px;background:var(--verde-l);border-radius:var(--r-sm);border:1px solid #10B98133">
+            <div style="font-size:18px;font-weight:900;color:var(--verde-d)" id="txValorParc">R$ 0,00</div>
+            <div style="font-size:11px;color:var(--muted)" id="txParcLabel">por mês</div>
+          </div>
+        </div></div>
+        <div id="txMesesInfo" style="background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-top:8px"></div>
+      </div>
+    </div>
     <input type="hidden" id="txIdx" value="-1">
     <!-- Mês/Ano selecionável -->
     <div class="fr one"><div class="fg"><label class="fl">📅 Mês de referência</label>
@@ -1230,8 +1286,34 @@ function calcularMes(){
       s+=Math.abs(v);
       cats[t.categoria]=(cats[t.categoria]||0)+Math.abs(v);
       if(t.metodo) mets[t.metodo]=(mets[t.metodo]||0)+Math.abs(v);
-      if(t.cartao&&t.cartao.trim()) carts[t.cartao.trim()]=(carts[t.cartao.trim()]||0)+Math.abs(v);
+      if(t.cartao&&t.cartao.trim()){
+        // Para o LIMITE do cartão: usa valor total da compra parcelada
+        // (parcelas * valor_parcela), pois o crédito é comprometido no momento da compra
+        const pt=parseInt(t.parcelas)||0;
+        const pa=parseInt(t.parcela_atual)||0;
+        // Só conta na fatura do mês em que a parcela está (cada mês = valor da parcela)
+        // mas para exibir no LIMITE do cartão, conta o valor desta parcela (já dividido)
+        carts[t.cartao.trim()]=(carts[t.cartao.trim()]||0)+Math.abs(v);
+      }
     }
+  });
+
+  // Limite do cartão: soma TODAS as parcelas de TODAS as transações do cartão
+  // (não apenas do mês atual) — representa o crédito total comprometido
+  const cartoesLimiteUso = {};
+  TODAS_TX.forEach(tx=>{
+    if(!tx.cartao||!tx.cartao.trim()||tx.valor>=0) return;
+    const ct=tx.cartao.trim();
+    const pt=parseInt(tx.parcelas)||0;
+    const pa=parseInt(tx.parcela_atual)||0;
+    if(pt>1 && pa===1){
+      // Primeira parcela: compromete valor TOTAL no limite
+      cartoesLimiteUso[ct]=(cartoesLimiteUso[ct]||0)+Math.abs(tx.valor)*pt;
+    } else if(pt<=1){
+      // Compra à vista: compromete o valor da compra
+      cartoesLimiteUso[ct]=(cartoesLimiteUso[ct]||0)+Math.abs(tx.valor);
+    }
+    // Parcelas 2..N não contam de novo (já contadas na parcela 1)
   });
 
   const lims={...LIMS_DEF,...LIMS_LOCAL};
@@ -1247,7 +1329,7 @@ function calcularMes(){
   if(topCats.length)narr+='Maiores gastos: '+topCats.map(([c,v])=>`${c} (${fmt(v)})`).join(' e ')+'. ';
   narr+=e-s>=0?'💚 Você está no azul!':'🔴 Gastos superaram as receitas.';
 
-  MES_DATA={mes,txMes,entradas:round2(e),saidas:round2(s),saldo:round2(e-s),registros:n,categorias:catsArr,metodos:metsArr,gastosPorCartao:carts,narrativa:narr};
+  MES_DATA={mes,txMes,entradas:round2(e),saidas:round2(s),saldo:round2(e-s),registros:n,categorias:catsArr,metodos:metsArr,gastosPorCartao:carts,cartoesLimiteUso,narrativa:narr};
 }
 
 function round2(v){return Math.round(v*100)/100}
@@ -1708,18 +1790,119 @@ function renderMetasDash(){
 // ════════════════════════════════════════════════
 function txTipoChange(){
   const tipo=document.getElementById('txTipo').value;
-  const metEl=document.getElementById('txMetodo');
-  if(tipo==='Receita'){metEl.value='';document.getElementById('txCartaoRow').style.display='none';}
+  if(tipo==='Receita'){
+    document.getElementById('txMetodo').value='';
+    document.getElementById('txCartaoRow').style.display='none';
+  }
 }
+
 function txMetChange(){
   const met=document.getElementById('txMetodo').value;
   const row=document.getElementById('txCartaoRow');
-  if(met==='Cartão crédito'&&CARTOES.length>0){
+  if(met==='Cartão crédito'){
     row.style.display='';
     const sel=document.getElementById('txCartaoSel');
-    sel.innerHTML='<option value="">— Selecione o cartão —</option>'+CARTOES.map(c=>`<option value="${c.nome}">${c.nome} (${c.bandeira})</option>`).join('');
-  }else{row.style.display='none';}
+    sel.innerHTML='<option value="">— Selecione o cartão —</option>'+
+      CARTOES.map(c=>`<option value="${c.nome}" data-fech="${c.fech||0}">${c.nome} (${c.bandeira})</option>`).join('');
+    // Reset parcelamento
+    document.getElementById('txIsParc').checked=false;
+    document.getElementById('txParcRow').style.display='none';
+    txCartaoChange();
+  } else {
+    row.style.display='none';
+    // Usa campo Parcelas normal quando não é cartão crédito
+  }
 }
+
+function txCartaoChange(){
+  const sel=document.getElementById('txCartaoSel');
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt || !opt.value) return;
+
+  const fech=parseInt(opt.dataset.fech)||0;
+  const hoje=new Date();
+  const diaHoje=hoje.getDate();
+  const infoEl=document.getElementById('txCorteInfo');
+
+  if(fech>0){
+    const infoEl2=document.getElementById('txCorteInfo');
+    const depoisDoCorte = diaHoje > fech;
+    infoEl2.style.display='block';
+
+    if(depoisDoCorte){
+      // Compra vai para próxima fatura (mês seguinte)
+      const mesBase=somarMes(getMesChave(),1);
+      infoEl2.innerHTML=`⚠️ Compra após o fechamento (dia ${fech}) → será lançada na fatura de <strong>${mesBase}</strong>`;
+      infoEl2.style.background='var(--amar-l)';
+      infoEl2.style.borderColor='var(--amar)';
+      infoEl2.style.color='#92400E';
+      // Seleciona mês seguinte automaticamente
+      const selMes=document.getElementById('txMesAno');
+      if(selMes){
+        for(let i=0;i<selMes.options.length;i++){
+          if(selMes.options[i].value===mesBase){selMes.selectedIndex=i;break;}
+        }
+      }
+    } else {
+      infoEl2.innerHTML=`✅ Dentro do fechamento (dia ${fech}) → lançada na fatura de <strong>${getMesNome()}</strong>`;
+      infoEl2.style.background='var(--verde-l)';
+      infoEl2.style.borderColor='var(--verde)';
+      infoEl2.style.color='var(--verde-d)';
+    }
+  } else {
+    if(infoEl) infoEl.style.display='none';
+  }
+}
+
+let TX_PARC_SEL = 0; // parcelas selecionadas
+
+function txParcToggle(){
+  const isParc=document.getElementById('txIsParc').checked;
+  document.getElementById('txParcRow').style.display=isParc?'':'none';
+  document.getElementById('txParc').value=isParc?TX_PARC_SEL:0;
+  if(isParc) atualizarValorParc();
+}
+
+function selParc(n){
+  TX_PARC_SEL=n;
+  document.getElementById('txParc').value=n;
+  // Visual: marcar botão selecionado
+  document.querySelectorAll('.parc-btn').forEach(b=>{
+    const bN=parseInt(b.textContent);
+    b.classList.toggle('sel', bN===n);
+  });
+  atualizarValorParc();
+}
+
+function atualizarValorParc(){
+  const valor=parseFloat(document.getElementById('txValor').value)||0;
+  const n=TX_PARC_SEL||1;
+  const porParc=valor/n;
+  const sel=document.getElementById('txCartaoSel');
+  const cartaoNome=sel?.value||'';
+  const mesBase=document.getElementById('txMesAno').value||getMesChave();
+  const mesFim=somarMes(mesBase,n-1);
+
+  const vpEl=document.getElementById('txValorParc');
+  const plEl=document.getElementById('txParcLabel');
+  const miEl=document.getElementById('txMesesInfo');
+
+  if(vpEl) vpEl.textContent=fmt(porParc);
+  if(plEl) plEl.textContent=`por mês × ${n} parcelas = ${fmt(valor)} total`;
+  if(miEl && n>1) miEl.textContent=`📅 Parcelas de ${mesBase.replace('.','')} até ${mesFim.replace('.','')} — ${n} meses`;
+
+  // Destaca valor no campo principal com o valor da parcela
+  const vEl=document.getElementById('txValor');
+  if(vEl) vEl.title=`Valor total: ${fmt(valor)} | Por parcela: ${fmt(porParc)}`;
+}
+
+// Atualiza preview ao digitar valor
+document.addEventListener('DOMContentLoaded',()=>{
+  const vEl=document.getElementById('txValor');
+  if(vEl) vEl.addEventListener('input',()=>{
+    if(document.getElementById('txIsParc')?.checked) atualizarValorParc();
+  });
+});
 
 function populateMesSelector(){
   const sel=document.getElementById('txMesAno');
@@ -1780,6 +1963,13 @@ function resetTxForm(){
   document.getElementById('txMetodo').value='';
   document.getElementById('txParc').value='0';
   document.getElementById('txCartaoRow').style.display='none';
+  document.getElementById('txParcRow').style.display='none';
+  const isParcEl=document.getElementById('txIsParc');
+  if(isParcEl) isParcEl.checked=false;
+  const corteEl=document.getElementById('txCorteInfo');
+  if(corteEl) corteEl.style.display='none';
+  TX_PARC_SEL=0;
+  document.querySelectorAll('.parc-btn').forEach(b=>b.classList.remove('sel'));
 }
 
 // getMesChave com offset customizável
@@ -2091,7 +2281,14 @@ function renderTxTable(){
       <td style="font-size:12px">
         ${t.metodo&&t.cartao ? `<span style="font-weight:700">${t.metodo}</span> <span style="color:var(--azul);font-weight:700">/ ${t.cartao}</span>` : t.metodo||'—'}
       </td>
-      <td>${t.parcelas>0?`<span class="pill pparc">${t.parcelas}x</span>`:'—'}</td>
+      <td>${(()=>{
+        if(!t.parcelas||t.parcelas<=0) return '—';
+        // parcela_atual vem do campo J da planilha
+        const pa=parseInt(t.parcela_atual)||0;
+        const pt=parseInt(t.parcelas);
+        if(pa>0) return `<span class="pill pparc">${pa}/${pt}</span>`;
+        return `<span class="pill pparc">${pt}x</span>`;
+      })()}</td>
       <td><span class="${tp}">${t.tipo}</span></td>
       <td><div style="display:flex;gap:3px">
         <button style="background:var(--azul-l);color:var(--azul);border:none;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer" onclick="editTx(${i})">✏️</button>
@@ -2135,12 +2332,20 @@ function saveCt(){
 
 function renderCartoes(){
   document.getElementById('ctMesLabel').textContent=getMesNome();
+  // Fatura do mês = parcelas deste mês por cartão
   const rawG=MES_DATA.gastosPorCartao||{};
   const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
-  // KPIs gerais
+  // Limite comprometido = valor TOTAL das compras parceladas em aberto
+  const limUso=MES_DATA.cartoesLimiteUso||{};
+
   const fatTotal=Object.values(gastos).reduce((s,v)=>s+v,0);
-  const dispTotal=CARTOES.reduce((s,c)=>s+c.limite,0)-fatTotal;
-  const usoMedio=CARTOES.length?CARTOES.reduce((s,c)=>{const g=gastos[c.nome]||0;return s+(c.limite>0?g/c.limite*100:0)},0)/CARTOES.length:0;
+  const limTotal=CARTOES.reduce((s,c)=>s+c.limite,0);
+  const limComprometido=CARTOES.reduce((s,c)=>s+(limUso[c.nome]||0),0);
+  const dispTotal=Math.max(limTotal-limComprometido,0);
+  const usoMedio=CARTOES.length?CARTOES.reduce((s,c)=>{
+    const comprometido=limUso[c.nome]||0;
+    return s+(c.limite>0?comprometido/c.limite*100:0);
+  },0)/CARTOES.length:0;
   document.getElementById('ctFatTotal').textContent=fmt(fatTotal);
   document.getElementById('ctUsoMedio').textContent=usoMedio.toFixed(1)+'%';
   document.getElementById('ctDispTotal').textContent=fmt(Math.max(dispTotal,0));
@@ -2150,9 +2355,11 @@ function renderCartoes(){
   if(!CARTOES.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">💳</div><h3>Nenhum cartão ainda</h3><p>Adicione seus cartões para acompanhar a fatura automaticamente</p></div></div>`;return;}
 
   el.innerHTML=CARTOES.map((c,i)=>{
-    const usado=gastos[c.nome]||0;
-    const disponivel=Math.max(c.limite-usado,0);
-    const pct=c.limite>0?Math.min(usado/c.limite*100,100):0;
+    const fatMes=gastos[c.nome]||0;       // fatura deste mês (parcelas)
+    const comprometido=limUso[c.nome]||fatMes; // total comprometido no limite
+    const usado=comprometido;             // usa comprometido para barra do limite
+    const disponivel=Math.max(c.limite-comprometido,0);
+    const pct=c.limite>0?Math.min(comprometido/c.limite*100,100):0;
     const corBar=pct>85?'rgba(255,60,60,.8)':pct>60?'rgba(255,165,0,.8)':'rgba(255,255,255,.5)';
     // Txs deste cartão
     const txCartao=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0);
@@ -2160,8 +2367,9 @@ function renderCartoes(){
       <div class="credit-card" style="background:${c.cor}">
         <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:10px">${c.nome} · ${c.bandeira}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:4px">Fatura ${getMesNome()}</div>
-        <div style="font-size:22px;font-weight:900;letter-spacing:-1px;margin-bottom:4px">${fmt(usado)}</div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.8;margin-bottom:8px">
+        <div style="font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
+        <div style="font-size:10px;opacity:.7;margin-bottom:6px">Total comprometido: ${fmt(comprometido)}</div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.85;margin-bottom:8px">
           <span>Disponível: ${fmt(disponivel)}</span><span>Limite: ${fmt(c.limite)}</span>
         </div>
         <div style="height:4px;background:rgba(255,255,255,.2);border-radius:100px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${pct}%;background:${corBar};border-radius:100px"></div></div>
