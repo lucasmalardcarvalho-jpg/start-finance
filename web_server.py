@@ -1,18 +1,32 @@
 """
-START FINANCE — Web Server v3.0
-- Endpoint /api/todas retorna TODAS as transações (para filtro por mês no frontend)
-- CRUD completo com índice real no Sheets
-- Narrativa por mês
+START FINANCE — Web Server v4.0
+- Auth JWT multi-usuário
+- Todas as transações para filtro frontend
+- CRUD completo
 """
 
 import os, json, logging, threading
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file
 from sheets_manager import SheetsManager, get_mes_ano, MESES_PT, parsear_valor
+from auth import registrar_rotas_auth, requer_auth
 
 logger = logging.getLogger(__name__)
 app    = Flask(__name__)
 sheets = None
+
+# Habilita CORS
+@app.after_request
+def add_cors(r):
+    r.headers["Access-Control-Allow-Origin"]  = "*"
+    r.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+    r.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+    return r
+
+@app.route("/", defaults={"path": ""}, methods=["OPTIONS"])
+@app.route("/<path:path>", methods=["OPTIONS"])
+def options_handler(path):
+    return "", 204
 
 
 def init_sheets():
@@ -24,6 +38,10 @@ def init_sheets():
         logger.error(f"❌ Sheets: {e}")
 
 
+def fmt_r(v):
+    return f"R$ {abs(v):,.2f}"
+
+
 def gerar_narrativa(entradas, saidas, saldo, n, top_cats, mes):
     txt = f"Em {mes}: {n} transações registradas. "
     txt += f"Entradas {fmt_r(entradas)} | Saídas {fmt_r(saidas)} | Saldo {fmt_r(saldo)}. "
@@ -32,11 +50,12 @@ def gerar_narrativa(entradas, saidas, saldo, n, top_cats, mes):
     txt += "💚 Você está no azul!" if saldo >= 0 else "🔴 Gastos superaram as receitas."
     return txt
 
-def fmt_r(v):
-    return f"R$ {abs(v):,.2f}"
+
+# ── Auth routes ──────────────────────────────────────────────────────
+registrar_rotas_auth(app)
 
 
-# ── Dashboard HTML ────────────────────────────────────────────────────
+# ── Dashboard HTML ──────────────────────────────────────────────────
 @app.route("/")
 @app.route("/dashboard")
 def dashboard():
@@ -46,15 +65,17 @@ def dashboard():
         return "<h2>dashboard.html não encontrado</h2>", 404
 
 
-# ── GET todas as transações (para filtro por mês no frontend) ─────────
+# ── GET todas as transações ─────────────────────────────────────────
 @app.route("/api/todas")
 def api_todas():
-    """Retorna TODAS as transações da planilha — o frontend filtra por mês."""
     try:
         if not sheets:
             return jsonify({"erro": "Sheets não conectado"}), 500
 
-        todos = sheets._get_todos_registros()
+        todos     = sheets._get_todos_registros()
+        todos_raw = sheets.aba_transacoes.get_all_values()
+        raw_data  = todos_raw[3:] if len(todos_raw) > 3 else []
+
         EMOJIS = {"Alimentação":"🍽️","Transporte":"🚗","Contas":"⚡","Lazer":"🎮","Saúde":"❤️","Educação":"📚","Moradia":"🏠","Beleza":"💅","Vestuário":"👗","Pet":"🐾","Tecnologia":"📱","Filhos":"👶","Presentes":"🎁","Veículo":"🚘","Impostos":"🧾","Assinaturas":"📺","Salário":"💰","Freelance":"💼","Investimento":"📈","Outros":"📦"}
         CORES  = {"Alimentação":"#EF4444","Transporte":"#F97316","Contas":"#3B6FF0","Lazer":"#8B5CF6","Saúde":"#10B981","Educação":"#F59E0B","Moradia":"#6366F1","Beleza":"#EC4899","Vestuário":"#14B8A6","Pet":"#84CC16","Tecnologia":"#0EA5E9","Filhos":"#F472B6","Presentes":"#FB923C","Veículo":"#64748B","Impostos":"#78716C","Assinaturas":"#A78BFA","Salário":"#10B981","Freelance":"#34D399","Investimento":"#3B6FF0","Outros":"#9CA3AF"}
 
@@ -63,10 +84,6 @@ def api_todas():
                 v = row.get(n, "")
                 if v != "": return v
             return ""
-
-        # Lê valores raw para garantir coluna O (índice 14) mesmo sem cabeçalho
-        todos_raw = sheets.aba_transacoes.get_all_values()
-        raw_data  = todos_raw[3:] if len(todos_raw) > 3 else []
 
         txs = []
         for i, row in enumerate(todos):
@@ -77,7 +94,6 @@ def api_todas():
             except:
                 pt = 0
 
-            # Cartão: pelo cabeçalho ou fallback pela posição (col O = índice 14)
             cartao_val = str(col(row,"CARTÃO","CARTAO","cartao","Cartão")).strip()
             if not cartao_val and i < len(raw_data):
                 raw_row = raw_data[i]
@@ -102,10 +118,7 @@ def api_todas():
                 "cor":         CORES.get(cat,"#9CA3AF"),
             })
 
-        # Inverte para mostrar mais recentes primeiro
         txs.reverse()
-
-        # Histórico 6 meses para o gráfico
         historico = sheets.get_historico_ano()
 
         return jsonify({"transacoes": txs, "historico": historico})
@@ -115,10 +128,9 @@ def api_todas():
         return jsonify({"erro": str(e)}), 500
 
 
-# ── GET dados calculados para um mês específico ───────────────────────
+# ── GET dados do mês ────────────────────────────────────────────────
 @app.route("/api/mes")
 def api_mes():
-    """Calcula KPIs, categorias, etc. para o mês informado."""
     try:
         mes = request.args.get("mes", get_mes_ano())
         todos = sheets._get_todos_registros()
@@ -171,7 +183,7 @@ def api_mes():
         top_cats = list(cats.items())[:3]
         return jsonify({
             "mes": mes,
-            "kpis": {"entradas": round(e,2), "saidas": round(s,2), "saldo": round(e-s,2), "registros": int(total)},
+            "kpis": {"entradas":round(e,2),"saidas":round(s,2),"saldo":round(e-s,2),"registros":int(total)},
             "categorias": cats_det,
             "metodos": mets_fmt,
             "gastos_por_cartao": carts_fmt,
@@ -182,7 +194,7 @@ def api_mes():
         return jsonify({"erro": str(e)}), 500
 
 
-# ── POST nova transação ───────────────────────────────────────────────
+# ── POST nova transação ────────────────────────────────────────────
 @app.route("/api/transacao/nova", methods=["POST"])
 def nova_transacao():
     try:
@@ -195,7 +207,7 @@ def nova_transacao():
         return jsonify({"erro": str(e)}), 500
 
 
-# ── PUT editar transação ──────────────────────────────────────────────
+# ── PUT editar ────────────────────────────────────────────────────
 @app.route("/api/transacao/<int:idx>", methods=["PUT"])
 def editar_transacao(idx):
     try:
@@ -205,7 +217,6 @@ def editar_transacao(idx):
         mes_ano = get_mes_ano()
         pa = int(dados.get("parcela_atual",1) or 1)
         pt = int(dados.get("total_parcelas",0) or 0)
-
         nova = [
             dados.get("data",  agora.strftime("%d/%m/%Y")),
             dados.get("hora",  agora.strftime("%H:%M")),
@@ -221,31 +232,21 @@ def editar_transacao(idx):
             "Telegram",
             dados.get("mes_ano", mes_ano),
             "✅",
-            dados.get("cartao", ""),   # coluna O
+            dados.get("cartao", ""),
         ]
-
-        todos = sheets._get_todos_registros()
-        total = len(todos)
-        linha_sheet = idx + 4  # idx 0-based, dados começam na linha 4 da planilha
-
-        # Se a planilha tem menos de 15 colunas, ajusta
-        sheets.aba_transacoes.update(
-            f"A{linha_sheet}:O{linha_sheet}", [nova],
-            value_input_option="USER_ENTERED"
-        )
+        linha = idx + 4
+        sheets.aba_transacoes.update(f"A{linha}:O{linha}", [nova], value_input_option="USER_ENTERED")
         return jsonify({"ok": True})
     except Exception as e:
         logger.error(f"❌ Editar tx {idx}: {e}")
         return jsonify({"erro": str(e)}), 500
 
 
-# ── DELETE excluir transação ──────────────────────────────────────────
+# ── DELETE ────────────────────────────────────────────────────────
 @app.route("/api/transacao/<int:idx>", methods=["DELETE"])
 def deletar_transacao(idx):
     try:
-        todos  = sheets._get_todos_registros()
-        total  = len(todos)
-        linha  = idx + 4  # idx 0-based, dados começam na linha 4 da planilha
+        linha = idx + 4
         sheets.aba_transacoes.delete_rows(linha)
         return jsonify({"ok": True})
     except Exception as e:
@@ -253,7 +254,7 @@ def deletar_transacao(idx):
         return jsonify({"erro": str(e)}), 500
 
 
-# ── Health ────────────────────────────────────────────────────────────
+# ── Health ────────────────────────────────────────────────────────
 @app.route("/health")
 def health():
     return jsonify({"status":"ok","sheets": sheets is not None})
