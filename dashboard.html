@@ -1047,158 +1047,146 @@ input:checked+.slider:before{transform:translateX(16px)}
 <!-- ═══ CATEGORIAS & LIMITES (UNIFICADO) ═══ -->
 <div class="page" id="page-categorias">
   <div class="ph">
-    <div>
-      <h1>📂 Categorias & Limites</h1>
-      <p id="catSubtitle">Gerencie categorias e defina seus limites mensais</p>
-    </div>
+    <div><h1>📂 Categorias & Limites</h1><p id="catSubtitle">Gerencie categorias e limites em um só lugar</p></div>
     <div class="pa">
-      <button class="btn bg" onclick="saveLimits()" id="btnSaveLimits" style="display:none">💾 Salvar limites</button>
+      <button class="btn bs" onclick="saveLimits()">💾 Salvar limites</button>
       <button class="btn bp" onclick="abrirModalCat()">+ Nova categoria</button>
     </div>
   </div>
-
-  <!-- TABS internas -->
-  <div style="display:flex;gap:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:18px;width:fit-content;box-shadow:var(--sh)">
-    <button id="tabCatBtn" onclick="switchCatTab('cats')"
-      style="padding:8px 20px;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;background:var(--azul);color:#fff">
-      📂 Categorias
-    </button>
-    <button id="tabLimBtn" onclick="switchCatTab('lims')"
-      style="padding:8px 20px;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;background:none;color:var(--muted)">
-      ⚙️ Limites Mensais
-    </button>
-  </div>
-
-  <!-- ── TAB: CATEGORIAS ── -->
-  <div id="tabCats">
-    <!-- KPIs rápidos -->
-    <div id="catsKpis" class="g4 mb"></div>
-
-    <!-- Filtros -->
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <span style="font-size:12px;font-weight:700;color:var(--muted)">Mostrar:</span>
-      <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
-      <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
-      <button class="btn bs btn-sm catFiltBtn" data-f="atencao" onclick="setCatFiltro('atencao',this)">🟡 Atenção</button>
-      <button class="btn bs btn-sm catFiltBtn" data-f="ok" onclick="setCatFiltro('ok',this)">🟢 OK</button>
-      <button class="btn bs btn-sm catFiltBtn" data-f="zerado" onclick="setCatFiltro('zerado',this)">⚪ Sem gastos</button>
-      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-        <span style="font-size:12px;font-weight:600;color:var(--muted)">Ordenar:</span>
-        <select class="sf-f" id="catOrdem" onchange="renderCats()" style="font-size:12px;padding:5px 8px">
-          <option value="gasto">Maior gasto</option>
-          <option value="nome">Nome A-Z</option>
-          <option value="pct">% do limite</option>
-        </select>
+  <!-- KPIs -->
+  <div id="catsKpis" class="g4 mb"></div>
+  <!-- Barra orçamento -->
+  <div class="card mb">
+    <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="font-size:12px;font-weight:800;color:var(--txt)">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span></div>
+      <div style="display:flex;gap:14px;font-size:12px;font-weight:700">
+        <span id="limBudgetGasto" style="color:var(--verm)">—</span>
+        <span id="limBudgetPct" style="color:var(--muted)">—</span>
+        <span id="limBudgetTotal" style="color:var(--muted)">—</span>
       </div>
     </div>
-
-    <!-- Grid categorias -->
-    <div id="catsGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"></div>
-
-    <!-- Análise detalhada -->
-    <div class="card mb">
-      <div class="ch"><div><div class="ct">📊 Análise Detalhada</div><div class="cs">Gasto, limite, progresso e transações por categoria</div></div></div>
-      <div id="catsDetail" style="padding:0 18px 16px;overflow-x:auto"></div>
-    </div>
-
-    <!-- Categorias personalizadas -->
-    <div class="card">
-      <div class="ch">
-        <div><div class="ct">⭐ Minhas Categorias Personalizadas</div><div class="cs">Criadas por você</div></div>
-        <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Adicionar</button>
+    <div style="padding:0 20px 14px">
+      <div style="height:10px;background:var(--border);border-radius:100px;overflow:hidden">
+        <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;background:linear-gradient(90deg,var(--verde),var(--azul));transition:width 1.2s"></div>
       </div>
-      <div id="catsCustom" style="padding:0 18px 16px"></div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px">
+        <span>0%</span><span style="color:var(--lara);font-weight:700">⚠️ 80%</span><span style="color:var(--verm);font-weight:700">🔴 100%</span>
+      </div>
     </div>
   </div>
-
-  <!-- ── TAB: LIMITES ── -->
-  <div id="tabLims" style="display:none">
-    <!-- KPIs limites -->
-    <div id="limKpis" class="g4 mb"></div>
-
-    <!-- Barra geral -->
-    <div class="card mb" id="limBudgetBar">
-      <div class="ch"><div><div class="ct">📊 Orçamento Total do Mês</div><div class="cs" id="limBudgetSub">—</div></div></div>
-      <div style="padding:0 20px 20px">
-        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px">
-          <span id="limBudgetGasto" style="color:var(--verm)">R$ 0,00 gastos</span>
-          <span id="limBudgetPct" style="color:var(--muted)">0%</span>
-          <span id="limBudgetTotal" style="color:var(--muted)">de R$ 0,00</span>
-        </div>
-        <div style="height:16px;background:var(--border);border-radius:100px;overflow:hidden;position:relative">
-          <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1);background:linear-gradient(90deg,var(--verde),var(--azul))"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px">
-          <span>0%</span><span style="color:var(--lara);font-weight:700">⚠️ 80%</span><span style="color:var(--verm);font-weight:700">🔴 100%</span>
-        </div>
-      </div>
+  <!-- Filtros -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted)">Ver:</span>
+    <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="atencao" onclick="setCatFiltro('atencao',this)">🟡 Atenção</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="ok" onclick="setCatFiltro('ok',this)">🟢 OK</button>
+    <button class="btn bs btn-sm catFiltBtn" data-f="zerado" onclick="setCatFiltro('zerado',this)">⚪ Sem gastos</button>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <span style="font-size:12px;font-weight:600;color:var(--muted)">Ordenar:</span>
+      <select class="sf-f" id="catOrdem" onchange="renderCats()" style="font-size:12px;padding:5px 8px">
+        <option value="gasto">Maior gasto</option><option value="nome">Nome A-Z</option><option value="pct">% do limite</option>
+      </select>
     </div>
-
-    <!-- View toggle -->
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px">
-        <button id="btnViewCards" onclick="limToggleView('cards',this)"
-          style="padding:6px 14px;border:none;border-radius:var(--r-xs);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;background:var(--card);color:var(--azul);box-shadow:var(--sh);transition:all .15s">
-          🃏 Cards
-        </button>
-        <button id="btnViewTable" onclick="limToggleView('tabela',this)"
-          style="padding:6px 14px;border:none;border-radius:var(--r-xs);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;background:none;color:var(--muted);transition:all .15s">
-          ☰ Tabela
-        </button>
-      </div>
-      <button class="btn bp btn-sm" onclick="saveLimits()">💾 Salvar limites</button>
-    </div>
-
-    <!-- Cards view -->
-    <div id="limTableView">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px" id="limCards"></div>
-    </div>
-
-    <!-- Tabela view -->
-    <div id="limCardView" style="display:none">
-      <div class="tw">
-        <table class="st">
-          <thead><tr><th>Categoria</th><th>Limite (R$)</th><th>Gasto</th><th>Restante</th><th>Progresso</th><th>Status</th><th>Transações</th></tr></thead>
-          <tbody id="limBody"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:10px">💡 Clique no valor do limite para editar. Clique em "Salvar limites" para preservar.</div>
   </div>
+  <!-- Grid categorias -->
+  <div id="catsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:20px"></div>
+  <!-- Categorias custom -->
+  <div id="catsCustomSection"></div>
 </div>
+
+<!-- Modal Editar Categoria -->
+<div class="ov" id="ovEditCat">
+<div class="modal">
+  <div class="mh"><div class="mt" id="editCatTitle">Editar Categoria</div><button class="mc" onclick="CM('ovEditCat')">✕</button></div>
+  <div class="mb2">
+    <!-- Preview -->
+    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:var(--r-sm);margin-bottom:14px">
+      <div id="editCatPreviewEmoji" style="font-size:40px;margin-bottom:6px">📦</div>
+      <div id="editCatPreviewNome" style="font-size:15px;font-weight:800">—</div>
+      <div id="editCatPreviewGasto" style="font-size:18px;font-weight:900;color:var(--verm);margin-top:3px">—</div>
+    </div>
+    <!-- Limite -->
+    <div style="background:var(--azul-l);border:1px solid rgba(59,111,240,.3);border-radius:var(--r-sm);padding:14px;margin-bottom:14px">
+      <label style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">💰 Limite Mensal</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:15px;font-weight:700;color:var(--muted)">R$</span>
+        <input type="number" id="editCatLimite" step="50" min="0" placeholder="0 = sem limite"
+          style="flex:1;font-size:22px;font-weight:900;color:var(--azul);border:none;background:none;outline:none;font-family:'Cabinet Grotesk',sans-serif"
+          oninput="atualizarPreviewLimite()">
+        <span style="font-size:11px;color:var(--muted);font-weight:600">/mês</span>
+      </div>
+      <div id="editCatLimiteInfo" style="font-size:11px;color:var(--azul);margin-top:6px;font-weight:600"></div>
+    </div>
+    <!-- Campos extras — só custom -->
+    <div id="editCatExtras" style="display:none">
+      <div class="fr one" style="margin-bottom:12px"><div class="fg">
+        <label class="fl">Nome</label><input class="fi" id="editCatNome" placeholder="Nome da categoria">
+      </div></div>
+      <div class="fr one" style="margin-bottom:12px"><div class="fg">
+        <label class="fl">Emoji</label>
+        <div style="display:flex;flex-wrap:wrap;gap:5px" id="editEmojiPicker">
+          <span class="epick" onclick="selEmojiEdit(this,'🎯')">🎯</span><span class="epick" onclick="selEmojiEdit(this,'🎮')">🎮</span>
+          <span class="epick" onclick="selEmojiEdit(this,'🎵')">🎵</span><span class="epick" onclick="selEmojiEdit(this,'🎬')">🎬</span>
+          <span class="epick" onclick="selEmojiEdit(this,'🏋️')">🏋️</span><span class="epick" onclick="selEmojiEdit(this,'🧘')">🧘</span>
+          <span class="epick" onclick="selEmojiEdit(this,'🐕')">🐕</span><span class="epick" onclick="selEmojiEdit(this,'🐈')">🐈</span>
+          <span class="epick" onclick="selEmojiEdit(this,'🌱')">🌱</span><span class="epick" onclick="selEmojiEdit(this,'✈️')">✈️</span>
+          <span class="epick" onclick="selEmojiEdit(this,'📷')">📷</span><span class="epick" onclick="selEmojiEdit(this,'🎸')">🎸</span>
+          <span class="epick" onclick="selEmojiEdit(this,'☕')">☕</span><span class="epick" onclick="selEmojiEdit(this,'💊')">💊</span>
+          <span class="epick" onclick="selEmojiEdit(this,'🔧')">🔧</span><span class="epick" onclick="selEmojiEdit(this,'🏦')">🏦</span>
+          <span class="epick" onclick="selEmojiEdit(this,'📦')">📦</span><span class="epick" onclick="selEmojiEdit(this,'💝')">💝</span>
+        </div>
+        <input type="hidden" id="editCatEmoji" value="📦">
+      </div></div>
+      <div class="fr one"><div class="fg">
+        <label class="fl">Cor</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px" id="editColorPicker">
+          <div class="cpick" style="background:#EF4444" onclick="selColorEdit(this,'#EF4444')"></div>
+          <div class="cpick" style="background:#F97316" onclick="selColorEdit(this,'#F97316')"></div>
+          <div class="cpick" style="background:#F59E0B" onclick="selColorEdit(this,'#F59E0B')"></div>
+          <div class="cpick" style="background:#10B981" onclick="selColorEdit(this,'#10B981')"></div>
+          <div class="cpick" style="background:#3B6FF0" onclick="selColorEdit(this,'#3B6FF0')"></div>
+          <div class="cpick" style="background:#8B5CF6" onclick="selColorEdit(this,'#8B5CF6')"></div>
+          <div class="cpick" style="background:#EC4899" onclick="selColorEdit(this,'#EC4899')"></div>
+          <div class="cpick" style="background:#14B8A6" onclick="selColorEdit(this,'#14B8A6')"></div>
+        </div>
+        <input type="hidden" id="editCatCor" value="#EF4444">
+      </div></div>
+    </div>
+    <input type="hidden" id="editCatKey" value="">
+    <input type="hidden" id="editCatIsCustom" value="0">
+    <input type="hidden" id="editCatCustomIdx" value="-1">
+  </div>
+  <div class="mf">
+    <button class="btn bg" onclick="CM('ovEditCat')">Cancelar</button>
+    <span id="editCatDelBtn" style="display:none"><button class="btn bd btn-sm" onclick="deletarCatCustomEdit()">🗑️ Excluir</button></span>
+    <button class="btn bp" onclick="salvarEdicaoCategoria()">💾 Salvar</button>
+  </div>
+</div></div>
 
 <!-- Modal Nova Categoria -->
 <div class="ov" id="ovCatModal">
 <div class="modal">
   <div class="mh"><div class="mt" id="catModalTitle">Nova Categoria</div><button class="mc" onclick="CM('ovCatModal')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Nome da Categoria</label><input class="fi" id="catNome" placeholder="Ex: Academia, Pets, Hobbies..."></div>
-    <div class="fg"><label class="fl">Limite Mensal (R$)</label><input type="number" class="fi" id="catLimite" step="0.01" placeholder="0 = sem limite"></div></div>
-    <div class="fr one"><div class="fg"><label class="fl">Escolha um emoji</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="emojiPicker">
+    <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="catNome" placeholder="Ex: Academia, Pets..."></div>
+    <div class="fg"><label class="fl">Limite (R$)</label><input type="number" class="fi" id="catLimite" step="0.01" placeholder="0 = sem limite"></div></div>
+    <div class="fr one"><div class="fg"><label class="fl">Emoji</label>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px" id="emojiPicker">
         <span class="epick" onclick="selEmoji(this,'🎯')">🎯</span><span class="epick" onclick="selEmoji(this,'🎮')">🎮</span>
         <span class="epick" onclick="selEmoji(this,'🎵')">🎵</span><span class="epick" onclick="selEmoji(this,'🎬')">🎬</span>
         <span class="epick" onclick="selEmoji(this,'🏋️')">🏋️</span><span class="epick" onclick="selEmoji(this,'🧘')">🧘</span>
         <span class="epick" onclick="selEmoji(this,'🐕')">🐕</span><span class="epick" onclick="selEmoji(this,'🐈')">🐈</span>
-        <span class="epick" onclick="selEmoji(this,'🌱')">🌱</span><span class="epick" onclick="selEmoji(this,'🏡')">🏡</span>
-        <span class="epick" onclick="selEmoji(this,'✈️')">✈️</span><span class="epick" onclick="selEmoji(this,'🏖️')">🏖️</span>
-        <span class="epick" onclick="selEmoji(this,'📷')">📷</span><span class="epick" onclick="selEmoji(this,'🎸')">🎸</span>
-        <span class="epick" onclick="selEmoji(this,'🍷')">🍷</span><span class="epick" onclick="selEmoji(this,'☕')">☕</span>
-        <span class="epick" onclick="selEmoji(this,'💇')">💇</span><span class="epick" onclick="selEmoji(this,'💆')">💆</span>
-        <span class="epick" onclick="selEmoji(this,'🏊')">🏊</span><span class="epick" onclick="selEmoji(this,'🚲')">🚲</span>
-        <span class="epick" onclick="selEmoji(this,'⚽')">⚽</span><span class="epick" onclick="selEmoji(this,'🏄')">🏄</span>
-        <span class="epick" onclick="selEmoji(this,'🎲')">🎲</span><span class="epick" onclick="selEmoji(this,'🧩')">🧩</span>
-        <span class="epick" onclick="selEmoji(this,'📚')">📚</span><span class="epick" onclick="selEmoji(this,'✏️')">✏️</span>
-        <span class="epick" onclick="selEmoji(this,'💊')">💊</span><span class="epick" onclick="selEmoji(this,'🦷')">🦷</span>
-        <span class="epick" onclick="selEmoji(this,'🔧')">🔧</span><span class="epick" onclick="selEmoji(this,'🖥️')">🖥️</span>
-        <span class="epick" onclick="selEmoji(this,'🎁')">🎁</span><span class="epick" onclick="selEmoji(this,'💝')">💝</span>
+        <span class="epick" onclick="selEmoji(this,'🌱')">🌱</span><span class="epick" onclick="selEmoji(this,'✈️')">✈️</span>
+        <span class="epick" onclick="selEmoji(this,'🏖️')">🏖️</span><span class="epick" onclick="selEmoji(this,'📷')">📷</span>
+        <span class="epick" onclick="selEmoji(this,'🎸')">🎸</span><span class="epick" onclick="selEmoji(this,'☕')">☕</span>
+        <span class="epick" onclick="selEmoji(this,'💊')">💊</span><span class="epick" onclick="selEmoji(this,'🔧')">🔧</span>
         <span class="epick" onclick="selEmoji(this,'🏦')">🏦</span><span class="epick" onclick="selEmoji(this,'📦')">📦</span>
       </div>
       <input type="hidden" id="catEmoji" value="📦">
     </div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor</label>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px" id="colorPicker">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:5px" id="colorPicker">
         <div class="cpick sel" style="background:#EF4444" onclick="selColor(this,'#EF4444')"></div>
         <div class="cpick" style="background:#F97316" onclick="selColor(this,'#F97316')"></div>
         <div class="cpick" style="background:#F59E0B" onclick="selColor(this,'#F59E0B')"></div>
@@ -1207,10 +1195,6 @@ input:checked+.slider:before{transform:translateX(16px)}
         <div class="cpick" style="background:#8B5CF6" onclick="selColor(this,'#8B5CF6')"></div>
         <div class="cpick" style="background:#EC4899" onclick="selColor(this,'#EC4899')"></div>
         <div class="cpick" style="background:#14B8A6" onclick="selColor(this,'#14B8A6')"></div>
-        <div class="cpick" style="background:#84CC16" onclick="selColor(this,'#84CC16')"></div>
-        <div class="cpick" style="background:#0EA5E9" onclick="selColor(this,'#0EA5E9')"></div>
-        <div class="cpick" style="background:#6366F1" onclick="selColor(this,'#6366F1')"></div>
-        <div class="cpick" style="background:#64748B" onclick="selColor(this,'#64748B')"></div>
       </div>
       <input type="hidden" id="catCor" value="#EF4444">
     </div></div>
@@ -2998,57 +2982,148 @@ function renderPlan(){
 }
 
 // ════════════════════════════════════════════════
-// TAB SWITCH: Categorias ↔ Limites
+// CATEGORIAS & LIMITES — UNIFICADO
 // ════════════════════════════════════════════════
-let CAT_TAB = 'cats'; // 'cats' | 'lims'
+let CAT_FILTRO='todas';
 
-function switchCatTab(tab){
-  CAT_TAB = tab;
-  const isCats = tab === 'cats';
+function setCatFiltro(f,el){
+  CAT_FILTRO=f;
+  document.querySelectorAll('.catFiltBtn').forEach(b=>b.classList.remove('active'));
+  if(el) el.classList.add('active');
+  renderCats();
+}
 
-  document.getElementById('tabCats').style.display = isCats ? '' : 'none';
-  document.getElementById('tabLims').style.display = isCats ? 'none' : '';
-
-  const btnC = document.getElementById('tabCatBtn');
-  const btnL = document.getElementById('tabLimBtn');
-  const saveLimBtn = document.getElementById('btnSaveLimits');
-
-  if(btnC){
-    btnC.style.background = isCats ? 'var(--azul)' : 'none';
-    btnC.style.color      = isCats ? '#fff' : 'var(--muted)';
-  }
-  if(btnL){
-    btnL.style.background = !isCats ? 'var(--azul)' : 'none';
-    btnL.style.color      = !isCats ? '#fff' : 'var(--muted)';
-  }
-  if(saveLimBtn) saveLimBtn.style.display = isCats ? 'none' : '';
-
-  if(isCats){ renderCats(); }
-  else {
-    // Ensures limits use latest data
-    renderLimits();
+// Edit modal helpers
+function selEmojiEdit(el,e){
+  document.querySelectorAll('#editEmojiPicker .epick').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('editCatEmoji').value=e;
+  document.getElementById('editCatPreviewEmoji').textContent=e;
+}
+function selColorEdit(el,cor){
+  document.querySelectorAll('#editColorPicker .cpick').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('editCatCor').value=cor;
+}
+function atualizarPreviewLimite(){
+  const v=parseFloat(document.getElementById('editCatLimite').value)||0;
+  const gasto=parseFloat(document.getElementById('editCatPreviewGasto').dataset.val||0);
+  const info=document.getElementById('editCatLimiteInfo');
+  if(v>0&&info){
+    const rest=Math.max(v-gasto,0);
+    const pct=gasto/v*100;
+    info.textContent=`Restante: R$ ${rest.toFixed(2).replace('.',',')} · ${pct.toFixed(0)}% utilizado`;
+  } else if(info){
+    info.textContent='Sem limite definido — gastos livres';
   }
 }
 
-// Redefine limToggleView to use new IDs
-function limToggleView(mode, btn){
-  const isCards = mode === 'cards';
-  document.getElementById('limTableView').style.display = isCards ? '' : 'none';
-  document.getElementById('limCardView').style.display  = isCards ? 'none' : '';
+function abrirEditarCategoria(nomeCat, isCustom, customIdx){
+  const lims={...LIMS_DEF,...LIMS_LOCAL};
+  const txMes=MES_DATA.txMes||[];
+  const gastoMap={};
+  txMes.filter(t=>t.valor<0).forEach(t=>{gastoMap[t.categoria]=(gastoMap[t.categoria]||0)+Math.abs(t.valor);});
 
-  const btnC = document.getElementById('btnViewCards');
-  const btnT = document.getElementById('btnViewTable');
-  if(btnC){
-    btnC.style.background = isCards ? 'var(--card)' : 'none';
-    btnC.style.color      = isCards ? 'var(--azul)' : 'var(--muted)';
-    btnC.style.boxShadow  = isCards ? 'var(--sh)' : 'none';
+  const gasto=gastoMap[nomeCat]||0;
+  const lim=lims[nomeCat]||0;
+
+  // Preview
+  let emoji='📦',cor='#9CA3AF';
+  if(isCustom&&customIdx>=0){
+    emoji=CATS_CUSTOM[customIdx].emoji||'📦';
+    cor=CATS_CUSTOM[customIdx].cor||'#9CA3AF';
+  } else {
+    const padrao=CATS_PADRAO_EXTRA.find(c=>c.nome===nomeCat);
+    if(padrao){emoji=padrao.emoji;cor=padrao.cor;}
   }
-  if(btnT){
-    btnT.style.background = !isCards ? 'var(--card)' : 'none';
-    btnT.style.color      = !isCards ? 'var(--azul)' : 'var(--muted)';
-    btnT.style.boxShadow  = !isCards ? 'var(--sh)' : 'none';
+
+  document.getElementById('editCatPreviewEmoji').textContent=emoji;
+  document.getElementById('editCatPreviewNome').textContent=nomeCat;
+  const pgEl=document.getElementById('editCatPreviewGasto');
+  pgEl.textContent=fmt(gasto);
+  pgEl.dataset.val=gasto;
+  pgEl.style.color=gasto>0?'var(--verm)':'var(--muted2)';
+  document.getElementById('editCatLimite').value=lim||'';
+  document.getElementById('editCatKey').value=nomeCat;
+  document.getElementById('editCatIsCustom').value=isCustom?'1':'0';
+  document.getElementById('editCatCustomIdx').value=customIdx;
+  document.getElementById('editCatTitle').textContent=isCustom?'✏️ Editar Categoria':'⚙️ Limite — '+nomeCat;
+
+  // Extras: só para custom
+  const extras=document.getElementById('editCatExtras');
+  const delBtn=document.getElementById('editCatDelBtn');
+  if(isCustom&&customIdx>=0){
+    extras.style.display='';
+    delBtn.style.display='';
+    document.getElementById('editCatNome').value=nomeCat;
+    document.getElementById('editCatEmoji').value=emoji;
+    document.getElementById('editCatCor').value=cor;
+    // Marca emoji e cor
+    document.querySelectorAll('#editEmojiPicker .epick').forEach(e=>e.classList.toggle('sel',e.textContent===emoji));
+    document.querySelectorAll('#editColorPicker .cpick').forEach(e=>e.classList.toggle('sel',e.style.background===cor));
+  } else {
+    extras.style.display='none';
+    delBtn.style.display='none';
   }
+  atualizarPreviewLimite();
+  OM('ovEditCat');
 }
+
+function salvarEdicaoCategoria(){
+  const cat=document.getElementById('editCatKey').value;
+  const isCustom=document.getElementById('editCatIsCustom').value==='1';
+  const customIdx=parseInt(document.getElementById('editCatCustomIdx').value);
+  const novoLim=parseFloat(document.getElementById('editCatLimite').value)||0;
+
+  // Salva o limite
+  LIMS_LOCAL[cat]=novoLim;
+  salvarLimsLocal();
+
+  // Se custom, atualiza nome/emoji/cor
+  if(isCustom&&customIdx>=0){
+    const novoNome=document.getElementById('editCatNome').value.trim()||cat;
+    CATS_CUSTOM[customIdx]={
+      ...CATS_CUSTOM[customIdx],
+      nome:novoNome,
+      emoji:document.getElementById('editCatEmoji').value||'📦',
+      cor:document.getElementById('editCatCor').value||'#9CA3AF',
+      limite:novoLim,
+    };
+    // Atualiza o limite no LIMS_LOCAL com o novo nome se renomeou
+    if(novoNome!==cat){
+      LIMS_LOCAL[novoNome]=novoLim;
+      delete LIMS_LOCAL[cat];
+    }
+    salvarCats();
+    salvarLimsLocal();
+    atualizarSelectCats();
+  }
+
+  CM('ovEditCat');
+  renderCats();
+  renderDash();
+  toast('✅ Categoria atualizada!','success');
+}
+
+function deletarCatCustomEdit(){
+  const customIdx=parseInt(document.getElementById('editCatCustomIdx').value);
+  if(customIdx>=0){
+    const cat=CATS_CUSTOM[customIdx];
+    if(cat&&LIMS_LOCAL[cat.nome]) delete LIMS_LOCAL[cat.nome];
+    CATS_CUSTOM.splice(customIdx,1);
+    salvarCats();
+    salvarLimsLocal();
+    atualizarSelectCats();
+  }
+  CM('ovEditCat');
+  renderCats();
+  toast('🗑️ Categoria removida','info');
+}
+
+// switchCatTab stub — kept for compatibility but no longer does anything visible
+function switchCatTab(){}
+function limToggleView(){}
+
 
 // ════════════════════════════════════════════════
 // CATEGORIAS — COMPLETO
@@ -3238,24 +3313,19 @@ function renderCats(){
       const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':c.status==='ok'?'var(--verde)':'var(--muted2)';
       const stIco=c.status==='estourou'?'🔴':c.status==='atencao'?'🟡':c.status==='ok'?'🟢':'';
       const nTx=txMes.filter(t=>t.categoria===c.nome).length;
-      return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'}; cursor:default">
+      const isCustom=CATS_CUSTOM.some(x=>x.nome===c.nome);
+      const custIdx=CATS_CUSTOM.findIndex(x=>x.nome===c.nome);
+      return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'};cursor:pointer;transition:all .2s"
+        onclick="abrirEditarCategoria('${c.nome}',${isCustom},${custIdx})"
+        onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--sh-md)'"
+        onmouseleave="this.style.transform='';this.style.boxShadow=''">
         ${stIco?`<span class="cc-st">${stIco}</span>`:''}
-        <div class="cc-em" style="cursor:pointer" onclick="filtrarPorCategoria('${c.nome}')" title="Ver transações">${c.emoji}</div>
+        <div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)" title="Clique para editar">✏️</div>
+        <div class="cc-em">${c.emoji}</div>
         <div class="cc-nm">${c.nome}</div>
-        <div class="cc-vl" style="color:${c.gasto>0?'var(--verm)':'var(--muted2)'};cursor:pointer" onclick="filtrarPorCategoria('${c.nome}')">${c.gasto>0?fmt(c.gasto):'R$ 0,00'}</div>
-        <!-- Limite inline editável -->
-        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin:3px 0">
-          <span style="font-size:9px;color:var(--muted);font-weight:600">LIMITE</span>
-          <input type="number" value="${c.limite||0}" step="50" min="0"
-            style="width:72px;font-size:11px;font-weight:700;color:var(--azul);border:1px solid var(--border);border-radius:5px;padding:2px 5px;text-align:center;background:var(--bg);font-family:'Cabinet Grotesk',sans-serif;outline:none"
-            onclick="event.stopPropagation()"
-            onchange="editarLimiteInline('${c.nome}',this.value)"
-            onfocus="this.style.borderColor='var(--azul)';this.style.background='var(--azul-l)'"
-            onblur="this.style.borderColor='var(--border)';this.style.background='var(--bg)'"
-            title="Clique para editar o limite">
-        </div>
-        ${nTx>0?`<div style="font-size:10px;color:var(--muted)">${nTx} transação(ões)</div>`:''}
-        ${c.limite>0?`<div class="cc-bar"><div class="cc-fill" style="width:0%;background:${bCor}" data-w="${bPct}%"></div></div>`:'<div style="height:4px;background:var(--border);border-radius:100px;margin-top:5px;opacity:.3"></div>'}
+        <div class="cc-vl" style="color:${c.gasto>0?'var(--verm)':'var(--muted2)'}">${c.gasto>0?fmt(c.gasto):'R$ 0,00'}</div>
+        <div style="font-size:10px;color:var(--muted);margin:2px 0">${c.limite>0?'Limite: '+fmt(c.limite):'Toque para definir limite'}${nTx>0?' · '+nTx+' tx':''}</div>
+        ${c.limite>0?`<div class="cc-bar"><div class="cc-fill" style="width:0%;background:${bCor}" data-w="${bPct}%"></div></div>`:'<div style="height:3px;background:var(--border);border-radius:100px;margin-top:6px;opacity:.3"></div>'}
       </div>`;
     }).join('');
     setTimeout(()=>el.querySelectorAll('[data-w]').forEach(b=>b.style.width=b.dataset.w),100);
@@ -3290,25 +3360,25 @@ function renderCats(){
     }).join('')+`</tbody></table></div>`;
   }
 
-  // Categorias personalizadas
-  const customEl=document.getElementById('catsCustom');if(!customEl)return;
+  // Categorias personalizadas — renderiza na nova seção
+  const customEl=document.getElementById('catsCustomSection');if(!customEl)return;
   if(!CATS_CUSTOM.length){
     customEl.innerHTML='<div class="empty" style="padding:24px"><div class="empty-ic">⭐</div><h3>Nenhuma categoria personalizada</h3><p>Adicione categorias que não existem na lista padrão</p><button class="btn bp" style="margin-top:12px" onclick="abrirModalCat()">+ Adicionar categoria</button></div>';
   } else {
-    customEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">`+
-    CATS_CUSTOM.map((c,i)=>{
-      const gasto=gastoMap[c.nome]||0;
-      return `<div class="cat-card-item" style="border-top:3px solid ${c.cor}">
-        <div class="cc-em">${c.emoji}</div>
-        <div class="cc-nm">${c.nome}</div>
-        <div class="cc-vl" style="color:${gasto>0?'var(--verm)':'var(--muted2)'}">${gasto>0?fmt(gasto):'R$ 0,00'}</div>
-        <div class="cc-lm">${c.limite>0?'Limite: '+fmt(c.limite):'Sem limite'}</div>
-        <div style="display:flex;gap:4px;margin-top:8px;justify-content:center">
-          <button class="btn bg btn-xs" onclick="event.stopPropagation();abrirModalCat(${i})">✏️</button>
-          <button class="btn bd btn-xs" onclick="event.stopPropagation();delCatCustom(${i})">🗑️</button>
-        </div>
-      </div>`;
-    }).join('')+`</div>`;
+    customEl.innerHTML=`<div class="card" style="margin-top:4px">
+      <div class="ch"><div><div class="ct">⭐ Categorias Personalizadas</div><div class="cs">Criadas por você — clique para editar</div></div>
+        <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Adicionar</button>
+      </div>
+      <div style="padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
+        ${CATS_CUSTOM.map((c,i)=>{
+          const gasto=gastoMap[c.nome]||0;
+          const lim=lims[c.nome]||0;
+          const pct=lim>0?Math.min(gasto/lim*100,100):0;
+          const bCor2=pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
+          return '<div class="cat-card-item" style="border-top:3px solid '+c.cor+';cursor:pointer;transition:all .15s" onclick="abrirEditarCategoria('+JSON.stringify(c.nome)+',true,'+i+')" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''"><div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)">✏️</div><div class="cc-em">'+c.emoji+'</div><div class="cc-nm">'+c.nome+'</div><div class="cc-vl" style="color:'+(gasto>0?'var(--verm)':'var(--muted2)')+'">'+(gasto>0?fmt(gasto):'R$ 0,00')+'</div><div style="font-size:10px;color:var(--muted)">'+(lim>0?'Limite: '+fmt(lim):'Sem limite')+'</div>'+(lim>0?'<div class="cc-bar"><div class="cc-fill" style="width:'+pct+'%;background:'+bCor2+'"></div></div>':'')+'</div>';
+        }).join('')}
+      </div>
+    </div>`;
   }
 }
 
