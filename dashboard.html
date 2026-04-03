@@ -894,7 +894,10 @@ input:checked+.slider:before{transform:translateX(16px)}
 
   </div>
 
-  <!-- ── LINHA 5: Dica do Dia ── -->
+  <!-- ── LINHA 5: Próximos Vencimentos de Cartão ── -->
+  <div id="dashVencimentos" style="margin-bottom:15px"></div>
+
+  <!-- ── LINHA 6: Dica do Dia ── -->
   <div id="dashDica" style="margin-bottom:15px"></div>
 
   <!-- ── LINHA 6: Telegram banner compacto ── -->
@@ -1466,6 +1469,8 @@ function renderDash(){
   renderDividasDash();
   // Metas
   renderMetasDash();
+  // Próximos vencimentos
+  renderVencimentos();
   // Dica do dia
   renderDicaDia();
 }
@@ -1863,46 +1868,53 @@ function txMetChange(){
 function txCartaoChange(){
   const sel=document.getElementById('txCartaoSel');
   const opt=sel.options[sel.selectedIndex];
-  if(!opt || !opt.value) return;
+  const infoEl=document.getElementById('txCorteInfo');
+  if(!opt||!opt.value){ if(infoEl) infoEl.style.display='none'; return; }
 
   const fech=parseInt(opt.dataset.fech)||0;
-  const hoje=new Date();
-  const diaHoje=hoje.getDate();
-  const infoEl=document.getElementById('txCorteInfo');
+  // Usa a data digitada no campo, não "hoje"
+  const dataVal=document.getElementById('txData').value;
+  let diaCompra=new Date().getDate();
+  if(dataVal&&dataVal.match(/\d{2}\/\d{2}\/\d{4}/)){
+    diaCompra=parseInt(dataVal.split('/')[0]);
+  }
+
+  if(!infoEl) return;
 
   if(fech>0){
-    const infoEl2=document.getElementById('txCorteInfo');
-    const depoisDoCorte = diaHoje > fech;
-    infoEl2.style.display='block';
+    const depoisDoCorte = diaCompra > fech;
+    infoEl.style.display='block';
+
+    // Encontra o cartão no array para pegar vencimento
+    const cartaoObj=CARTOES.find(c=>c.nome===opt.value);
+    const venc=cartaoObj?cartaoObj.venc:'—';
 
     if(depoisDoCorte){
-      // Compra vai para próxima fatura (mês seguinte)
-      const mesBase=somarMes(getMesChave(),1);
-      infoEl2.innerHTML=`⚠️ Compra após o fechamento (dia ${fech}) → será lançada na fatura de <strong>${mesBase}</strong>`;
-      infoEl2.style.background='var(--amar-l)';
-      infoEl2.style.borderColor='var(--amar)';
-      infoEl2.style.color='#92400E';
-      // Seleciona mês seguinte automaticamente
+      // Compra vai para a PRÓXIMA fatura
+      const mesProx=somarMes(getMesChave(),1);
+      infoEl.innerHTML=`⚠️ Compra após o fechamento (dia ${fech}) → fatura de <strong>${mesProx.replace('.','')}</strong> · Vence dia <strong>${venc}</strong>`;
+      infoEl.style.background='var(--amar-l)';
+      infoEl.style.borderColor='var(--amar)';
+      infoEl.style.color='#92400E';
+      // Seleciona mês seguinte automaticamente no dropdown
       const selMes=document.getElementById('txMesAno');
       if(selMes){
         for(let i=0;i<selMes.options.length;i++){
-          if(selMes.options[i].value===mesBase){selMes.selectedIndex=i;break;}
+          if(selMes.options[i].value===mesProx){selMes.selectedIndex=i;break;}
         }
       }
     } else {
-      infoEl2.innerHTML=`✅ Dentro do fechamento (dia ${fech}) → lançada na fatura de <strong>${getMesNome()}</strong>`;
-      infoEl2.style.background='var(--verde-l)';
-      infoEl2.style.borderColor='var(--verde)';
-      infoEl2.style.color='var(--verde-d)';
+      // Compra dentro do período — fatura do mês atual
+      const mesAtual=document.getElementById('txMesAno').value||getMesChave();
+      infoEl.innerHTML=`✅ Dentro do fechamento (dia ${fech}) → fatura de <strong>${mesAtual.replace('.','')}</strong> · Vence dia <strong>${venc}</strong>`;
+      infoEl.style.background='var(--verde-l)';
+      infoEl.style.borderColor='var(--verde)';
+      infoEl.style.color='var(--verde-d)';
     }
   } else {
-    if(infoEl) infoEl.style.display='none';
+    infoEl.style.display='none';
   }
 }
-
-let TX_PARC_SEL = 0; // parcelas selecionadas
-let DP_DATE = new Date(); // data picker selecionada
-let DP_VIEW = new Date(); // data picker mês em exibição
 
 function txParcToggle(){
   const isParc=document.getElementById('txIsParc').checked;
@@ -2374,6 +2386,9 @@ function dpConfirmar(){
   const y = DP_DATE.getFullYear();
   document.getElementById('txData').value = `${d}/${m}/${y}`;
   fecharDP();
+  // Reavalia corte do cartão com a nova data
+  const met = document.getElementById('txMetodo').value;
+  if(met==='Cartão crédito') txCartaoChange();
 }
 
 function dpSelDia(dia){
@@ -3891,6 +3906,139 @@ function renderResumoMes(d, mes){
       🎉 Tudo sob controle este mês!
     </div>`}
   `;
+}
+
+function renderVencimentos(){
+  const el=document.getElementById('dashVencimentos');
+  if(!el) return;
+
+  if(!CARTOES.length){
+    el.innerHTML='';
+    return;
+  }
+
+  const hoje=new Date();
+  const mesAtual=hoje.getMonth();
+  const anoAtual=hoje.getFullYear();
+  const diaHoje=hoje.getDate();
+
+  // Monta lista de faturas: mês atual + próximo mês por cartão
+  const faturas=[];
+
+  CARTOES.forEach(ct=>{
+    const venc=parseInt(ct.venc)||0;
+    const fech=parseInt(ct.fech)||0;
+    if(!venc) return;
+
+    // Fatura do mês atual
+    [0,1].forEach(offset=>{
+      const d=new Date(anoAtual,mesAtual+offset,1);
+      const mLabel=`${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+      const mNome =`${MESES_NM[d.getMonth()]} ${d.getFullYear()}`;
+
+      // Data de vencimento desta fatura
+      const dtVenc=new Date(d.getFullYear(), d.getMonth(), venc);
+      // Se vencimento < hoje no mês atual, não mostra (já venceu)
+      if(offset===0 && dtVenc < hoje) return;
+
+      // Calcula total gasto nesta fatura com base nas transações
+      const gastosParc=TODAS_TX.filter(tx=>{
+        if(!tx.cartao||tx.cartao.trim()!==ct.nome.trim()) return false;
+        if(tx.valor>=0) return false;
+        return tx.mes_ano===mLabel;
+      }).reduce((s,tx)=>s+Math.abs(parseFloat(tx.valor)||0),0);
+
+      const diasAteVenc=Math.ceil((dtVenc-hoje)/(1000*60*60*24));
+      const urgencia=diasAteVenc<=3?'critico':diasAteVenc<=7?'atencao':'normal';
+
+      faturas.push({
+        cartao:ct,
+        mesLabel:mLabel,
+        mesNome:mNome,
+        vencDia:venc,
+        fechDia:fech,
+        dtVenc,
+        diasAteVenc,
+        gasto:gastosParc,
+        urgencia,
+        offset
+      });
+    });
+  });
+
+  // Ordena por data de vencimento
+  faturas.sort((a,b)=>a.dtVenc-b.dtVenc);
+
+  if(!faturas.length){
+    el.innerHTML='';
+    return;
+  }
+
+  const cores={
+    critico:{bg:'var(--verm-l)',border:'var(--verm)',badge:'🔴',badgeBg:'var(--verm)',badgeColor:'#fff'},
+    atencao:{bg:'var(--amar-l)',border:'var(--amar)',badge:'🟡',badgeBg:'var(--amar)',badgeColor:'#fff'},
+    normal: {bg:'var(--card)',border:'var(--border)',badge:'📅',badgeBg:'var(--azul-l)',badgeColor:'var(--azul)'}
+  };
+
+  el.innerHTML=`
+    <div class="card">
+      <div class="ch">
+        <div>
+          <div class="ct">📅 Próximos Vencimentos de Cartão</div>
+          <div class="cs">Faturas abertas e valores lançados</div>
+        </div>
+        <button class="btn bg btn-sm" onclick="go('cartoes')">Ver cartões →</button>
+      </div>
+      <div style="padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
+        ${faturas.map(f=>{
+          const c=cores[f.urgencia];
+          const pct=f.cartao.limite>0?Math.min(f.gasto/f.cartao.limite*100,100):0;
+          const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
+          const diasTxt=f.diasAteVenc===0?'Vence hoje!':
+                        f.diasAteVenc===1?'Vence amanhã!':
+                        `Vence em ${f.diasAteVenc} dias`;
+          return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:var(--r-sm);padding:14px;cursor:pointer" onclick="go('cartoes')">
+            <!-- Header: nome do cartão + badge urgência -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <div style="width:10px;height:28px;border-radius:4px;background:${f.cartao.cor||'var(--azul)'};flex-shrink:0"></div>
+                <div>
+                  <div style="font-size:13px;font-weight:800;color:var(--txt)">${f.cartao.nome}</div>
+                  <div style="font-size:10px;color:var(--muted)">${f.cartao.bandeira} · ${f.mesNome}</div>
+                </div>
+              </div>
+              <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px;background:${c.badgeBg};color:${c.badgeColor}">${diasTxt}</span>
+            </div>
+            <!-- Valor da fatura -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
+              <div>
+                <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:1px">Fatura</div>
+                <div style="font-size:20px;font-weight:900;color:var(--verm)${f.gasto===0?';opacity:.4':''}">
+                  ${f.gasto>0?fmt(f.gasto):'Sem lançamentos'}
+                </div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:var(--muted)">Vencimento</div>
+                <div style="font-size:14px;font-weight:800;color:var(--txt)">Dia ${f.vencDia}</div>
+              </div>
+            </div>
+            <!-- Barra de uso do limite -->
+            ${f.gasto>0?`
+            <div style="margin-bottom:6px">
+              <div style="height:6px;background:rgba(0,0,0,.08);border-radius:100px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${barCor};border-radius:100px;transition:width 1s"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px">
+                <span style="color:var(--muted)">${pct.toFixed(0)}% do limite</span>
+                <span style="color:var(--verde);font-weight:600">${fmt(f.cartao.limite-f.gasto)} disponível</span>
+              </div>
+            </div>`:''}
+            <!-- Info fechamento -->
+            ${f.fechDia>0?`<div style="font-size:10px;color:var(--muted);margin-top:4px">🔒 Fecha dia ${f.fechDia}</div>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
 }
 
 function renderDicaDia(){
