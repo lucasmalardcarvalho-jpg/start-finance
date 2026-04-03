@@ -1272,6 +1272,14 @@ let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
 let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={};
 
+// ── Globals de estado das features ──
+let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
+let DEL_MODO = 'so_esta'; // modo de exclusão: 'so_esta' | 'todas'
+let CAT_FILTRO = 'todas'; // filtro ativo da aba categorias
+let CAT_TAB = 'cats';     // tab interna (legado, mantido por compatibilidade)
+let DP_DATE = new Date(); // data selecionada no date picker
+let DP_VIEW = new Date(); // mês em exibição no date picker
+
 const fmt=v=>'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fmtSm=v=>v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+Math.round(v);
 const ls=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch{return d}};
@@ -2208,7 +2216,6 @@ async function confirmDel(){
   }
 }
 
-let DEL_MODO = 'so_esta'; // 'so_esta' | 'todas'
 
 async function deletarUmaTx(t){
   const realIdx=t.idx;
@@ -2984,7 +2991,6 @@ function renderPlan(){
 // ════════════════════════════════════════════════
 // CATEGORIAS & LIMITES — UNIFICADO
 // ════════════════════════════════════════════════
-let CAT_FILTRO='todas';
 
 function setCatFiltro(f,el){
   CAT_FILTRO=f;
@@ -3128,7 +3134,6 @@ function limToggleView(){}
 // ════════════════════════════════════════════════
 // CATEGORIAS — COMPLETO
 // ════════════════════════════════════════════════
-let CAT_FILTRO='todas';
 
 function setCatFiltro(f,el){
   CAT_FILTRO=f;
@@ -4289,13 +4294,22 @@ function iniciar(){
 function mostrarLogin(){
   document.getElementById('loginScreen').classList.remove('hidden');
   carregarUsuariosLogin();
-  setTimeout(()=>{
-    document.getElementById('loading').style.opacity='0';
-    setTimeout(()=>document.getElementById('loading').style.display='none',300);
-  },500);
+  // Always hide loading
+  const ldg = document.getElementById('loading');
+  if(ldg){ ldg.style.opacity='0'; setTimeout(()=>ldg.style.display='none',300); }
 }
 
 document.getElementById('loading').style.transition='opacity .5s';
+// Safety net: hide loading after 4s in case of any uncaught error
+setTimeout(()=>{
+  const ldg=document.getElementById('loading');
+  if(ldg&&ldg.style.display!=='none'){
+    ldg.style.opacity='0';
+    setTimeout(()=>ldg.style.display='none',500);
+    console.warn('Loading timeout — showing login');
+    mostrarLogin();
+  }
+},4000);
 iniciar();
 </script>
 </body>
