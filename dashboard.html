@@ -1407,7 +1407,21 @@ async function reload(manual=false){
     renderDash();
     // Re-renderiza aba ativa
     const cur=document.querySelector('.page.active')?.id?.replace('page-','');
-    if(cur&&cur!=='dashboard'){const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};if(fns[cur])fns[cur]();}
+    if(cur&&cur!=='dashboard'){
+      const fns={
+        transacoes:renderTxPage,
+        cartoes:renderCartoes,
+        categorias:()=>{ if(CAT_TAB==='lims') renderLimits(); else renderCats(); },
+        limites:()=>{ if(CAT_TAB==='lims') renderLimits(); else renderCats(); },
+        relatorios:renderRel,
+        planejamento:renderPlan,
+        fixas:renderFixas,
+        dividas:renderDividas,
+        metas:renderMetas,
+        investimentos:renderInv
+      };
+      if(fns[cur]) fns[cur]();
+    }
     if(manual)toast('✅ Atualizado!','success');
   }catch(e){
     if(manual)toast('❌ '+e.message,'error');
@@ -1432,7 +1446,11 @@ function go(page){
   const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
   if(fns[page])fns[page]();
 }
-document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
+document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
+  const p=b.dataset.p;
+  if(p==='limites'){ go('categorias'); setTimeout(()=>switchCatTab('lims'),80); }
+  else go(p);
+}));
 
 // ════════════════════════════════════════════════
 // RENDER DASHBOARD
@@ -2676,7 +2694,7 @@ function saveCt(){
   const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseFloat(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value};
   if(!c.nome)return toast('Preencha o nome','warning');
   if(idx>=0)CARTOES[idx]=c;else CARTOES.push(c);
-  salvarCartoes();CM('ovCt');renderCartoes();toast('✅ Cartão salvo!','success');
+  salvarCartoes();CM('ovCt');renderCartoes();renderDash();toast('✅ Cartão salvo!','success');
   // Atualiza selector de cartões no modal de tx
 }
 
@@ -2774,7 +2792,7 @@ function saveFx(){
   const f={desc:document.getElementById('fxDesc').value,valor:parseFloat(document.getElementById('fxValor').value)||0,cat:document.getElementById('fxCat').value,venc:document.getElementById('fxVenc').value,status:document.getElementById('fxStatus').value,obs:document.getElementById('fxObs').value};
   if(!f.desc||!f.valor)return toast('Preencha descrição e valor','warning');
   if(i>=0)FIXAS[i]=f;else FIXAS.push(f);
-  salvarFixas();CM('ovFx');renderFixas();toast('✅ Salva!','success');
+  salvarFixas();CM('ovFx');renderFixas();renderDash();toast('✅ Salva!','success');
 }
 function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';salvarFixas();renderFixas();}
 function delFx(i){FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')}
@@ -2819,9 +2837,9 @@ function saveDv(){
   const d={nome:document.getElementById('dvNome').value,total:parseFloat(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseFloat(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value};
   if(!d.nome||!d.total)return toast('Preencha nome e valor','warning');
   if(i>=0)DIVIDAS[i]=d;else DIVIDAS.push(d);
-  salvarDividas();CM('ovDv');renderDividas();toast('✅ Salva!','success');
+  salvarDividas();CM('ovDv');renderDividas();renderDash();toast('✅ Salva!','success');
 }
-function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
+function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();renderDash();salvarDividas();renderDividas();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
 function delDv(i){DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')}
 
 function renderDividas(){
@@ -2867,7 +2885,7 @@ function saveMt(){
   const m={nome:document.getElementById('mtNome').value,emoji:document.getElementById('mtEmoji').value,total:parseFloat(document.getElementById('mtTotal').value)||0,atual:parseFloat(document.getElementById('mtAtual').value)||0,mensal:parseFloat(document.getElementById('mtMensal').value)||0,desc:document.getElementById('mtDesc').value};
   if(!m.nome||!m.total)return toast('Preencha nome e valor','warning');
   if(i>=0)METAS[i]=m;else METAS.push(m);
-  salvarMetas();CM('ovMt');renderMetas();toast('✅ Meta salva!','success');
+  salvarMetas();CM('ovMt');renderMetas();renderDash();toast('✅ Meta salva!','success');
 }
 function depositarMeta(i){const v=parseFloat(prompt(`Depositar na meta "${METAS[i].nome}"?\nDigite o valor:`)||'0');if(v>0){METAS[i].atual=(METAS[i].atual||0)+v;salvarMetas();renderMetas();toast(`💰 ${fmt(v)} depositado!`,'success');}}
 function delMt(i){METAS.splice(i,1);salvarMetas();renderMetas();toast('🗑️ Meta removida','info')}
@@ -2910,7 +2928,7 @@ function saveIv(){
   const v={nome:document.getElementById('ivNome').value,tipo:document.getElementById('ivTipo').value,valor:parseFloat(document.getElementById('ivValor').value)||0,atual:parseFloat(document.getElementById('ivAtual').value)||0,rent:parseFloat(document.getElementById('ivRent').value)||0};
   if(!v.nome||!v.valor)return toast('Preencha nome e valor','warning');
   if(i>=0)INVESTIMENTOS[i]=v;else INVESTIMENTOS.push(v);
-  salvarInv();CM('ovIv');renderInv();toast('✅ Salvo!','success');
+  salvarInv();CM('ovIv');renderInv();renderDash();toast('✅ Salvo!','success');
 }
 function delIv(i){INVESTIMENTOS.splice(i,1);salvarInv();renderInv();toast('🗑️ Removido','info')}
 
@@ -3005,8 +3023,11 @@ function switchCatTab(tab){
   }
   if(saveLimBtn) saveLimBtn.style.display = isCats ? 'none' : '';
 
-  if(isCats) renderCats();
-  else renderLimits();
+  if(isCats){ renderCats(); }
+  else {
+    // Ensures limits use latest data
+    renderLimits();
+  }
 }
 
 // Redefine limToggleView to use new IDs
@@ -3159,6 +3180,9 @@ const CATS_PADRAO_EXTRA = [
 
 function renderCats(){
   const txMes=MES_DATA.txMes||[];
+  // Sempre recarrega do localStorage para ter os mais recentes
+  const limsStored = lsUser('limites',{});
+  Object.assign(LIMS_LOCAL, limsStored);
   const lims={...LIMS_DEF,...LIMS_LOCAL};
 
   // Monta lista completa: padrão + custom, enriquecida com gastos
@@ -3214,13 +3238,24 @@ function renderCats(){
       const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':c.status==='ok'?'var(--verde)':'var(--muted2)';
       const stIco=c.status==='estourou'?'🔴':c.status==='atencao'?'🟡':c.status==='ok'?'🟢':'';
       const nTx=txMes.filter(t=>t.categoria===c.nome).length;
-      return `<div class="cat-card-item" onclick="filtrarPorCategoria('${c.nome}')" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'}">
+      return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'}; cursor:default">
         ${stIco?`<span class="cc-st">${stIco}</span>`:''}
-        <div class="cc-em">${c.emoji}</div>
+        <div class="cc-em" style="cursor:pointer" onclick="filtrarPorCategoria('${c.nome}')" title="Ver transações">${c.emoji}</div>
         <div class="cc-nm">${c.nome}</div>
-        <div class="cc-vl" style="color:${c.gasto>0?'var(--verm)':'var(--muted2)'}">${c.gasto>0?fmt(c.gasto):'R$ 0,00'}</div>
-        <div class="cc-lm">${c.limite>0?'Limite: '+fmt(c.limite):'Sem limite'}${nTx>0?' · '+nTx+' tx':''}</div>
-        ${c.limite>0?`<div class="cc-bar"><div class="cc-fill" style="width:0%;background:${bCor}" data-w="${bPct}%"></div></div>`:''}
+        <div class="cc-vl" style="color:${c.gasto>0?'var(--verm)':'var(--muted2)'};cursor:pointer" onclick="filtrarPorCategoria('${c.nome}')">${c.gasto>0?fmt(c.gasto):'R$ 0,00'}</div>
+        <!-- Limite inline editável -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:4px;margin:3px 0">
+          <span style="font-size:9px;color:var(--muted);font-weight:600">LIMITE</span>
+          <input type="number" value="${c.limite||0}" step="50" min="0"
+            style="width:72px;font-size:11px;font-weight:700;color:var(--azul);border:1px solid var(--border);border-radius:5px;padding:2px 5px;text-align:center;background:var(--bg);font-family:'Cabinet Grotesk',sans-serif;outline:none"
+            onclick="event.stopPropagation()"
+            onchange="editarLimiteInline('${c.nome}',this.value)"
+            onfocus="this.style.borderColor='var(--azul)';this.style.background='var(--azul-l)'"
+            onblur="this.style.borderColor='var(--border)';this.style.background='var(--bg)'"
+            title="Clique para editar o limite">
+        </div>
+        ${nTx>0?`<div style="font-size:10px;color:var(--muted)">${nTx} transação(ões)</div>`:''}
+        ${c.limite>0?`<div class="cc-bar"><div class="cc-fill" style="width:0%;background:${bCor}" data-w="${bPct}%"></div></div>`:'<div style="height:4px;background:var(--border);border-radius:100px;margin-top:5px;opacity:.3"></div>'}
       </div>`;
     }).join('');
     setTimeout(()=>el.querySelectorAll('[data-w]').forEach(b=>b.style.width=b.dataset.w),100);
@@ -3296,6 +3331,8 @@ function filtrarPorCategoria(cat){
 
 function renderLimits(){
   const txMes  = MES_DATA.txMes || [];
+  const limsStored2 = lsUser('limites',{});
+  Object.assign(LIMS_LOCAL, limsStored2);
   const lims   = {...LIMS_DEF, ...LIMS_LOCAL};
   const gastoMap = {};
   txMes.filter(t => t.valor < 0).forEach(t => {
@@ -3388,8 +3425,8 @@ function renderLimits(){
           <div style="font-size:10px;font-weight:600;color:var(--muted);margin-bottom:2px">LIMITE</div>
           <div style="display:flex;align-items:center;gap:5px">
             <input type="number" value="${d.lim}" step="50" min="0"
-              style="width:90px;font-size:14px;font-weight:900;color:var(--azul);border:none;background:none;outline:none;cursor:text;padding:0"
-              onchange="LIMS_LOCAL['${d.cat}']=parseFloat(this.value)||0;renderLimits()"
+              style="width:90px;font-size:14px;font-weight:900;color:var(--azul);border:none;background:none;outline:none;cursor:text;padding:0;font-family:'Cabinet Grotesk',sans-serif"
+              onchange="editarLimiteInline('${d.cat}',this.value)"
               onclick="this.select()"
               title="Clique para editar">
             <span style="font-size:10px;color:var(--muted)">✏️</span>
@@ -3437,7 +3474,26 @@ function renderLimits(){
 }
 
 function buildSegments(gasto, limite) { return []; }
-function saveLimits(){salvarLimsLocal();renderLimits();toast('💾 Limites salvos!','success')}
+function editarLimiteInline(cat, val){
+  const v = parseFloat(val)||0;
+  LIMS_LOCAL[cat] = v;
+  salvarLimsLocal();
+  // Atualiza só o visual — sem re-render completo para não perder foco
+  if(MES_DATA.categorias){
+    const c = MES_DATA.categorias.find(x=>x.nome===cat);
+    if(c){ c.limite=v; c.pct=v>0?(c.gasto/v*100):0; c.status=c.pct>=100?'estourou':c.pct>=80?'atencao':c.gasto>0?'ok':'livre'; }
+  }
+  // Re-render silencioso após 600ms para não travar o input
+  clearTimeout(window._limTimer);
+  window._limTimer = setTimeout(()=>{
+    renderCats();
+    renderLimits();
+    renderCatListDash(MES_DATA.categorias);
+    toast('💾 Limite salvo!','success');
+  }, 600);
+}
+
+function saveLimits(){salvarLimsLocal();renderLimits();renderCats();renderDash();toast('💾 Limites salvos!','success')}
 
 // ════════════════════════════════════════════════
 // RELATÓRIOS — COMPLETO COM DADOS REAIS
