@@ -308,7 +308,27 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .av-opt:hover,.av-opt.sel{border-color:rgba(255,255,255,.6);background:rgba(255,255,255,.15)}
 .cor-login{width:26px;height:26px;border-radius:50%;cursor:pointer;border:3px solid transparent;transition:all .15s;flex-shrink:0}
 .cor-login:hover,.cor-login.sel{border-color:#fff;transform:scale(1.2)}
-/* ════ PARCELAMENTO BUTTONS ════ */
+/* ════ DATE PICKER ════ */
+.dp-wrap{position:relative}
+.dp-pop{display:none;position:fixed;background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-lg);padding:16px;z-index:1000;min-width:280px}
+.dp-pop.open{display:block}
+.dp-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.dp-nav{background:none;border:none;cursor:pointer;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--muted);transition:all .15s}
+.dp-nav:hover{background:var(--bg);color:var(--azul)}
+.dp-month-label{font-size:14px;font-weight:800;color:var(--txt);cursor:pointer}
+.dp-month-label:hover{color:var(--azul)}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dp-dow{font-size:10px;font-weight:700;color:var(--muted2);text-align:center;padding:4px 0}
+.dp-day{aspect-ratio:1;border-radius:8px;border:none;background:none;cursor:pointer;font-size:12px;font-weight:600;color:var(--txt2);display:flex;align-items:center;justify-content:center;transition:all .15s;width:100%}
+.dp-day:hover{background:var(--azul-l);color:var(--azul)}
+.dp-day.today{border:1.5px solid var(--azul);color:var(--azul);font-weight:800}
+.dp-day.sel{background:var(--azul);color:#fff;font-weight:800}
+.dp-day.other-month{color:var(--muted2);opacity:.4}
+.dp-day.empty{cursor:default}
+.dp-input-row{display:flex;gap:6px;margin-bottom:10px}
+.dp-input-row .fi{font-size:13px}
+
+/* ════ PARCELAMENTO BUTTONS ════ *//* ════ PARCELAMENTO BUTTONS ════ */
 .parc-btn{padding:6px 12px;border:2px solid var(--border);border-radius:var(--r-xs);background:var(--card);cursor:pointer;font-size:12px;font-weight:700;color:var(--muted);transition:all .15s;font-family:'Cabinet Grotesk',sans-serif}
 .parc-btn:hover{border-color:var(--azul);color:var(--azul);background:var(--azul-l)}
 .parc-btn.sel{border-color:var(--azul);background:var(--azul);color:#fff}
@@ -464,7 +484,30 @@ input:checked+.slider:before{transform:translateX(16px)}
 <div class="modal">
   <div class="mh"><div class="mt" id="txTitle">Nova Transação</div><button class="mc" onclick="CM('ovTx')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Data</label><input class="fi" id="txData" placeholder="DD/MM/YYYY"></div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Data</label>
+      <div class="dp-wrap">
+        <input class="fi" id="txData" placeholder="DD/MM/YYYY" readonly
+          onclick="abrirDP()" style="cursor:pointer;background:var(--card)"
+          style="cursor:pointer">
+        <div class="dp-pop" id="dpPop">
+          <div class="dp-header">
+            <button type="button" class="dp-nav" onclick="dpNav(-1)">◀</button>
+            <span class="dp-month-label" id="dpLabel">—</span>
+            <button type="button" class="dp-nav" onclick="dpNav(1)">▶</button>
+          </div>
+          <div class="dp-grid">
+            <div class="dp-dow">D</div><div class="dp-dow">S</div><div class="dp-dow">T</div>
+            <div class="dp-dow">Q</div><div class="dp-dow">Q</div><div class="dp-dow">S</div>
+            <div class="dp-dow">S</div>
+          </div>
+          <div class="dp-grid" id="dpGrid"></div>
+          <div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <button type="button" class="btn bg btn-sm" onclick="dpHoje()">Hoje</button>
+            <button type="button" class="btn bp btn-sm" onclick="fecharDP()">Confirmar</button>
+          </div>
+        </div>
+      </div>
+    </div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="txValor" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
     <!-- txParc hidden — gerenciado pelo sistema de parcelamento -->
     <input type="hidden" id="txParc" value="0">
@@ -1858,6 +1901,8 @@ function txCartaoChange(){
 }
 
 let TX_PARC_SEL = 0; // parcelas selecionadas
+let DP_DATE = new Date(); // data picker selecionada
+let DP_VIEW = new Date(); // data picker mês em exibição
 
 function txParcToggle(){
   const isParc=document.getElementById('txIsParc').checked;
@@ -1987,6 +2032,9 @@ function resetTxForm(){
   const hoje = new Date();
   const mesHoje = getMesChave(0); // mês real de hoje
   const d = mesAtual === mesHoje ? hoje : new Date();
+  // Set today's date and init picker state
+  DP_DATE = hoje;
+  DP_VIEW = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
   document.getElementById('txData').value=hoje.toLocaleDateString('pt-BR');
   document.getElementById('txHora').value=hoje.toTimeString().slice(0,5);
   document.getElementById('txValor').value='';
@@ -2084,35 +2132,35 @@ function promptDel(idx){
 }
 
 async function confirmDel(){
-  const btn=document.getElementById('btnDel');btn.disabled=true;
-  const t=TX_FILT[delIdx];
-  const isParcelada = parseInt(t.parcelas)>1;
+  const btn=document.getElementById('btnDel');
+  btn.disabled=true;
+  const originalText=btn.textContent;
 
-  if(isParcelada && DEL_MODO==='so_esta'){
-    btn.textContent='⏳ Excluindo...';
-    await deletarUmaTx(t);
-    CM('ovDel');
-    toast('🗑️ Esta parcela excluída!','success');
+  const reset=()=>{ btn.disabled=false; btn.textContent='🗑️ Excluir'; };
+
+  try{
+    const t=TX_FILT[delIdx];
+    if(!t){ CM('ovDel'); reset(); return; }
+
+    const isParcelada=parseInt(t.parcelas)>1;
+
+    if(isParcelada && DEL_MODO==='todas'){
+      btn.textContent='⏳ Excluindo todas...';
+      await deletarTodasParcelas(t);
+      CM('ovDel');
+      toast('🗑️ Todas as parcelas excluídas!','success');
+    } else {
+      btn.textContent='⏳ Excluindo...';
+      await deletarUmaTx(t);
+      CM('ovDel');
+      toast('🗑️ Excluído!','success');
+    }
     setTimeout(()=>reload(), 1200);
-    return;
+  }catch(e){
+    toast('❌ '+e.message,'error');
+  }finally{
+    reset();
   }
-
-  if(isParcelada && DEL_MODO==='todas'){
-    btn.textContent='⏳ Excluindo todas...';
-    await deletarTodasParcelas(t);
-    CM('ovDel');
-    toast('🗑️ Todas as parcelas excluídas!','success');
-    setTimeout(()=>reload(), 1200);
-    return;
-  }
-
-  // Transação normal (não parcelada)
-  btn.textContent='⏳...';
-  await deletarUmaTx(t);
-  CM('ovDel');
-  toast('🗑️ Excluído!','success');
-  setTimeout(()=>reload(), 1200);
-  btn.disabled=false; btn.textContent='🗑️ Excluir';
 }
 
 let DEL_MODO = 'so_esta'; // 'so_esta' | 'todas'
@@ -2262,6 +2310,129 @@ function somarMes(mesAno, n){
   const ano=parseInt(parts[1])||new Date().getFullYear();
   const d=new Date(ano, idx2+n, 1);
   return `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+}
+
+// ════════════════════════════════════════════════
+// DATE PICKER — MODAL DE TRANSAÇÃO
+// ════════════════════════════════════════════════
+function abrirDP(){
+  const pop = document.getElementById('dpPop');
+  if(!pop) return;
+
+  // Inicializa com a data atual do campo ou hoje
+  const val = document.getElementById('txData').value;
+  if(val && val.match(/\d{2}\/\d{2}\/\d{4}/)){
+    const [d,m,y] = val.split('/');
+    DP_DATE = new Date(parseInt(y), parseInt(m)-1, parseInt(d));
+    DP_VIEW = new Date(parseInt(y), parseInt(m)-1, 1);
+  } else {
+    DP_DATE = new Date();
+    DP_VIEW = new Date(DP_DATE.getFullYear(), DP_DATE.getMonth(), 1);
+  }
+
+  renderDP();
+
+  // Posiciona abaixo do input
+  const input = document.getElementById('txData');
+  const rect = input.getBoundingClientRect();
+  pop.style.top  = (rect.bottom + 4 + window.scrollY) + 'px';
+  pop.style.left = rect.left + 'px';
+  pop.classList.add('open');
+
+  // Fecha ao clicar fora
+  setTimeout(()=>{
+    document.addEventListener('click', _dpOutside, {once:true, capture:true});
+  }, 50);
+}
+
+function _dpOutside(e){
+  const pop = document.getElementById('dpPop');
+  if(pop && !pop.contains(e.target) && e.target.id !== 'txData'){
+    pop.classList.remove('open');
+  }
+}
+
+function fecharDP(){
+  document.getElementById('dpPop')?.classList.remove('open');
+}
+
+function dpNav(dir){
+  DP_VIEW.setMonth(DP_VIEW.getMonth() + dir);
+  renderDP();
+}
+
+function dpHoje(){
+  DP_DATE = new Date();
+  DP_VIEW = new Date(DP_DATE.getFullYear(), DP_DATE.getMonth(), 1);
+  renderDP();
+  dpConfirmar();
+}
+
+function dpConfirmar(){
+  const d = String(DP_DATE.getDate()).padStart(2,'0');
+  const m = String(DP_DATE.getMonth()+1).padStart(2,'0');
+  const y = DP_DATE.getFullYear();
+  document.getElementById('txData').value = `${d}/${m}/${y}`;
+  fecharDP();
+}
+
+function dpSelDia(dia){
+  DP_DATE = new Date(DP_VIEW.getFullYear(), DP_VIEW.getMonth(), dia);
+  renderDP();
+  dpConfirmar();
+}
+
+function renderDP(){
+  const y = DP_VIEW.getFullYear();
+  const m = DP_VIEW.getMonth(); // 0-11
+  const hoje = new Date();
+
+  document.getElementById('dpLabel').textContent =
+    MESES_NM[m] + ' ' + y;
+
+  const primeiroDia = new Date(y, m, 1).getDay(); // 0=Dom
+  const ultimoDia   = new Date(y, m+1, 0).getDate();
+
+  // Dias do mês anterior para completar a grid
+  const diasAnt = new Date(y, m, 0).getDate();
+
+  let html = '';
+
+  // Dias do mês anterior (desabilitados)
+  for(let i = primeiroDia-1; i >= 0; i--){
+    html += `<button type="button" class="dp-day other-month" onclick="dpNavAnt(${diasAnt-i})">${diasAnt-i}</button>`;
+  }
+
+  // Dias do mês atual
+  for(let dia=1; dia<=ultimoDia; dia++){
+    const isHoje = (hoje.getFullYear()===y && hoje.getMonth()===m && hoje.getDate()===dia);
+    const isSel  = (DP_DATE.getFullYear()===y && DP_DATE.getMonth()===m && DP_DATE.getDate()===dia);
+    const cls = ['dp-day',
+      isHoje&&!isSel ? 'today' : '',
+      isSel ? 'sel' : '',
+    ].filter(Boolean).join(' ');
+    html += `<button type="button" class="${cls}" onclick="dpSelDia(${dia})">${dia}</button>`;
+  }
+
+  // Completar última linha com dias do próximo mês
+  const totalCells = primeiroDia + ultimoDia;
+  const resto = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for(let i=1; i<=resto; i++){
+    html += `<button type="button" class="dp-day other-month" onclick="dpNavProx(${i})">${i}</button>`;
+  }
+
+  document.getElementById('dpGrid').innerHTML = html;
+}
+
+function dpNavAnt(dia){
+  DP_VIEW.setMonth(DP_VIEW.getMonth() - 1);
+  DP_DATE = new Date(DP_VIEW.getFullYear(), DP_VIEW.getMonth(), dia);
+  renderDP(); dpConfirmar();
+}
+function dpNavProx(dia){
+  DP_VIEW.setMonth(DP_VIEW.getMonth() + 1);
+  DP_DATE = new Date(DP_VIEW.getFullYear(), DP_VIEW.getMonth(), dia);
+  renderDP(); dpConfirmar();
 }
 
 // ════════════════════════════════════════════════
