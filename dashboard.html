@@ -698,8 +698,7 @@ input:checked+.slider:before{transform:translateX(16px)}
     <button class="ni" data-p="investimentos"><span class="nic">📈</span> Investimentos</button>
     <button class="ni" data-p="planejamento"><span class="nic">🗓️</span> Planejamento Anual</button>
     <div class="nsec">Análises</div>
-    <button class="ni" data-p="categorias"><span class="nic">📂</span> Categorias</button>
-    <button class="ni" data-p="limites"><span class="nic">⚙️</span> Limites</button>
+    <button class="ni" data-p="categorias"><span class="nic">📂</span> Categorias & Limites</button>
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
   <div class="sb-bot">
@@ -1045,52 +1044,127 @@ input:checked+.slider:before{transform:translateX(16px)}
   </div>
 </div>
 
-<!-- ═══ CATEGORIAS ═══ -->
+<!-- ═══ CATEGORIAS & LIMITES (UNIFICADO) ═══ -->
 <div class="page" id="page-categorias">
   <div class="ph">
-    <div><h1>📂 Categorias</h1><p id="catSubtitle">Gastos por categoria — clique para ver transações</p></div>
-    <div class="pa"><button class="btn bp" onclick="abrirModalCat()">+ Nova categoria</button></div>
-  </div>
-
-  <!-- KPIs rápidos de categorias -->
-  <div id="catsKpis" class="g4 mb"></div>
-
-  <!-- Filtro de visualização -->
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted)">Mostrar:</span>
-    <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
-    <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
-    <button class="btn bs btn-sm catFiltBtn" data-f="atencao" onclick="setCatFiltro('atencao',this)">🟡 Atenção</button>
-    <button class="btn bs btn-sm catFiltBtn" data-f="ok" onclick="setCatFiltro('ok',this)">🟢 OK</button>
-    <button class="btn bs btn-sm catFiltBtn" data-f="zerado" onclick="setCatFiltro('zerado',this)">⚪ Sem gastos</button>
-    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
-      <span style="font-size:12px;font-weight:600;color:var(--muted)">Ordenar:</span>
-      <select class="sf-f" id="catOrdem" onchange="renderCats()" style="font-size:12px;padding:5px 8px">
-        <option value="gasto">Maior gasto</option>
-        <option value="nome">Nome A-Z</option>
-        <option value="pct">% do limite</option>
-      </select>
+    <div>
+      <h1>📂 Categorias & Limites</h1>
+      <p id="catSubtitle">Gerencie categorias e defina seus limites mensais</p>
+    </div>
+    <div class="pa">
+      <button class="btn bg" onclick="saveLimits()" id="btnSaveLimits" style="display:none">💾 Salvar limites</button>
+      <button class="btn bp" onclick="abrirModalCat()">+ Nova categoria</button>
     </div>
   </div>
 
-  <!-- Grid de categorias -->
-  <div id="catsGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"></div>
-
-  <!-- Análise detalhada -->
-  <div class="card mb">
-    <div class="ch">
-      <div><div class="ct">📊 Análise Detalhada por Categoria</div><div class="cs">Gasto, limite, progresso e nº de transações</div></div>
-    </div>
-    <div id="catsDetail" style="padding:0 18px 16px"></div>
+  <!-- TABS internas -->
+  <div style="display:flex;gap:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:18px;width:fit-content;box-shadow:var(--sh)">
+    <button id="tabCatBtn" onclick="switchCatTab('cats')"
+      style="padding:8px 20px;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;background:var(--azul);color:#fff">
+      📂 Categorias
+    </button>
+    <button id="tabLimBtn" onclick="switchCatTab('lims')"
+      style="padding:8px 20px;border:none;border-radius:var(--r-sm);font-size:13px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;background:none;color:var(--muted)">
+      ⚙️ Limites Mensais
+    </button>
   </div>
 
-  <!-- Categorias personalizadas -->
-  <div class="card">
-    <div class="ch">
-      <div><div class="ct">⭐ Minhas Categorias Personalizadas</div><div class="cs">Criadas por você</div></div>
-      <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Adicionar</button>
+  <!-- ── TAB: CATEGORIAS ── -->
+  <div id="tabCats">
+    <!-- KPIs rápidos -->
+    <div id="catsKpis" class="g4 mb"></div>
+
+    <!-- Filtros -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <span style="font-size:12px;font-weight:700;color:var(--muted)">Mostrar:</span>
+      <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
+      <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
+      <button class="btn bs btn-sm catFiltBtn" data-f="atencao" onclick="setCatFiltro('atencao',this)">🟡 Atenção</button>
+      <button class="btn bs btn-sm catFiltBtn" data-f="ok" onclick="setCatFiltro('ok',this)">🟢 OK</button>
+      <button class="btn bs btn-sm catFiltBtn" data-f="zerado" onclick="setCatFiltro('zerado',this)">⚪ Sem gastos</button>
+      <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">Ordenar:</span>
+        <select class="sf-f" id="catOrdem" onchange="renderCats()" style="font-size:12px;padding:5px 8px">
+          <option value="gasto">Maior gasto</option>
+          <option value="nome">Nome A-Z</option>
+          <option value="pct">% do limite</option>
+        </select>
+      </div>
     </div>
-    <div id="catsCustom" style="padding:0 18px 16px"></div>
+
+    <!-- Grid categorias -->
+    <div id="catsGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px"></div>
+
+    <!-- Análise detalhada -->
+    <div class="card mb">
+      <div class="ch"><div><div class="ct">📊 Análise Detalhada</div><div class="cs">Gasto, limite, progresso e transações por categoria</div></div></div>
+      <div id="catsDetail" style="padding:0 18px 16px;overflow-x:auto"></div>
+    </div>
+
+    <!-- Categorias personalizadas -->
+    <div class="card">
+      <div class="ch">
+        <div><div class="ct">⭐ Minhas Categorias Personalizadas</div><div class="cs">Criadas por você</div></div>
+        <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Adicionar</button>
+      </div>
+      <div id="catsCustom" style="padding:0 18px 16px"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: LIMITES ── -->
+  <div id="tabLims" style="display:none">
+    <!-- KPIs limites -->
+    <div id="limKpis" class="g4 mb"></div>
+
+    <!-- Barra geral -->
+    <div class="card mb" id="limBudgetBar">
+      <div class="ch"><div><div class="ct">📊 Orçamento Total do Mês</div><div class="cs" id="limBudgetSub">—</div></div></div>
+      <div style="padding:0 20px 20px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px">
+          <span id="limBudgetGasto" style="color:var(--verm)">R$ 0,00 gastos</span>
+          <span id="limBudgetPct" style="color:var(--muted)">0%</span>
+          <span id="limBudgetTotal" style="color:var(--muted)">de R$ 0,00</span>
+        </div>
+        <div style="height:16px;background:var(--border);border-radius:100px;overflow:hidden;position:relative">
+          <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1);background:linear-gradient(90deg,var(--verde),var(--azul))"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px">
+          <span>0%</span><span style="color:var(--lara);font-weight:700">⚠️ 80%</span><span style="color:var(--verm);font-weight:700">🔴 100%</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- View toggle -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px">
+        <button id="btnViewCards" onclick="limToggleView('cards',this)"
+          style="padding:6px 14px;border:none;border-radius:var(--r-xs);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;background:var(--card);color:var(--azul);box-shadow:var(--sh);transition:all .15s">
+          🃏 Cards
+        </button>
+        <button id="btnViewTable" onclick="limToggleView('tabela',this)"
+          style="padding:6px 14px;border:none;border-radius:var(--r-xs);font-size:12px;font-weight:700;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;background:none;color:var(--muted);transition:all .15s">
+          ☰ Tabela
+        </button>
+      </div>
+      <button class="btn bp btn-sm" onclick="saveLimits()">💾 Salvar limites</button>
+    </div>
+
+    <!-- Cards view -->
+    <div id="limTableView">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px" id="limCards"></div>
+    </div>
+
+    <!-- Tabela view -->
+    <div id="limCardView" style="display:none">
+      <div class="tw">
+        <table class="st">
+          <thead><tr><th>Categoria</th><th>Limite (R$)</th><th>Gasto</th><th>Restante</th><th>Progresso</th><th>Status</th><th>Transações</th></tr></thead>
+          <tbody id="limBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:10px">💡 Clique no valor do limite para editar. Clique em "Salvar limites" para preservar.</div>
   </div>
 </div>
 
@@ -1112,7 +1186,6 @@ input:checked+.slider:before{transform:translateX(16px)}
         <span class="epick" onclick="selEmoji(this,'📷')">📷</span><span class="epick" onclick="selEmoji(this,'🎸')">🎸</span>
         <span class="epick" onclick="selEmoji(this,'🍷')">🍷</span><span class="epick" onclick="selEmoji(this,'☕')">☕</span>
         <span class="epick" onclick="selEmoji(this,'💇')">💇</span><span class="epick" onclick="selEmoji(this,'💆')">💆</span>
-        <span class="epick" onclick="selEmoji(this,'🛁')">🛁</span><span class="epick" onclick="selEmoji(this,'🧴')">🧴</span>
         <span class="epick" onclick="selEmoji(this,'🏊')">🏊</span><span class="epick" onclick="selEmoji(this,'🚲')">🚲</span>
         <span class="epick" onclick="selEmoji(this,'⚽')">⚽</span><span class="epick" onclick="selEmoji(this,'🏄')">🏄</span>
         <span class="epick" onclick="selEmoji(this,'🎲')">🎲</span><span class="epick" onclick="selEmoji(this,'🧩')">🧩</span>
@@ -1146,53 +1219,6 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mf"><button class="btn bg" onclick="CM('ovCatModal')">Cancelar</button><button class="btn bp" onclick="salvarCatCustom()">💾 Salvar</button></div>
 </div></div>
 
-<!-- ═══ LIMITES ═══ -->
-<div class="page" id="page-limites">
-  <div class="ph">
-    <div><h1>⚙️ Limites Mensais</h1><p id="limSubtitle">Configure quanto quer gastar em cada categoria</p></div>
-    <div class="pa">
-      <button class="btn bs" onclick="limToggleView()" id="btnLimView">🃏 Ver como cards</button>
-      <button class="btn bp" onclick="saveLimits()">💾 Salvar limites</button>
-    </div>
-  </div>
-
-  <!-- KPIs resumo dos limites -->
-  <div id="limKpis" class="g4 mb"></div>
-
-  <!-- Barra de progresso do orçamento total -->
-  <div class="card mb" id="limBudgetBar">
-    <div class="ch"><div><div class="ct">📊 Orçamento Total do Mês</div><div class="cs" id="limBudgetSub">Gasto vs total de limites definidos</div></div></div>
-    <div style="padding:0 20px 20px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;margin-bottom:8px">
-        <span id="limBudgetGasto" style="color:var(--verm)">R$ 0,00 gastos</span>
-        <span id="limBudgetPct" style="color:var(--muted)">0%</span>
-        <span id="limBudgetTotal" style="color:var(--muted)">de R$ 0,00</span>
-      </div>
-      <div style="height:16px;background:var(--border);border-radius:100px;overflow:hidden;position:relative">
-        <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1);background:linear-gradient(90deg,var(--verde),var(--azul))"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:6px">
-        <span>0%</span><span style="color:var(--lara);font-weight:700">⚠️ 80%</span><span style="color:var(--verm);font-weight:700">🔴 100%</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- View tabela (padrão) -->
-  <div id="limTableView">
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px" id="limCards"></div>
-  </div>
-
-  <!-- View cards compacta -->
-  <div id="limCardView" style="display:none">
-    <div class="tw">
-      <table class="st">
-        <thead><tr><th>Categoria</th><th>Limite (R$)</th><th>Gasto</th><th>Restante</th><th>Progresso</th><th>Status</th><th>Transações</th></tr></thead>
-        <tbody id="limBody"></tbody>
-      </table>
-    </div>
-  </div>
-  <div style="font-size:11px;color:var(--muted);font-style:italic;margin-top:10px">💡 Clique no valor do limite para editar. Clique em "Salvar limites" para preservar.</div>
-</div>
 
 <!-- ═══ RELATÓRIOS ═══ -->
 <div class="page" id="page-relatorios">
@@ -1381,7 +1407,7 @@ async function reload(manual=false){
     renderDash();
     // Re-renderiza aba ativa
     const cur=document.querySelector('.page.active')?.id?.replace('page-','');
-    if(cur&&cur!=='dashboard'){const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:renderCats,limites:renderLimits,relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};if(fns[cur])fns[cur]();}
+    if(cur&&cur!=='dashboard'){const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};if(fns[cur])fns[cur]();}
     if(manual)toast('✅ Atualizado!','success');
   }catch(e){
     if(manual)toast('❌ '+e.message,'error');
@@ -1393,12 +1419,17 @@ async function reload(manual=false){
 // NAVEGAÇÃO
 // ════════════════════════════════════════════════
 function go(page){
+  // 'limites' redirects to the unified 'categorias' page on lims tab
+  const targetPage = page === 'limites' ? 'categorias' : page;
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(i=>i.classList.remove('active'));
-  document.getElementById('page-'+page)?.classList.add('active');
-  document.querySelector(`[data-p="${page}"]`)?.classList.add('active');
+  document.getElementById('page-'+targetPage)?.classList.add('active');
+  document.querySelector(`[data-p="${targetPage}"]`)?.classList.add('active');
   window.scrollTo(0,0);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:renderCats,limites:renderLimits,relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+
+  if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
+  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.p)));
@@ -2949,6 +2980,56 @@ function renderPlan(){
 }
 
 // ════════════════════════════════════════════════
+// TAB SWITCH: Categorias ↔ Limites
+// ════════════════════════════════════════════════
+let CAT_TAB = 'cats'; // 'cats' | 'lims'
+
+function switchCatTab(tab){
+  CAT_TAB = tab;
+  const isCats = tab === 'cats';
+
+  document.getElementById('tabCats').style.display = isCats ? '' : 'none';
+  document.getElementById('tabLims').style.display = isCats ? 'none' : '';
+
+  const btnC = document.getElementById('tabCatBtn');
+  const btnL = document.getElementById('tabLimBtn');
+  const saveLimBtn = document.getElementById('btnSaveLimits');
+
+  if(btnC){
+    btnC.style.background = isCats ? 'var(--azul)' : 'none';
+    btnC.style.color      = isCats ? '#fff' : 'var(--muted)';
+  }
+  if(btnL){
+    btnL.style.background = !isCats ? 'var(--azul)' : 'none';
+    btnL.style.color      = !isCats ? '#fff' : 'var(--muted)';
+  }
+  if(saveLimBtn) saveLimBtn.style.display = isCats ? 'none' : '';
+
+  if(isCats) renderCats();
+  else renderLimits();
+}
+
+// Redefine limToggleView to use new IDs
+function limToggleView(mode, btn){
+  const isCards = mode === 'cards';
+  document.getElementById('limTableView').style.display = isCards ? '' : 'none';
+  document.getElementById('limCardView').style.display  = isCards ? 'none' : '';
+
+  const btnC = document.getElementById('btnViewCards');
+  const btnT = document.getElementById('btnViewTable');
+  if(btnC){
+    btnC.style.background = isCards ? 'var(--card)' : 'none';
+    btnC.style.color      = isCards ? 'var(--azul)' : 'var(--muted)';
+    btnC.style.boxShadow  = isCards ? 'var(--sh)' : 'none';
+  }
+  if(btnT){
+    btnT.style.background = !isCards ? 'var(--card)' : 'none';
+    btnT.style.color      = !isCards ? 'var(--azul)' : 'var(--muted)';
+    btnT.style.boxShadow  = !isCards ? 'var(--sh)' : 'none';
+  }
+}
+
+// ════════════════════════════════════════════════
 // CATEGORIAS — COMPLETO
 // ════════════════════════════════════════════════
 let CAT_FILTRO='todas';
@@ -3208,14 +3289,10 @@ function filtrarPorCategoria(cat){
 // ════════════════════════════════════════════════
 // LIMITES — REDESIGN VISUAL
 // ════════════════════════════════════════════════
-let LIM_VIEW = 'cards'; // 'cards' | 'tabela'
+// LIM_VIEW now handled by limToggleView(mode)
 
-function limToggleView(){
-  LIM_VIEW = LIM_VIEW === 'cards' ? 'tabela' : 'cards';
-  document.getElementById('limTableView').style.display = LIM_VIEW === 'cards' ? '' : 'none';
-  document.getElementById('limCardView').style.display  = LIM_VIEW === 'tabela' ? '' : 'none';
-  document.getElementById('btnLimView').textContent = LIM_VIEW === 'cards' ? '☰ Ver como tabela' : '🃏 Ver como cards';
-}
+// limToggleView: see new version in switchCatTab section
+
 
 function renderLimits(){
   const txMes  = MES_DATA.txMes || [];
