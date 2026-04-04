@@ -3322,8 +3322,6 @@ function renderCats(){
       const custIdx=CATS_CUSTOM.findIndex(x=>x.nome===c.nome);
       return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'};cursor:pointer;transition:all .2s"
         onclick="abrirEditarCategoria('${c.nome}',${isCustom},${custIdx})"
-        onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='var(--sh-md)'"
-        onmouseleave="this.style.transform='';this.style.boxShadow=''">
         ${stIco?`<span class="cc-st">${stIco}</span>`:''}
         <div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)" title="Clique para editar">✏️</div>
         <div class="cc-em">${c.emoji}</div>
@@ -3380,7 +3378,7 @@ function renderCats(){
           const lim=lims[c.nome]||0;
           const pct=lim>0?Math.min(gasto/lim*100,100):0;
           const bCor2=pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
-          return '<div class="cat-card-item" style="border-top:3px solid '+c.cor+';cursor:pointer;transition:all .15s" onclick="abrirEditarCategoria('+JSON.stringify(c.nome)+',true,'+i+')" onmouseenter="this.style.transform='translateY(-2px)'" onmouseleave="this.style.transform=''"><div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)">✏️</div><div class="cc-em">'+c.emoji+'</div><div class="cc-nm">'+c.nome+'</div><div class="cc-vl" style="color:'+(gasto>0?'var(--verm)':'var(--muted2)')+'">'+(gasto>0?fmt(gasto):'R$ 0,00')+'</div><div style="font-size:10px;color:var(--muted)">'+(lim>0?'Limite: '+fmt(lim):'Sem limite')+'</div>'+(lim>0?'<div class="cc-bar"><div class="cc-fill" style="width:'+pct+'%;background:'+bCor2+'"></div></div>':'')+'</div>';
+          return '<div class="cat-card-item" style="border-top:3px solid '+c.cor+';cursor:pointer" onclick="abrirEditarCategoria('+JSON.stringify(c.nome)+',true,'+i+')" ><div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)">✏️</div><div class="cc-em">'+c.emoji+'</div><div class="cc-nm">'+c.nome+'</div><div class="cc-vl" style="color:'+(gasto>0?'var(--verm)':'var(--muted2)')+'">'+(gasto>0?fmt(gasto):'R$ 0,00')+'</div><div style="font-size:10px;color:var(--muted)">'+(lim>0?'Limite: '+fmt(lim):'Sem limite')+'</div>'+(lim>0?'<div class="cc-bar"><div class="cc-fill" style="width:'+pct+'%;background:'+bCor2+'"></div></div>':'')+'</div>';
         }).join('')}
       </div>
     </div>`;
