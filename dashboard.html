@@ -351,13 +351,41 @@ input:checked+.slider:before{transform:translateX(16px)}
 /* ════ TOOLTIP FIX ════ *//* ════ TOOLTIP FIX ════ */
 .hist-tip{pointer-events:none;z-index:999;position:fixed!important}
 
+/* ════ VALOR FORMATADO ════ */
+input.valor-fmt{font-variant-numeric:tabular-nums}
+
 /* ════ MOBILE ════ */
 @media(max-width:768px){
-  .login-box{margin:16px;padding:32px 24px}
+  .login-box{margin:16px;padding:28px 20px}
   .sidebar{display:none}
-  .main{margin-left:0}
-  .kg{grid-template-columns:1fr 1fr}
+  .main{margin-left:0;padding:0}
+  .ph{padding:14px 14px 8px;flex-direction:column;gap:8px;align-items:flex-start}
+  .ph .pa{width:100%;display:flex;gap:6px;flex-wrap:wrap}
+  .ph .pa .btn{flex:1;min-width:0;font-size:12px;padding:7px 8px}
+  .kg,.g2,.g2e,.g3,.g4{grid-template-columns:1fr!important}
+  .g2,.g3,.g4{gap:10px}
+  .card{border-radius:12px;margin:0 10px}
+  .kpi{padding:14px}
+  .kpi-v{font-size:18px}
   #topbarUserArea{display:none}
+  .tb{flex-direction:column;gap:6px}
+  .sf-s,.sf-f{width:100%!important}
+  .modal{margin:10px;max-width:calc(100vw - 20px);max-height:90vh;overflow-y:auto}
+  .fr{flex-direction:column}
+  .fr.one{flex-direction:column}
+  .parc-btn{padding:5px 10px;font-size:11px}
+  table.st{font-size:11px}
+  table.st th,table.st td{padding:6px 8px}
+  .ni{padding:8px 12px;font-size:12px}
+  .kpi-top{margin-bottom:4px}
+  #catsGrid{grid-template-columns:repeat(2,1fr)!important;gap:8px}
+  .cat-card-item{padding:12px 8px}
+  .dv-card,.meta-card,.inv-card{padding:14px}
+  #dashChart svg{min-width:280px}
+}
+@media(max-width:400px){
+  .kg{grid-template-columns:1fr}
+  #catsGrid{grid-template-columns:1fr 1fr!important}
 }
 </style>
 </head>
@@ -508,7 +536,7 @@ input:checked+.slider:before{transform:translateX(16px)}
         </div>
       </div>
     </div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="txValor" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="txValor" class="fi valor-input" inputmode="decimal" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
     <!-- txParc hidden — gerenciado pelo sistema de parcelamento -->
     <input type="hidden" id="txParc" value="0">
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="txCat"><option>Alimentação</option><option>Transporte</option><option>Contas</option><option>Lazer</option><option>Saúde</option><option>Educação</option><option>Moradia</option><option>Beleza</option><option>Vestuário</option><option>Pet</option><option>Tecnologia</option><option>Filhos</option><option>Presentes</option><option>Veículo</option><option>Impostos</option><option>Assinaturas</option><option>Salário</option><option>Freelance</option><option>Investimento</option><option>Outros</option></select></div><div class="fg"><label class="fl">Subcategoria</label><input class="fi" id="txSub" placeholder="Ex: Almoço, Uber..."></div></div>
@@ -562,8 +590,8 @@ input:checked+.slider:before{transform:translateX(16px)}
       </div>
     </div>
     <input type="hidden" id="txIdx" value="-1">
-    <!-- Mês/Ano selecionável -->
-    <div class="fr one"><div class="fg"><label class="fl">📅 Mês de referência</label>
+    <!-- Mês/Ano selecionável — oculto para cartão crédito (data de corte controla) -->
+    <div class="fr one" id="txMesAnoRow"><div class="fg"><label class="fl">📅 Mês de referência</label>
       <select class="fs" id="txMesAno" onchange="onMesAnoChange()"></select>
     </div></div>
   </div>
@@ -583,7 +611,7 @@ input:checked+.slider:before{transform:translateX(16px)}
 <div class="modal">
   <div class="mh"><div class="mt" id="fxTitle">Nova Despesa Fixa</div><button class="mc" onclick="CM('ovFx')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="fxValor" step="0.01"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="fxValor" class="fi valor-input" inputmode="decimal" step="0.01"></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"><option>Contas</option><option>Moradia</option><option>Saúde</option><option>Educação</option><option>Assinaturas</option><option>Transporte</option><option>Outros</option></select></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Observação</label><input class="fi" id="fxObs" placeholder="Opcional"></div></div>
     <input type="hidden" id="fxIdx" value="-1">
@@ -597,7 +625,7 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mh"><div class="mt" id="ctTitle">Adicionar Cartão</div><button class="mc" onclick="CM('ovCt')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome do Cartão</label><input class="fi" id="ctNome" placeholder="Ex: Nubank Roxinho, Itaú..."></div><div class="fg"><label class="fl">Bandeira</label><select class="fs" id="ctBand"><option>Visa</option><option>Mastercard</option><option>Elo</option><option>American Express</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="number" class="fi" id="ctLim" step="0.01"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="number" class="fi" id="ctLim" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor do Cartão</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="coresGrid">
         <div class="cor-opt sel" style="background:linear-gradient(135deg,#6B21A8,#A855F7)" onclick="selCor(this,'linear-gradient(135deg,#6B21A8,#A855F7)')"></div>
@@ -622,7 +650,7 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mh"><div class="mt" id="dvTitle">Nova Dívida</div><button class="mc" onclick="CM('ovDv')">✕</button></div>
   <div class="mb2">
     <div class="fr one"><div class="fg"><label class="fl">Nome da Dívida</label><input class="fi" id="dvNome" placeholder="Ex: Financiamento do carro..."></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="number" class="fi" id="dvTotal" step="0.01"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="number" class="fi" id="dvMensal" step="0.01"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="number" class="fi" id="dvTotal" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="number" class="fi" id="dvMensal" class="fi valor-input" inputmode="decimal" step="0.01"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="dvPagas" min="0" value="0"></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="dvVenc" min="1" max="31" value="5"></div></div>
     <input type="hidden" id="dvIdx" value="-1">
   </div>
@@ -630,12 +658,63 @@ input:checked+.slider:before{transform:translateX(16px)}
 </div></div>
 
 <!-- Modal Meta -->
+<!-- Modal Depositar Meta -->
+<div class="ov" id="ovDepMeta">
+<div class="modal">
+  <div class="mh"><div class="mt">💰 Depositar na Meta</div><button class="mc" onclick="CM('ovDepMeta')">✕</button></div>
+  <div class="mb2">
+    <div style="text-align:center;padding:14px;background:var(--bg);border-radius:var(--r-sm);margin-bottom:16px">
+      <div style="font-size:20px;font-weight:800;margin-bottom:8px" id="depMetaNome">—</div>
+      <div style="display:flex;justify-content:center;gap:20px;font-size:12px">
+        <div><div style="color:var(--muted)">Atual</div><div style="font-weight:800;color:var(--verde);font-size:15px" id="depMetaAtual">—</div></div>
+        <div><div style="color:var(--muted)">Total</div><div style="font-weight:800;color:var(--txt);font-size:15px" id="depMetaTotal">—</div></div>
+        <div><div style="color:var(--muted)">Faltam</div><div style="font-weight:800;color:var(--azul);font-size:15px" id="depMetaRest">—</div></div>
+      </div>
+    </div>
+    <div class="fr one"><div class="fg">
+      <label class="fl">Valor a depositar (R$)</label>
+      <input class="fi valor-input" id="depValor" type="text" inputmode="decimal" placeholder="0,00"
+        oninput="mascaraValor(this)"
+        onkeydown="if(event.key==='Enter')confirmarDeposito()">
+    </div></div>
+    <input type="hidden" id="depMetaIdx" value="">
+  </div>
+  <div class="mf">
+    <button class="btn bg" onclick="CM('ovDepMeta')">Cancelar</button>
+    <button class="btn bp" onclick="confirmarDeposito()">💰 Depositar</button>
+  </div>
+</div></div>
+
 <div class="ov" id="ovMt">
 <div class="modal">
   <div class="mh"><div class="mt" id="mtTitle">Nova Meta</div><button class="mc" onclick="CM('ovMt')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Nome da Meta</label><input class="fi" id="mtNome" placeholder="Ex: Viagem, iPhone..."></div><div class="fg"><label class="fl">Emoji</label><input class="fi" id="mtEmoji" value="🎯" style="font-size:20px;text-align:center"></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="number" class="fi" id="mtTotal" step="0.01"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="number" class="fi" id="mtAtual" step="0.01" value="0"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="number" class="fi" id="mtMensal" step="0.01"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Nome da Meta</label><input class="fi" id="mtNome" placeholder="Ex: Viagem, iPhone..."></div><div class="fg"><label class="fl">Emoji</label>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">
+        <span class="epick" onclick="selMtEmoji(this,'🎯')">🎯</span>
+        <span class="epick" onclick="selMtEmoji(this,'💰')">💰</span>
+        <span class="epick" onclick="selMtEmoji(this,'🏠')">🏠</span>
+        <span class="epick" onclick="selMtEmoji(this,'✈️')">✈️</span>
+        <span class="epick" onclick="selMtEmoji(this,'🌍')">🌍</span>
+        <span class="epick" onclick="selMtEmoji(this,'🏖️')">🏖️</span>
+        <span class="epick" onclick="selMtEmoji(this,'🚢')">🚢</span>
+        <span class="epick" onclick="selMtEmoji(this,'🏔️')">🏔️</span>
+        <span class="epick" onclick="selMtEmoji(this,'🌴')">🌴</span>
+        <span class="epick" onclick="selMtEmoji(this,'🗼')">🗼</span>
+        <span class="epick" onclick="selMtEmoji(this,'🏝️')">🏝️</span>
+        <span class="epick" onclick="selMtEmoji(this,'🎒')">🎒</span>
+        <span class="epick" onclick="selMtEmoji(this,'🚗')">🚗</span>
+        <span class="epick" onclick="selMtEmoji(this,'📱')">📱</span>
+        <span class="epick" onclick="selMtEmoji(this,'💻')">💻</span>
+        <span class="epick" onclick="selMtEmoji(this,'🏋️')">🏋️</span>
+        <span class="epick" onclick="selMtEmoji(this,'🎓')">🎓</span>
+        <span class="epick" onclick="selMtEmoji(this,'🏡')">🏡</span>
+        <span class="epick" onclick="selMtEmoji(this,'💎')">💎</span>
+        <span class="epick" onclick="selMtEmoji(this,'🎊')">🎊</span>
+      </div>
+      <input type="hidden" id="mtEmoji" value="🎯">
+    </div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="number" class="fi" id="mtTotal" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="number" class="fi" id="mtAtual" class="fi valor-input" inputmode="decimal" step="0.01" value="0"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="number" class="fi" id="mtMensal" step="0.01"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="mtDesc" placeholder="Descreva seu objetivo"></div></div>
     <input type="hidden" id="mtIdx" value="-1">
   </div>
@@ -648,7 +727,7 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mh"><div class="mt" id="ivTitle">Novo Investimento</div><button class="mc" onclick="CM('ovIv')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="ivNome" placeholder="Ex: Tesouro Selic, PETR4..."></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="ivTipo"><option>Renda Fixa</option><option>Ações</option><option>FIIs</option><option>Cripto</option><option>Internacional</option><option>Poupança</option><option>Outros</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="number" class="fi" id="ivValor" step="0.01"></div><div class="fg"><label class="fl">Valor Atual</label><input type="number" class="fi" id="ivAtual" step="0.01"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="number" class="fi" id="ivValor" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Valor Atual</label><input type="number" class="fi" id="ivAtual" step="0.01"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
     <input type="hidden" id="ivIdx" value="-1">
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovIv')">Cancelar</button><button class="btn bp" onclick="saveIv()">💾 Salvar</button></div>
@@ -699,6 +778,7 @@ input:checked+.slider:before{transform:translateX(16px)}
     <button class="ni" data-p="planejamento"><span class="nic">🗓️</span> Planejamento Anual</button>
     <div class="nsec">Análises</div>
     <button class="ni" data-p="categorias"><span class="nic">📂</span> Categorias & Limites</button>
+    <button class="ni" data-p="vencimentos"><span class="nic">📅</span> Vencimentos</button>
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
   <div class="sb-bot">
@@ -1033,15 +1113,10 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="ph"><div><h1>🗓️ Planejamento Anual</h1><p>Visão completa do ano — receitas, gastos e saldo mês a mês</p></div></div>
   <div class="g4 mb" id="planKpis"></div>
   <div class="g2e mb">
-    <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="height:110px"></div></div>
+    <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="padding:12px 0"></div></div>
     <div class="card"><div class="ch"><div><div class="ct">🏆 Top Categorias do Período</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
   </div>
-  <div class="tw">
-    <table class="st">
-      <thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th>Fixas Est.</th><th>Variáveis</th></tr></thead>
-      <tbody id="planBody"></tbody>
-    </table>
-  </div>
+  <div id="planTable" style="margin-top:16px"></div>
 </div>
 
 <!-- ═══ CATEGORIAS & LIMITES (UNIFICADO) ═══ -->
@@ -1049,7 +1124,6 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="ph">
     <div><h1>📂 Categorias & Limites</h1><p id="catSubtitle">Gerencie categorias e limites em um só lugar</p></div>
     <div class="pa">
-      <button class="btn bs" onclick="saveLimits()">💾 Salvar limites</button>
       <button class="btn bp" onclick="abrirModalCat()">+ Nova categoria</button>
     </div>
   </div>
@@ -1111,7 +1185,7 @@ input:checked+.slider:before{transform:translateX(16px)}
       <label style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">💰 Limite Mensal</label>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:15px;font-weight:700;color:var(--muted)">R$</span>
-        <input type="number" id="editCatLimite" step="50" min="0" placeholder="0 = sem limite"
+        <input type="number" id="editCatLimite" class="valor-input" step="50" min="0" step="50" min="0" placeholder="0 = sem limite"
           style="flex:1;font-size:22px;font-weight:900;color:var(--azul);border:none;background:none;outline:none;font-family:'Cabinet Grotesk',sans-serif"
           oninput="atualizarPreviewLimite()">
         <span style="font-size:11px;color:var(--muted);font-weight:600">/mês</span>
@@ -1170,7 +1244,7 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mh"><div class="mt" id="catModalTitle">Nova Categoria</div><button class="mc" onclick="CM('ovCatModal')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="catNome" placeholder="Ex: Academia, Pets..."></div>
-    <div class="fg"><label class="fl">Limite (R$)</label><input type="number" class="fi" id="catLimite" step="0.01" placeholder="0 = sem limite"></div></div>
+    <div class="fg"><label class="fl">Limite (R$)</label><input type="number" class="fi" id="catLimite" class="fi valor-input" inputmode="decimal" step="0.01" placeholder="0 = sem limite"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Emoji</label>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px" id="emojiPicker">
         <span class="epick" onclick="selEmoji(this,'🎯')">🎯</span><span class="epick" onclick="selEmoji(this,'🎮')">🎮</span>
@@ -1203,6 +1277,43 @@ input:checked+.slider:before{transform:translateX(16px)}
   <div class="mf"><button class="btn bg" onclick="CM('ovCatModal')">Cancelar</button><button class="btn bp" onclick="salvarCatCustom()">💾 Salvar</button></div>
 </div></div>
 
+
+<!-- ═══ VENCIMENTOS (CALENDÁRIO) ═══ -->
+<div class="page" id="page-vencimentos">
+  <div class="ph">
+    <div><h1>📅 Calendário de Vencimentos</h1><p>Todos os vencimentos do mês em um só lugar</p></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <!-- Calendário -->
+    <div class="card">
+      <div class="ch">
+        <div><div class="ct" id="vcalTitle">—</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn bg btn-sm" onclick="vcalNav(-1)">◀</button>
+          <button class="btn bg btn-sm" onclick="vcalNav(1)">▶</button>
+          <button class="btn bp btn-sm" onclick="vcalHoje()">Hoje</button>
+        </div>
+      </div>
+      <div style="padding:0 18px 16px">
+        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">D</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">S</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">T</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">Q</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">Q</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">S</div>
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center">S</div>
+        </div>
+        <div id="vcalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
+      </div>
+    </div>
+    <!-- Lista de vencimentos -->
+    <div class="card">
+      <div class="ch"><div><div class="ct">📋 Vencimentos do Mês</div><div class="cs" id="vcalListSub">—</div></div></div>
+      <div id="vcalList" style="padding:0 18px 16px;max-height:400px;overflow-y:auto"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ RELATÓRIOS ═══ -->
 <div class="page" id="page-relatorios">
@@ -1281,6 +1392,24 @@ let DP_DATE = new Date(); // data selecionada no date picker
 let DP_VIEW = new Date(); // mês em exibição no date picker
 
 const fmt=v=>'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const parseBRL=s=>parseFloat((s||'').toString().replace(/[R$\s.]/g,'').replace(',','.'))||0;
+
+function mascaraValor(el){
+  let v=el.value.replace(/\D/g,'');
+  if(!v){el.value='';return;}
+  v=(parseInt(v)/100).toFixed(2);
+  el.value=parseFloat(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function mascaraValorInit(selector){
+  document.querySelectorAll(selector).forEach(el=>{
+    el.addEventListener('input',()=>mascaraValor(el));
+    el.addEventListener('focus',()=>{if(el.value)el.value=el.value.replace(/[^0-9,]/g,'');});
+    el.addEventListener('blur',()=>{
+      const v=parseBRL(el.value);
+      if(v>0) el.value=v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    });
+  });
+}
 const fmtSm=v=>v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+Math.round(v);
 const ls=(k,d)=>{try{return JSON.parse(localStorage.getItem(k)||'null')??d}catch{return d}};
 const save=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
@@ -1313,7 +1442,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:renderCats,limites:renderLimits,relatorios:renderRel,planejamento:renderPlan};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:renderCats,limites:renderLimits,relatorios:renderRel,planejamento:renderPlan};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -1542,131 +1671,124 @@ function renderEvolucaoAnual(el, h, histParam){
   el.style.height='auto';
   el.style.padding='0';
 
-  // Totais (só meses com dados ou passados)
+  const showE  = CHART_LAYERS.entradas !== false;
+  const showS  = CHART_LAYERS.saidas   !== false;
+  const showSd = CHART_LAYERS.saldo    !== false;
+
+  // Totais (só meses passados/atual)
   const comDados = hist.filter(hh=>!hh.futuro);
   const totE = comDados.reduce((s,hh)=>s+hh.entradas,0);
   const totS = comDados.reduce((s,hh)=>s+hh.saidas,0);
-  const melhor = comDados.filter(hh=>hh.entradas>0||hh.saidas>0).reduce((b,hh)=>hh.saldo>b.saldo?hh:b, {saldo:-Infinity,label:'—',saldo:0});
+  const melhorList = comDados.filter(hh=>hh.entradas>0||hh.saidas>0);
+  const melhor = melhorList.length ? melhorList.reduce((b,hh)=>hh.saldo>b.saldo?hh:b, melhorList[0]) : {saldo:0,label:'—'};
 
-  // ── Stats compactos ──
   const statsHtml = `<div style="display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
-    <div style="flex:1;padding:10px 18px;border-right:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Receitas ${new Date().getFullYear()}</div>
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Receitas ${new Date().getFullYear()}</div>
       <div style="font-size:16px;font-weight:900;color:var(--verde)">${fmt(totE)}</div>
     </div>
-    <div style="flex:1;padding:10px 18px;border-right:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Gastos ${new Date().getFullYear()}</div>
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Gastos ${new Date().getFullYear()}</div>
       <div style="font-size:16px;font-weight:900;color:var(--verm)">− ${fmt(totS)}</div>
     </div>
-    <div style="flex:1;padding:10px 18px;border-right:1px solid var(--border)">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Saldo ${new Date().getFullYear()}</div>
+    <div style="flex:1;padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Saldo ${new Date().getFullYear()}</div>
       <div style="font-size:16px;font-weight:900;color:${totE-totS>=0?'var(--verde)':'var(--verm)'}">${totE-totS<0?'− ':''}${fmt(totE-totS)}</div>
     </div>
-    <div style="flex:1;padding:10px 18px">
-      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Melhor mês</div>
+    <div style="flex:1;padding:10px 14px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Melhor mês</div>
       <div style="font-size:16px;font-weight:900;color:var(--azul)">${melhor.label||'—'} <span style="font-size:11px;color:var(--muted);font-weight:600">${melhor.saldo?fmtSm(melhor.saldo):''}</span></div>
     </div>
   </div>`;
 
-  // ── Gráfico SVG ──
-  const W = 800, H = 140, PL = 8, PR = 8, PT = 16, PB = 28;
-  const chartW = W - PL - PR;
-  const chartH = H - PT - PB;
-  const n = hist.length; // 12 meses
-  const colW = chartW / n;
-  const barW = Math.max(colW * 0.3, 6);
-  const gap  = barW * 0.5;
+  const W=800, H=160, PL=8, PR=8, PT=20, PB=28;
+  const chartW=W-PL-PR, chartH=H-PT-PB;
+  const n=hist.length;
+  const colW=chartW/n;
+  const barW=Math.max(colW*0.28, 5);
+  const gap=barW*0.4;
 
-  const maxVal = Math.max(...hist.map(hh=>Math.max(hh.entradas,hh.saidas)), 1);
+  // Max val considers only visible layers
+  const vals=[];
+  hist.forEach(hh=>{
+    if(showE) vals.push(hh.entradas);
+    if(showS) vals.push(hh.saidas);
+    if(showSd) vals.push(Math.abs(hh.saldo));
+  });
+  const maxVal=Math.max(...vals.filter(v=>v>0),1);
 
-  // Guias horizontais
-  const guides = [0.25,0.5,0.75,1.0].map(pct=>{
-    const y = PT + chartH - chartH*pct;
-    const val = maxVal*pct;
+  const guides=[0.25,0.5,0.75,1.0].map(pct=>{
+    const y=PT+chartH-chartH*pct;
     return `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#E5E9EF" stroke-width="1"/>
-            <text x="${PL}" y="${y-3}" font-size="8" fill="#9CA3AF" font-family="Cabinet Grotesk">${fmtSm(val)}</text>`;
+            <text x="${PL}" y="${y-3}" font-size="8" fill="#9CA3AF" font-family="Cabinet Grotesk">${fmtSm(maxVal*pct)}</text>`;
   }).join('');
 
-  // Barras
-  let bars = '';
-  let saldoPoints = '';
-
+  let bars='', saldoPoints='', projPoints='';
   hist.forEach((hh,i)=>{
-    const cx = PL + i*colW + colW/2;
-    const opacity = hh.futuro ? 0.2 : 1;
+    const cx=PL+i*colW+colW/2;
+    const opacity=hh.futuro?0.25:1;
+    const isFut=hh.futuro;
 
-    // Barra receitas
-    if(hh.entradas > 0){
-      const bh = (hh.entradas/maxVal)*chartH;
-      const by = PT + chartH - bh;
-      const cor = hh.atual ? '#2451C7' : '#10B981';
-      bars += `<rect x="${cx-barW-gap/2}" y="${by}" width="${barW}" height="${bh}"
-               rx="3" fill="${cor}" opacity="${opacity}"
-               class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${hh.futuro||false}"/>`;
+    if(showE && hh.entradas>0){
+      const bh=(hh.entradas/maxVal)*chartH;
+      const by=PT+chartH-bh;
+      const cor=hh.atual?'#2451C7':'#10B981';
+      bars+=`<rect x="${cx-barW-gap/2}" y="${by}" width="${barW}" height="${bh}" rx="3" fill="${cor}" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
+    }
+    if(showS && hh.saidas>0){
+      const bh=(hh.saidas/maxVal)*chartH;
+      const by=PT+chartH-bh;
+      const cor=hh.atual?'#3B6FF0':'#EF4444';
+      bars+=`<rect x="${cx+gap/2}" y="${by}" width="${barW}" height="${bh}" rx="3" fill="${cor}" opacity="${opacity*0.85}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
+    }
+    if(isFut && (showE||showS)){
+      // Projected month: show estimated value label
+      const projVal=hh.entradas||hh.saidas||0;
+      if(projVal>0){
+        const by=PT+chartH-Math.min((projVal/maxVal)*chartH,chartH-2);
+        bars+=`<text x="${cx}" y="${by-4}" text-anchor="middle" font-size="7" fill="#9CA3AF" font-family="Cabinet Grotesk">~${fmtSm(projVal)}</text>`;
+      }
     }
 
-    // Barra saídas
-    if(hh.saidas > 0){
-      const bh = (hh.saidas/maxVal)*chartH;
-      const by = PT + chartH - bh;
-      const cor = hh.atual ? '#3B6FF0' : '#EF4444';
-      bars += `<rect x="${cx+gap/2}" y="${by}" width="${barW}" height="${bh}"
-               rx="3" fill="${cor}" opacity="${opacity * 0.85}"
-               class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${hh.futuro||false}"/>`;
-    }
+    const labelCor=hh.atual?'#3B6FF0':(hh.futuro?'#D1D5DB':'#6B7280');
+    bars+=`<text x="${cx}" y="${H-4}" text-anchor="middle" font-size="9" fill="${labelCor}" font-weight="${hh.atual?'bold':'normal'}" font-family="Cabinet Grotesk">${hh.label}</text>`;
 
-    // Label mês
-    const labelCor = hh.atual ? '#3B6FF0' : (hh.futuro ? '#D1D5DB' : '#6B7280');
-    const labelWeight = hh.atual ? 'bold' : 'normal';
-    bars += `<text x="${cx}" y="${H-4}" text-anchor="middle" font-size="9" fill="${labelCor}" font-weight="${labelWeight}" font-family="Cabinet Grotesk">${hh.label}</text>`;
-
-    // Ponto para linha de saldo
-    if(!hh.futuro && (hh.entradas>0||hh.saidas>0)){
-      const sy = PT + chartH - (Math.max(hh.saldo,0)/maxVal)*chartH;
-      saldoPoints += `${cx},${Math.min(Math.max(sy,PT),PT+chartH)} `;
+    if(showSd && !hh.futuro && (hh.entradas>0||hh.saidas>0)){
+      const saldoNorm=Math.max(hh.saldo,0);
+      const sy=PT+chartH-(saldoNorm/maxVal)*chartH;
+      saldoPoints+=`${cx},${Math.min(Math.max(sy,PT),PT+chartH)} `;
     }
   });
 
-  // Linha do saldo
-  const saldoLine = saldoPoints ? `<polyline points="${saldoPoints.trim()}" fill="none" stroke="#3B6FF0" stroke-width="2" stroke-dasharray="4,3" opacity="0.6"/>` : '';
+  const saldoLine=showSd&&saldoPoints?`<polyline points="${saldoPoints.trim()}" fill="none" stroke="#3B6FF0" stroke-width="2" stroke-dasharray="4,3" opacity="0.7"/>`:'' ;
 
-  const svgHtml = `<div style="padding:12px 18px 0;overflow-x:auto">
-    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:480px" id="chartSvg">
-      ${guides}
-      ${saldoLine}
-      ${bars}
-      <!-- Linha base -->
+  const svgHtml=`<div style="padding:12px 18px 0;overflow-x:auto">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:320px" id="chartSvg">
+      ${guides}${saldoLine}${bars}
       <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E5E9EF" stroke-width="1.5"/>
     </svg>
   </div>`;
 
-  // ── Legenda ──
-  const legendHtml = `<div style="padding:8px 18px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#10B981"></div>Entradas</div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#EF4444;opacity:.85"></div>Saídas</div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--azul)"><div style="width:18px;height:2px;background:#3B6FF0;border-radius:1px"></div>Saldo</div>
+  const legendHtml=`<div style="padding:6px 18px 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);opacity:${showE?1:.4}"><div style="width:10px;height:10px;border-radius:2px;background:#10B981"></div>Entradas</div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);opacity:${showS?1:.4}"><div style="width:10px;height:10px;border-radius:2px;background:#EF4444;opacity:.85"></div>Saídas</div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--azul);opacity:${showSd?1:.4}"><div style="width:18px;height:2px;background:#3B6FF0;border-radius:1px"></div>Saldo</div>
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#2451C7"></div>Mês atual</div>
     <div style="margin-left:auto;font-size:11px;color:var(--muted);font-style:italic">Passe o mouse nas barras</div>
   </div>`;
 
-  // ── Mini saldo mensal ──
-  const saldoMiniHtml = `<div style="padding:10px 18px 14px;border-top:1px solid var(--border)">
-    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Saldo mensal</div>
+  const comDadosFiltrados=comDados.filter(hh=>hh.entradas>0||hh.saidas>0);
+  const saldoMiniHtml=comDadosFiltrados.length?`<div style="padding:8px 18px 12px;border-top:1px solid var(--border)">
+    <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px">Saldo mensal</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap">
-      ${comDados.filter(hh=>hh.entradas>0||hh.saidas>0).map(hh=>`
-        <span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;
-          background:${hh.saldo>=0?'var(--verde-l)':'var(--verm-l)'};
-          color:${hh.saldo>=0?'var(--verde-d)':'var(--verm)'}"
-        >${hh.label}: ${hh.saldo>=0?'+':''}${fmtSm(hh.saldo)}</span>
-      `).join('')}
+      ${comDadosFiltrados.map(hh=>`<span style="font-size:11px;font-weight:700;padding:3px 9px;border-radius:100px;background:${hh.saldo>=0?'var(--verde-l)':'var(--verm-l)'};color:${hh.saldo>=0?'var(--verde-d)':'var(--verm)'}">${hh.label}: ${hh.saldo>=0?'+':''}${fmtSm(hh.saldo)}</span>`).join('')}
     </div>
-  </div>`;
+  </div>`:'';
 
-  el.innerHTML = statsHtml + svgHtml + legendHtml + saldoMiniHtml;
-
-  // ── Tooltip interativo via SVG ──
+  el.innerHTML=statsHtml+svgHtml+legendHtml+saldoMiniHtml;
   setupChartTooltip(el);
 }
+
 
 // Tooltip via SVG — nunca corta, aparece junto ao mouse
 const _tip = (() => {
@@ -1884,17 +2006,18 @@ function txMetChange(){
     sel.innerHTML='<option value="">— Selecione o cartão —</option>'+
       CARTOES.map(c=>`<option value="${c.nome}" data-fech="${c.fech||0}">${c.nome} (${c.bandeira})</option>`).join('');
 
+    const mesRow=document.getElementById('txMesAnoRow');
     if(met==='Cartão crédito'){
-      // Crédito: mostra opção de parcelamento + corte
       if(isParcArea) isParcArea.style.display='';
+      if(mesRow) mesRow.style.display='none'; // cartão crédito: corte controla o mês
       document.getElementById('txIsParc').checked=false;
       document.getElementById('txParcRow').style.display='none';
       const miEl=document.getElementById('txMesesInfo');
       if(miEl) miEl.style.display='none';
       txCartaoChange();
     } else {
-      // Débito: só mostra seletor de cartão, sem parcelamento e sem info de corte
       if(isParcArea) isParcArea.style.display='none';
+      if(mesRow) mesRow.style.display=''; // outros métodos: mostra seletor de mês
       document.getElementById('txIsParc').checked=false;
       document.getElementById('txParcRow').style.display='none';
       const corteEl=document.getElementById('txCorteInfo');
@@ -1933,7 +2056,7 @@ function txCartaoChange(){
     if(depoisDoCorte){
       // Compra vai para a PRÓXIMA fatura
       const mesProx=somarMes(getMesChave(),1);
-      infoEl.innerHTML=`⚠️ Compra após o fechamento (dia ${fech}) → fatura de <strong>${mesProx.replace('.','')}</strong> · Vence dia <strong>${venc}</strong>`;
+      infoEl.innerHTML=`⚠️ Compra APÓS o fechamento (dia ${fech}) → será cobrada na fatura de <strong>${mesProx.replace('.','')}</strong> · Vence dia <strong>${venc}</strong>`;
       infoEl.style.background='var(--amar-l)';
       infoEl.style.borderColor='var(--amar)';
       infoEl.style.color='#92400E';
@@ -1947,7 +2070,7 @@ function txCartaoChange(){
     } else {
       // Compra dentro do período — fatura do mês atual
       const mesAtual=document.getElementById('txMesAno').value||getMesChave();
-      infoEl.innerHTML=`✅ Dentro do fechamento (dia ${fech}) → fatura de <strong>${mesAtual.replace('.','')}</strong> · Vence dia <strong>${venc}</strong>`;
+      infoEl.innerHTML=`✅ Compra ANTES do fechamento (dia ${fech}) → vai para a fatura de <strong>${mesAtual.replace('.','')}</strong> · Vence dia <strong>${venc}</strong>`;
       infoEl.style.background='var(--verde-l)';
       infoEl.style.borderColor='var(--verde)';
       infoEl.style.color='var(--verde-d)';
@@ -1987,7 +2110,8 @@ function onMesAnoChange(){
 }
 
 function atualizarValorParc(){
-  const valor=parseFloat(document.getElementById('txValor').value)||0;
+  const rawValTx=document.getElementById('txValor').value;
+  const valor=parseBRL(rawValTx)||parseFloat(rawValTx)||0;
   const n=TX_PARC_SEL||1;
   if(n<2||!document.getElementById('txIsParc')?.checked) return;
 
@@ -2016,9 +2140,13 @@ function atualizarValorParc(){
 // Atualiza preview ao digitar valor
 document.addEventListener('DOMContentLoaded',()=>{
   const vEl=document.getElementById('txValor');
-  if(vEl) vEl.addEventListener('input',()=>{
-    if(document.getElementById('txIsParc')?.checked) atualizarValorParc();
-  });
+  if(vEl){
+    vEl.addEventListener('input',()=>{
+      if(document.getElementById('txIsParc')?.checked) atualizarValorParc();
+    });
+  }
+  // Apply value masks to all money inputs
+  mascaraValorInit('.valor-input');
 });
 
 function populateMesSelector(){
@@ -2834,20 +2962,27 @@ function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas+
 function delDv(i){DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')}
 
 function renderDividas(){
-  const tot=DIVIDAS.reduce((s,d)=>s+d.total,0);
-  const mens=DIVIDAS.reduce((s,d)=>s+d.mensal,0);
-  const pago=DIVIDAS.reduce((s,d)=>s+(d.mensal*d.pagas),0);
+  // Cálculo correto: valor já pago = mensal * parcelas pagas
+  // Valor restante = total - (mensal * pagas)
+  const tot=DIVIDAS.reduce((s,d)=>s+parseFloat(d.total||0),0);
+  const mens=DIVIDAS.reduce((s,d)=>s+parseFloat(d.mensal||0),0);
+  const pago=DIVIDAS.reduce((s,d)=>s+(parseFloat(d.mensal||0)*parseInt(d.pagas||0)),0);
   document.getElementById('dvTot').textContent=fmt(tot);document.getElementById('dvMens').textContent=fmt(mens);document.getElementById('dvPago').textContent=fmt(pago);
   const el=document.getElementById('dividasGrid');if(!el)return;
   if(!DIVIDAS.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">⛓️</div><h3>Sem dívidas!</h3><p>Ou adicione suas dívidas para monitorar</p></div></div>`;return;}
   el.innerHTML=DIVIDAS.map((d,i)=>{
-    const rest=d.parcelas-d.pagas;
-    const pct=Math.min((d.pagas/d.parcelas)*100,100);
-    const vRest=rest*d.mensal;
+    const pagas=parseInt(d.pagas||0);
+    const parcelas=parseInt(d.parcelas||1);
+    const mensal=parseFloat(d.mensal||0);
+    const total=parseFloat(d.total||0);
+    const rest=Math.max(parcelas-pagas,0);
+    const pago=mensal*pagas;
+    const vRest=Math.max(total-pago,0);  // correto: total - já pago
+    const pct=parcelas>0?Math.min(pagas/parcelas*100,100):0;
     return `<div class="dv-card">
       <div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:15px;font-weight:800">${d.nome}</div><button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px" onclick="openDv(${i})">✏️</button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <div><div style="font-size:10px;color:var(--muted)">Progresso</div><div style="font-size:14px;font-weight:800">${d.pagas}/${d.parcelas} parcelas</div></div>
+        <div><div style="font-size:10px;color:var(--muted)">Progresso</div><div style="font-size:14px;font-weight:800">${pagas}/${parcelas} parcelas</div></div>
         <div><div style="font-size:10px;color:var(--muted)">Mensal</div><div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(d.mensal)}</div></div>
         <div><div style="font-size:10px;color:var(--muted)">Restante</div><div style="font-size:14px;font-weight:800;color:var(--lara)">${fmt(vRest)}</div></div>
         <div><div style="font-size:10px;color:var(--muted)">Vencimento</div><div style="font-size:14px;font-weight:700">Dia ${d.venc||'—'}</div></div>
@@ -2878,7 +3013,38 @@ function saveMt(){
   if(i>=0)METAS[i]=m;else METAS.push(m);
   salvarMetas();CM('ovMt');renderMetas();renderDash();toast('✅ Meta salva!','success');
 }
-function depositarMeta(i){const v=parseFloat(prompt(`Depositar na meta "${METAS[i].nome}"?\nDigite o valor:`)||'0');if(v>0){METAS[i].atual=(METAS[i].atual||0)+v;salvarMetas();renderMetas();toast(`💰 ${fmt(v)} depositado!`,'success');}}
+function selMtEmoji(el, emoji){
+  document.querySelectorAll('#ovMt .epick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('mtEmoji').value=emoji;
+}
+
+function depositarMeta(i){
+  // Open deposit modal
+  const m=METAS[i];
+  document.getElementById('depMetaIdx').value=i;
+  document.getElementById('depMetaNome').textContent=m.nome+' '+m.emoji;
+  document.getElementById('depMetaAtual').textContent=fmt(m.atual||0);
+  document.getElementById('depMetaTotal').textContent=fmt(m.total||0);
+  const rest=Math.max((m.total||0)-(m.atual||0),0);
+  document.getElementById('depMetaRest').textContent=fmt(rest);
+  document.getElementById('depValor').value='';
+  OM('ovDepMeta');
+  setTimeout(()=>document.getElementById('depValor').focus(),200);
+}
+
+function confirmarDeposito(){
+  const i=parseInt(document.getElementById('depMetaIdx').value);
+  const rawVal=document.getElementById('depValor').value.replace(/\./g,'').replace(',','.');
+  const v=parseFloat(rawVal)||0;
+  if(v<=0){toast('Digite um valor válido','warning');return;}
+  METAS[i].atual=(parseFloat(METAS[i].atual)||0)+v;
+  salvarMetas();
+  renderMetas();
+  renderDash();
+  CM('ovDepMeta');
+  toast(`💰 ${fmt(v)} adicionado à meta!`,'success');
+}
 function delMt(i){METAS.splice(i,1);salvarMetas();renderMetas();toast('🗑️ Meta removida','info')}
 
 function renderMetas(){
@@ -2963,300 +3129,102 @@ function renderInv(){
 // PLANEJAMENTO ANUAL
 // ════════════════════════════════════════════════
 function renderPlan(){
-  const hist=HISTORICO;
-  const totE=hist.reduce((s,h)=>s+h.entradas,0);
-  const totS=hist.reduce((s,h)=>s+h.saidas,0);
-  const media=hist.length?totS/hist.length:0;
+  // Usa HISTORICO (12 meses) + dados de TODAS_TX para projeção
+  const hist = HISTORICO; // já contém os 12 meses
+  const anoAtual = new Date().getFullYear();
+
+  const comDados = hist.filter(h=>!h.futuro);
+  const totE = comDados.reduce((s,h)=>s+h.entradas,0);
+  const totS = comDados.reduce((s,h)=>s+h.saidas,0);
+  const saldoAcum = totE - totS;
+  const mediaS = comDados.length ? totS/comDados.length : 0;
+
   document.getElementById('planKpis').innerHTML=`
-    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v">${fmt(totE)}</div><div class="kpi-l">Total recebido (6 meses)</div></div>
-    <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(totS)}</div><div class="kpi-l">Total gasto (6 meses)</div></div>
-    <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⚖️</div></div><div class="kpi-v" style="color:${totE-totS>=0?'var(--verde)':'var(--verm)'}">${fmt(totE-totS)}</div><div class="kpi-l">Saldo acumulado</div></div>
-    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📊</div></div><div class="kpi-v">${fmt(media)}</div><div class="kpi-l">Média mensal de gastos</div></div>`;
-  renderHistChart('planChart',100);
-  // Top cats do período
-  const allCats={};
-  TODAS_TX.filter(t=>t.valor<0).forEach(t=>{allCats[t.categoria]=(allCats[t.categoria]||0)+Math.abs(t.valor)});
-  const topCats=Object.entries(allCats).sort((a,b)=>b[1]-a[1]).slice(0,5);
-  document.getElementById('planTopCats').innerHTML=topCats.map(([cat,val])=>`<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:14px">${EMOJIS[cat]||'📦'}</span><span style="font-size:13px;font-weight:700;flex:1">${cat}</span><span style="font-size:13px;font-weight:800;color:var(--verm)">${fmt(val)}</span></div>`).join('');
-  const fxMes=FIXAS.reduce((s,f)=>s+parseFloat(f.valor||0),0);
-  document.getElementById('planBody').innerHTML=hist.map(h=>`<tr style="${h.atual?'background:#EEF3FF;font-weight:700':''}">
-    <td>${h.atual?'🔵 ':''}<strong>${h.label}</strong>${h.atual?' (atual)':''}</td>
-    <td class="vp">${fmt(h.entradas)}</td><td class="vn">${fmt(h.saidas)}</td>
-    <td style="font-weight:800;color:${h.saldo>=0?'var(--verde)':'var(--verm)'}">${fmt(h.saldo)}</td>
-    <td style="color:var(--txt2)">${fmt(fxMes)}</td>
-    <td style="color:var(--lara)">${fmt(Math.max(h.saidas-fxMes,0))}</td>
-  </tr>`).join('');
-}
+    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v" style="color:var(--verde)">${fmt(totE)}</div><div class="kpi-l">Total recebido (${comDados.length} meses)</div></div>
+    <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v" style="color:var(--verm)">− ${fmt(totS)}</div><div class="kpi-l">Total gasto (${comDados.length} meses)</div></div>
+    <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⚖️</div></div><div class="kpi-v" style="color:${saldoAcum>=0?'var(--verde)':'var(--verm)'}">${saldoAcum<0?'− ':''}${fmt(saldoAcum)}</div><div class="kpi-l">Saldo acumulado</div></div>
+    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📊</div></div><div class="kpi-v">${fmt(mediaS)}</div><div class="kpi-l">Média mensal de gastos</div></div>
+  `;
 
-// ════════════════════════════════════════════════
-// CATEGORIAS & LIMITES — UNIFICADO
-// ════════════════════════════════════════════════
+  // ── Gráfico SVG 12 meses ──
+  const chartEl = document.getElementById('planChart');
+  if(chartEl && hist.length){
+    const W=700,H=160,PT=18,PB=28,PL=6,PR=6;
+    const chartW=W-PL-PR, chartH=H-PT-PB;
+    const n=hist.length;
+    const colW=chartW/n;
+    const barW=Math.max(colW*0.3,5);
+    const maxVal=Math.max(...hist.map(h=>Math.max(h.entradas,h.saidas)),1);
 
-function setCatFiltro(f,el){
-  CAT_FILTRO=f;
-  document.querySelectorAll('.catFiltBtn').forEach(b=>b.classList.remove('active'));
-  if(el) el.classList.add('active');
-  renderCats();
-}
+    let bars='';
+    hist.forEach((h,i)=>{
+      const cx=PL+i*colW+colW/2;
+      const op=h.futuro?0.25:1;
+      if(h.entradas>0){
+        const bh=(h.entradas/maxVal)*chartH;
+        bars+=`<rect x="${cx-barW-1}" y="${PT+chartH-bh}" width="${barW}" height="${bh}" rx="2" fill="#10B981" opacity="${op}"/>`;
+      }
+      if(h.saidas>0){
+        const bh=(h.saidas/maxVal)*chartH;
+        bars+=`<rect x="${cx+1}" y="${PT+chartH-bh}" width="${barW}" height="${bh}" rx="2" fill="#EF4444" opacity="${op*0.8}"/>`;
+      }
+      const cor=h.atual?'#3B6FF0':h.futuro?'#D1D5DB':'#6B7280';
+      bars+=`<text x="${cx}" y="${H-4}" text-anchor="middle" font-size="8" fill="${cor}" font-family="Cabinet Grotesk" font-weight="${h.atual?'bold':'normal'}">${h.label}</text>`;
+    });
 
-// Edit modal helpers
-function selEmojiEdit(el,e){
-  document.querySelectorAll('#editEmojiPicker .epick').forEach(x=>x.classList.remove('sel'));
-  el.classList.add('sel');
-  document.getElementById('editCatEmoji').value=e;
-  document.getElementById('editCatPreviewEmoji').textContent=e;
-}
-function selColorEdit(el,cor){
-  document.querySelectorAll('#editColorPicker .cpick').forEach(x=>x.classList.remove('sel'));
-  el.classList.add('sel');
-  document.getElementById('editCatCor').value=cor;
-}
-function atualizarPreviewLimite(){
-  const v=parseFloat(document.getElementById('editCatLimite').value)||0;
-  const gasto=parseFloat(document.getElementById('editCatPreviewGasto').dataset.val||0);
-  const info=document.getElementById('editCatLimiteInfo');
-  if(v>0&&info){
-    const rest=Math.max(v-gasto,0);
-    const pct=gasto/v*100;
-    info.textContent=`Restante: R$ ${rest.toFixed(2).replace('.',',')} · ${pct.toFixed(0)}% utilizado`;
-  } else if(info){
-    info.textContent='Sem limite definido — gastos livres';
-  }
-}
+    // Linha de saldo
+    const pts=hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0)).map((h,_,arr)=>{
+      const i=hist.indexOf(h);
+      const cx=PL+i*colW+colW/2;
+      const sy=PT+chartH-Math.min(Math.max(h.saldo,0)/maxVal*chartH,chartH);
+      return `${cx},${sy}`;
+    }).join(' ');
 
-function abrirEditarCategoria(nomeCat, isCustom, customIdx){
-  const lims={...LIMS_DEF,...LIMS_LOCAL};
-  const txMes=MES_DATA.txMes||[];
-  const gastoMap={};
-  txMes.filter(t=>t.valor<0).forEach(t=>{gastoMap[t.categoria]=(gastoMap[t.categoria]||0)+Math.abs(t.valor);});
-
-  const gasto=gastoMap[nomeCat]||0;
-  const lim=lims[nomeCat]||0;
-
-  // Preview
-  let emoji='📦',cor='#9CA3AF';
-  if(isCustom&&customIdx>=0){
-    emoji=CATS_CUSTOM[customIdx].emoji||'📦';
-    cor=CATS_CUSTOM[customIdx].cor||'#9CA3AF';
-  } else {
-    const padrao=CATS_PADRAO_EXTRA.find(c=>c.nome===nomeCat);
-    if(padrao){emoji=padrao.emoji;cor=padrao.cor;}
+    chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+      <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E5E9EF" stroke-width="1.5"/>
+      ${bars}
+      ${pts?`<polyline points="${pts}" fill="none" stroke="#3B6FF0" stroke-width="2" stroke-dasharray="3,3" opacity="0.6"/>`:'' }
+    </svg>
+    <div style="display:flex;gap:12px;padding:6px 0;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;background:#10B981;border-radius:2px"></div>Entradas</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;background:#EF4444;border-radius:2px;opacity:.8"></div>Saídas</div>
+      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--azul)"><div style="width:14px;height:2px;background:#3B6FF0"></div>Saldo</div>
+    </div>`;
   }
 
-  document.getElementById('editCatPreviewEmoji').textContent=emoji;
-  document.getElementById('editCatPreviewNome').textContent=nomeCat;
-  const pgEl=document.getElementById('editCatPreviewGasto');
-  pgEl.textContent=fmt(gasto);
-  pgEl.dataset.val=gasto;
-  pgEl.style.color=gasto>0?'var(--verm)':'var(--muted2)';
-  document.getElementById('editCatLimite').value=lim||'';
-  document.getElementById('editCatKey').value=nomeCat;
-  document.getElementById('editCatIsCustom').value=isCustom?'1':'0';
-  document.getElementById('editCatCustomIdx').value=customIdx;
-  document.getElementById('editCatTitle').textContent=isCustom?'✏️ Editar Categoria':'⚙️ Limite — '+nomeCat;
+  // ── Top categorias do período ──
+  const gastosCat={};
+  TODAS_TX.filter(t=>t.valor<0&&!t.futuro).forEach(t=>{
+    const cat=t.categoria||'Outros';
+    gastosCat[cat]=(gastosCat[cat]||0)+Math.abs(t.valor);
+  });
+  const topCats=Object.entries(gastosCat).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
-  // Extras: só para custom
-  const extras=document.getElementById('editCatExtras');
-  const delBtn=document.getElementById('editCatDelBtn');
-  if(isCustom&&customIdx>=0){
-    extras.style.display='';
-    delBtn.style.display='';
-    document.getElementById('editCatNome').value=nomeCat;
-    document.getElementById('editCatEmoji').value=emoji;
-    document.getElementById('editCatCor').value=cor;
-    // Marca emoji e cor
-    document.querySelectorAll('#editEmojiPicker .epick').forEach(e=>e.classList.toggle('sel',e.textContent===emoji));
-    document.querySelectorAll('#editColorPicker .cpick').forEach(e=>e.classList.toggle('sel',e.style.background===cor));
-  } else {
-    extras.style.display='none';
-    delBtn.style.display='none';
-  }
-  atualizarPreviewLimite();
-  OM('ovEditCat');
-}
-
-function salvarEdicaoCategoria(){
-  const cat=document.getElementById('editCatKey').value;
-  const isCustom=document.getElementById('editCatIsCustom').value==='1';
-  const customIdx=parseInt(document.getElementById('editCatCustomIdx').value);
-  const novoLim=parseFloat(document.getElementById('editCatLimite').value)||0;
-
-  // Salva o limite
-  LIMS_LOCAL[cat]=novoLim;
-  salvarLimsLocal();
-
-  // Se custom, atualiza nome/emoji/cor
-  if(isCustom&&customIdx>=0){
-    const novoNome=document.getElementById('editCatNome').value.trim()||cat;
-    CATS_CUSTOM[customIdx]={
-      ...CATS_CUSTOM[customIdx],
-      nome:novoNome,
-      emoji:document.getElementById('editCatEmoji').value||'📦',
-      cor:document.getElementById('editCatCor').value||'#9CA3AF',
-      limite:novoLim,
-    };
-    // Atualiza o limite no LIMS_LOCAL com o novo nome se renomeou
-    if(novoNome!==cat){
-      LIMS_LOCAL[novoNome]=novoLim;
-      delete LIMS_LOCAL[cat];
-    }
-    salvarCats();
-    salvarLimsLocal();
-    atualizarSelectCats();
+  const tcEl=document.getElementById('planTopCats');
+  if(tcEl){
+    const EMOJIS={Alimentação:'🍽️',Transporte:'🚗',Contas:'⚡',Lazer:'🎮',Saúde:'❤️',Educação:'📚',Moradia:'🏠',Beleza:'💅',Vestuário:'👗',Pet:'🐾',Tecnologia:'📱',Filhos:'👶',Presentes:'🎁',Veículo:'🚘',Impostos:'🧾',Assinaturas:'📺',Salário:'💰',Freelance:'💼',Investimento:'📈',Outros:'📦'};
+    tcEl.innerHTML=topCats.length
+      ?topCats.map(([cat,val])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:16px">${EMOJIS[cat]||'📦'}</span><span style="font-size:13px;font-weight:600">${cat}</span></div><span style="font-size:13px;font-weight:800;color:var(--verm)">${fmt(val)}</span></div>`).join('')
+      :'<div style="color:var(--muted);text-align:center;padding:20px">Sem dados</div>';
   }
 
-  CM('ovEditCat');
-  renderCats();
-  renderDash();
-  toast('✅ Categoria atualizada!','success');
+  // ── Tabela 12 meses ──
+  const tEl=document.getElementById('planTable');
+  if(!tEl) return;
+  tEl.innerHTML=`<div class="tw"><table class="st">
+    <thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th>Situação</th></tr></thead>
+    <tbody>
+      ${hist.map(h=>`<tr style="${h.atual?'background:var(--azul-l)':h.futuro?'opacity:.6':''}">
+        <td style="font-weight:${h.atual?'800':'600'};color:${h.atual?'var(--azul)':'var(--txt2)'}">${h.label}${h.atual?' ◀':''}</td>
+        <td style="color:var(--verde);font-weight:700">${h.entradas>0?fmt(h.entradas):'—'}</td>
+        <td style="color:var(--verm);font-weight:700">${h.saidas>0?fmt(h.saidas):'—'}</td>
+        <td style="color:${h.saldo>=0?'var(--verde)':'var(--verm)'};font-weight:800">${h.entradas>0||h.saidas>0?(h.saldo>=0?'+':'')+fmtSm(h.saldo):'—'}</td>
+        <td>${h.futuro?'<span style="color:var(--muted);font-size:11px">Projeção</span>':h.saldo>=0?'<span style="color:var(--verde);font-size:11px">✅ Positivo</span>':'<span style="color:var(--verm);font-size:11px">🔴 Negativo</span>'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
 }
 
-function deletarCatCustomEdit(){
-  const customIdx=parseInt(document.getElementById('editCatCustomIdx').value);
-  if(customIdx>=0){
-    const cat=CATS_CUSTOM[customIdx];
-    if(cat&&LIMS_LOCAL[cat.nome]) delete LIMS_LOCAL[cat.nome];
-    CATS_CUSTOM.splice(customIdx,1);
-    salvarCats();
-    salvarLimsLocal();
-    atualizarSelectCats();
-  }
-  CM('ovEditCat');
-  renderCats();
-  toast('🗑️ Categoria removida','info');
-}
-
-// switchCatTab stub — kept for compatibility but no longer does anything visible
-function switchCatTab(){}
-function limToggleView(){}
-
-
-// ════════════════════════════════════════════════
-// CATEGORIAS — COMPLETO
-// ════════════════════════════════════════════════
-
-function setCatFiltro(f,el){
-  CAT_FILTRO=f;
-  document.querySelectorAll('.catFiltBtn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  renderCats();
-}
-
-function selEmoji(el,emoji){
-  document.querySelectorAll('.epick').forEach(e=>e.classList.remove('sel'));
-  el.classList.add('sel');
-  document.getElementById('catEmoji').value=emoji;
-}
-
-function selColor(el,cor){
-  document.querySelectorAll('.cpick').forEach(e=>e.classList.remove('sel'));
-  el.classList.add('sel');
-  document.getElementById('catCor').value=cor;
-}
-
-function abrirModalCat(idx=-1){
-  document.getElementById('catModalIdx').value=idx;
-  if(idx>=0){
-    const c=CATS_CUSTOM[idx];
-    document.getElementById('catNome').value=c.nome;
-    document.getElementById('catLimite').value=c.limite||0;
-    document.getElementById('catEmoji').value=c.emoji;
-    document.getElementById('catCor').value=c.cor;
-    document.getElementById('catModalTitle').textContent='✏️ Editar Categoria';
-    // Marca emoji e cor ativos
-    document.querySelectorAll('.epick').forEach(e=>e.classList.toggle('sel',e.textContent===c.emoji));
-    document.querySelectorAll('.cpick').forEach(e=>e.classList.toggle('sel',e.style.background===c.cor));
-  } else {
-    document.getElementById('catNome').value='';
-    document.getElementById('catLimite').value='';
-    document.getElementById('catModalTitle').textContent='Nova Categoria';
-    document.querySelectorAll('.epick').forEach((e,i)=>e.classList.toggle('sel',i===0));
-    document.querySelectorAll('.cpick').forEach((e,i)=>e.classList.toggle('sel',i===0));
-    document.getElementById('catEmoji').value='📦';
-    document.getElementById('catCor').value='#EF4444';
-  }
-  OM('ovCatModal');
-}
-
-function salvarCatCustom(){
-  const idx=parseInt(document.getElementById('catModalIdx').value);
-  const c={
-    nome:document.getElementById('catNome').value.trim(),
-    emoji:document.getElementById('catEmoji').value||'📦',
-    cor:document.getElementById('catCor').value||'#9CA3AF',
-    limite:parseFloat(document.getElementById('catLimite').value)||0,
-    custom:true
-  };
-  if(!c.nome)return toast('Digite o nome da categoria','warning');
-  if(idx>=0) CATS_CUSTOM[idx]=c;
-  else CATS_CUSTOM.push(c);
-  salvarCats();
-  CM('ovCatModal');
-  renderCats();
-  // Atualiza dropdown de categorias nos formulários de tx
-  atualizarSelectCats();
-  toast('✅ Categoria salva!','success');
-}
-
-function delCatCustom(idx){
-  CATS_CUSTOM.splice(idx,1);
-  salvarCats();
-  renderCats();
-  atualizarSelectCats();
-  toast('🗑️ Categoria removida','info');
-}
-
-function atualizarSelectCats(){
-  const sel=document.getElementById('txCat');
-  if(!sel)return;
-  // Mantém a seleção atual
-  const atual=sel.value;
-  const padrao=['Alimentação','Transporte','Contas','Lazer','Saúde','Educação','Moradia','Beleza','Vestuário','Pet','Tecnologia','Filhos','Presentes','Veículo','Impostos','Assinaturas','Salário','Freelance','Investimento','Outros'];
-  const custom=CATS_CUSTOM.map(c=>c.nome);
-  const todas=[...padrao,...custom.filter(n=>!padrao.includes(n))];
-  sel.innerHTML=todas.map(n=>`<option value="${n}"${n===atual?' selected':''}>${n}</option>`).join('');
-}
-
-// Categorias padrão completas (50+)
-const CATS_PADRAO_EXTRA = [
-  {nome:'Alimentação',emoji:'🍽️',cor:'#EF4444'},
-  {nome:'Transporte',emoji:'🚗',cor:'#F97316'},
-  {nome:'Contas',emoji:'⚡',cor:'#3B6FF0'},
-  {nome:'Lazer',emoji:'🎮',cor:'#8B5CF6'},
-  {nome:'Saúde',emoji:'❤️',cor:'#10B981'},
-  {nome:'Educação',emoji:'📚',cor:'#F59E0B'},
-  {nome:'Moradia',emoji:'🏠',cor:'#6366F1'},
-  {nome:'Beleza',emoji:'💅',cor:'#EC4899'},
-  {nome:'Vestuário',emoji:'👗',cor:'#14B8A6'},
-  {nome:'Pet',emoji:'🐾',cor:'#84CC16'},
-  {nome:'Tecnologia',emoji:'📱',cor:'#0EA5E9'},
-  {nome:'Filhos',emoji:'👶',cor:'#F472B6'},
-  {nome:'Presentes',emoji:'🎁',cor:'#FB923C'},
-  {nome:'Veículo',emoji:'🚘',cor:'#64748B'},
-  {nome:'Impostos',emoji:'🧾',cor:'#78716C'},
-  {nome:'Assinaturas',emoji:'📺',cor:'#A78BFA'},
-  {nome:'Salário',emoji:'💰',cor:'#10B981'},
-  {nome:'Freelance',emoji:'💼',cor:'#34D399'},
-  {nome:'Investimento',emoji:'📈',cor:'#3B6FF0'},
-  {nome:'Academia',emoji:'🏋️',cor:'#EF4444'},
-  {nome:'Farmácia',emoji:'💊',cor:'#10B981'},
-  {nome:'Restaurante',emoji:'🍴',cor:'#F97316'},
-  {nome:'Delivery',emoji:'🛵',cor:'#F59E0B'},
-  {nome:'Mercado',emoji:'🛒',cor:'#6366F1'},
-  {nome:'Viagem',emoji:'✈️',cor:'#0EA5E9'},
-  {nome:'Hotel',emoji:'🏨',cor:'#8B5CF6'},
-  {nome:'Combustível',emoji:'⛽',cor:'#64748B'},
-  {nome:'Estacionamento',emoji:'🅿️',cor:'#78716C'},
-  {nome:'Cinema',emoji:'🎬',cor:'#EC4899'},
-  {nome:'Shows',emoji:'🎵',cor:'#A78BFA'},
-  {nome:'Esportes',emoji:'⚽',cor:'#10B981'},
-  {nome:'Livros',emoji:'📖',cor:'#F59E0B'},
-  {nome:'Cursos',emoji:'🎓',cor:'#3B6FF0'},
-  {nome:'Dentista',emoji:'🦷',cor:'#14B8A6'},
-  {nome:'Psicólogo',emoji:'🧘',cor:'#8B5CF6'},
-  {nome:'Cabelo',emoji:'💇',cor:'#EC4899'},
-  {nome:'Outros',emoji:'📦',cor:'#9CA3AF'},
-];
 
 function renderCats(){
   const txMes=MES_DATA.txMes||[];
@@ -3307,6 +3275,18 @@ function renderCats(){
     <div class="kpi r" style="cursor:pointer" onclick="setCatFiltro('estourou',document.querySelector('[data-f=estourou]'))"><div class="kpi-top"><div class="kpi-ic">🔴</div></div><div class="kpi-v">${nEstourou}</div><div class="kpi-l">Categorias estouradas</div></div>
     <div class="kpi y" style="cursor:pointer" onclick="setCatFiltro('atencao',document.querySelector('[data-f=atencao]'))"><div class="kpi-top"><div class="kpi-ic">🟡</div></div><div class="kpi-v">${nAtencao}</div><div class="kpi-l">Em atenção (>80%)</div></div>
     <div class="kpi g" style="cursor:pointer" onclick="setCatFiltro('ok',document.querySelector('[data-f=ok]'))"><div class="kpi-top"><div class="kpi-ic">🟢</div></div><div class="kpi-v">${nOk}</div><div class="kpi-l">Dentro do limite</div></div>`;
+
+  // ── Barra de orçamento total ──
+  const totalOrçado=Object.values(lims).reduce((s,v)=>s+v,0);
+  const pctOrç=totalOrçado>0?Math.min(totalGasto/totalOrçado*100,100):0;
+  const barCor=pctOrç>=100?'var(--verm)':pctOrç>=80?'linear-gradient(90deg,var(--verde),var(--lara))':'linear-gradient(90deg,var(--verde),var(--azul))';
+  const setBB=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setBB('limBudgetGasto',`${fmt(totalGasto)} gastos`);
+  setBB('limBudgetPct',`${pctOrç.toFixed(1)}%`);
+  setBB('limBudgetTotal',`de ${fmt(totalOrçado)}`);
+  setBB('limBudgetSub',`${fmt(totalGasto)} gastos de ${fmt(totalOrçado)} orçados — ${fmt(Math.max(totalOrçado-totalGasto,0))} disponível`);
+  const fill=document.getElementById('limBudgetFill');
+  if(fill){fill.style.width=pctOrç+'%';fill.style.background=barCor;}
 
   // Grid principal
   const el=document.getElementById('catsGrid');if(!el)return;
@@ -4037,7 +4017,7 @@ function renderResumoMes(d, mes){
   const top     = cats.slice(0,3);
   const fixasPend = FIXAS.filter(f=>f.status!=='Pago').length;
   const dividasMes = DIVIDAS.reduce((s,dv)=>s+parseFloat(dv.mensal||0),0);
-  const taxaPoup = d.entradas>0 ? (saldo/d.entradas*100) : 0;
+  const taxaPoup = d.entradas>0 ? Math.max(0, saldo/d.entradas*100) : 0;
   const nCartoes = CARTOES.length;
 
   // Sub e status badge
@@ -4069,7 +4049,9 @@ function renderResumoMes(d, mes){
       <div style="padding:10px 14px;border-right:1px solid var(--border)">
         <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Taxa de poupança</div>
         <div style="font-size:18px;font-weight:900;color:${taxaPoup>=20?'var(--verde)':taxaPoup>=10?'var(--lara)':'var(--verm)'}">${taxaPoup.toFixed(1)}%</div>
-        <div style="font-size:10px;color:var(--muted)">${fmt(saldo)} economizados</div>
+        <div style="font-size:10px;color:${saldo>0?'var(--verde-d)':saldo<0?'var(--verm)':'var(--muted)'}">
+          ${saldo>0?'💚 '+fmt(saldo)+' guardados':saldo<0?'🔴 Gasto acima da receita':'Neutro'}
+        </div>
       </div>
       <div style="padding:10px 14px">
         <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Média/transação</div>
@@ -4190,10 +4172,13 @@ function renderVencimentos(){
     <div class="card">
       <div class="ch">
         <div>
-          <div class="ct">📅 Próximos Vencimentos de Cartão</div>
+          <div class="ct">📅 Próximos Vencimentos</div>
           <div class="cs">Faturas abertas e valores lançados</div>
         </div>
-        <button class="btn bg btn-sm" onclick="go('cartoes')">Ver cartões →</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn bg btn-sm" onclick="go('vencimentos')">📅 Ver calendário</button>
+          <button class="btn bg btn-sm" onclick="go('cartoes')">💳 Cartões →</button>
+        </div>
       </div>
       <div style="padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
         ${faturas.map(f=>{
@@ -4245,6 +4230,125 @@ function renderVencimentos(){
         }).join('')}
       </div>
     </div>`;
+}
+
+// ════════════════════════════════════════════════
+// CALENDÁRIO DE VENCIMENTOS
+// ════════════════════════════════════════════════
+let VCAL_DATE = new Date();
+
+function vcalNav(dir){ VCAL_DATE.setMonth(VCAL_DATE.getMonth()+dir); renderVencimentosCal(); }
+function vcalHoje(){ VCAL_DATE=new Date(); renderVencimentosCal(); }
+
+function coletarVencimentos(ano, mes){
+  // mes = 0-11
+  const items=[];
+  const hoje=new Date();
+
+  // 1) Cartões de crédito
+  CARTOES.forEach(ct=>{
+    const venc=parseInt(ct.venc)||0;
+    if(!venc) return;
+    const dtVenc=new Date(ano,mes,venc);
+    const mLabel=`${MESES_PT[mes]}/${ano}`;
+    const fatura=TODAS_TX.filter(t=>t.cartao===ct.nome&&t.valor<0&&t.mes_ano===mLabel).reduce((s,t)=>s+Math.abs(t.valor),0);
+    const diasAte=Math.ceil((dtVenc-hoje)/(86400000));
+    if(dtVenc>=new Date(ano,mes,1)) items.push({dia:venc,tipo:'cartao',nome:`💳 ${ct.nome}`,valor:fatura,desc:`Fatura ${MESES_NM[mes]}`,diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal'});
+  });
+
+  // 2) Despesas fixas com vencimento neste mês
+  FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
+    const vDia=parseInt(f.venc)||0;
+    if(!vDia) return;
+    const dtV=new Date(ano,mes,vDia);
+    const diasAte=Math.ceil((dtV-hoje)/(86400000));
+    if(dtV>=new Date(ano,mes,1)) items.push({dia:vDia,tipo:'fixa',nome:`📌 ${f.desc}`,valor:f.valor,desc:'Despesa fixa',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal'});
+  });
+
+  // 3) Dívidas com vencimento neste mês
+  DIVIDAS.filter(d=>{
+    const pagas=parseInt(d.pagas||0), parcelas=parseInt(d.parcelas||1);
+    return pagas < parcelas;
+  }).forEach(d=>{
+    const vDia=parseInt(d.venc)||0;
+    if(!vDia) return;
+    const dtV=new Date(ano,mes,vDia);
+    const diasAte=Math.ceil((dtV-hoje)/(86400000));
+    if(dtV>=new Date(ano,mes,1)) items.push({dia:vDia,tipo:'divida',nome:`⛓️ ${d.nome}`,valor:d.mensal,desc:'Parcela dívida',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal'});
+  });
+
+  return items.sort((a,b)=>a.dia-b.dia);
+}
+
+function renderVencimentosCal(){
+  const dt=VCAL_DATE;
+  const ano=dt.getFullYear(), mes=dt.getMonth();
+  const hoje=new Date();
+  const diasMes=new Date(ano,mes+1,0).getDate();
+  const primDia=new Date(ano,mes,1).getDay();
+
+  document.getElementById('vcalTitle').textContent=`${MESES_NM[mes]} ${ano}`;
+  const sub=document.getElementById('vcalListSub');
+  if(sub) sub.textContent=`${MESES_NM[mes]} ${ano}`;
+
+  const items=coletarVencimentos(ano,mes);
+  const diasComVenc={};
+  items.forEach(it=>{
+    if(!diasComVenc[it.dia]) diasComVenc[it.dia]=[];
+    diasComVenc[it.dia].push(it);
+  });
+
+  const corUrg={critico:'#EF4444',atencao:'#F59E0B',normal:'#3B6FF0'};
+
+  let html='';
+  for(let i=0;i<primDia;i++) html+='<div></div>';
+  for(let d=1;d<=diasMes;d++){
+    const isHoje=hoje.getFullYear()===ano&&hoje.getMonth()===mes&&hoje.getDate()===d;
+    const vens=diasComVenc[d]||[];
+    const urgMax=vens.find(v=>v.urgencia==='critico')?'critico':vens.find(v=>v.urgencia==='atencao')?'atencao':vens.length?'normal':'';
+    html+=`<div style="aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:${isHoje?'900':'600'};
+      background:${isHoje?'var(--azul)':urgMax?corUrg[urgMax]+'18':'none'};
+      color:${isHoje?'#fff':urgMax?corUrg[urgMax]:'var(--txt2)'};
+      border:${isHoje?'2px solid var(--azul)':urgMax?'1.5px solid '+corUrg[urgMax]+'44':'1px solid transparent'};
+      cursor:${vens.length?'pointer':'default'};
+      position:relative"
+      ${vens.length?`onclick="vcalSelDia(${d},${ano},${mes})" title="${vens.map(v=>v.nome).join(', ')}"`:''}>
+      ${d}
+      ${vens.length?`<span style="font-size:7px;margin-top:1px">${vens.length>1?vens.length+'v':'●'}</span>`:''}
+    </div>`;
+  }
+  document.getElementById('vcalGrid').innerHTML=html;
+
+  // Lista lateral
+  const listEl=document.getElementById('vcalList');
+  if(!listEl) return;
+  if(!items.length){listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Nenhum vencimento este mês 🎉</div>';return;}
+
+  const corTipo={cartao:'var(--azul)',fixa:'var(--lara)',divida:'var(--verm)'};
+  listEl.innerHTML=items.map(it=>{
+    const diasTxt=it.diasAte<0?`${Math.abs(it.diasAte)} dias atrasado`:it.diasAte===0?'Vence hoje!':it.diasAte===1?'Vence amanhã':`${it.diasAte} dias`;
+    const bgUrg=it.urgencia==='critico'?'var(--verm-l)':it.urgencia==='atencao'?'var(--amar-l)':'var(--bg)';
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:32px;height:32px;border-radius:8px;background:${bgUrg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${it.nome.split(' ')[0]}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700">${it.nome.replace(/^[^ ]+ /,'')}</div>
+          <div style="font-size:10px;color:var(--muted)">${it.desc} · Dia ${it.dia}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:800;color:var(--verm)">${it.valor>0?fmt(it.valor):'—'}</div>
+        <div style="font-size:10px;font-weight:700;color:${it.urgencia==='critico'?'var(--verm)':it.urgencia==='atencao'?'var(--lara)':'var(--muted)'}">${diasTxt}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function vcalSelDia(dia, ano, mes){
+  const items=coletarVencimentos(ano,mes).filter(i=>i.dia===dia);
+  if(!items.length) return;
+  const msg=items.map(it=>`${it.nome}: ${it.valor>0?fmt(it.valor):'—'} (${it.desc})`).join('\n');
+  alert(`Vencimentos dia ${dia}:\n\n${msg}`);
 }
 
 function renderDicaDia(){
