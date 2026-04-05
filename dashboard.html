@@ -1114,7 +1114,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="g4 mb" id="planKpis"></div>
   <div class="g2e mb">
     <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="padding:12px 0"></div></div>
-    <div class="card"><div class="ch"><div><div class="ct">🏆 Top Categorias do Período</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
+    <div class="card"><div class="ch"><div><div class="ct">🏆 Maiores Gastos por Categoria</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
   </div>
   <div id="planTable" style="margin-top:16px"></div>
 </div>
@@ -1165,6 +1165,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
   <!-- Grid categorias -->
   <div id="catsGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;margin-bottom:20px"></div>
+  <!-- Tabela análise detalhada -->
+  <div id="catsDetail" style="margin-bottom:20px"></div>
   <!-- Categorias custom -->
   <div id="catsCustomSection"></div>
 </div>
@@ -1442,7 +1444,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:renderCats,limites:renderLimits,relatorios:renderRel,planejamento:renderPlan};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -3063,7 +3065,7 @@ function renderMetas(){
       <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:8px"><span style="color:var(--azul)">${fmt(m.atual)}</span><span style="color:var(--muted)">${fmt(m.total)}</span></div>
       ${meses>0?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">⏳ ~${meses} meses a ${fmt(m.mensal)}/mês</div>`:''}
       <div style="display:flex;gap:5px">
-        <button class="btn bv btn-sm" style="flex:1" onclick="depositarMeta(${i})">💰</button>
+        <button class="btn bv btn-sm" style="flex:1" onclick="depositarMeta(${i})">💰 Adicionar</button>
         <button class="btn bg btn-sm" onclick="openMt(${i})">✏️</button>
         <button class="btn bd btn-sm" onclick="delMt(${i})">🗑️</button>
       </div>
@@ -3149,46 +3151,72 @@ function renderPlan(){
   // ── Gráfico SVG 12 meses ──
   const chartEl = document.getElementById('planChart');
   if(chartEl && hist.length){
-    const W=700,H=160,PT=18,PB=28,PL=6,PR=6;
+    const W=700,H=180,PT=20,PB=28,PL=8,PR=8;
     const chartW=W-PL-PR, chartH=H-PT-PB;
     const n=hist.length;
     const colW=chartW/n;
-    const barW=Math.max(colW*0.3,5);
-    const maxVal=Math.max(...hist.map(h=>Math.max(h.entradas,h.saidas)),1);
+    const barW=Math.max(Math.floor(colW*0.28),6);
+
+    // Calcula escala correta considerando saldo também
+    const maxBar=Math.max(...hist.map(h=>Math.max(h.entradas,h.saidas)),1);
+    const allSaldos=hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0)).map(h=>h.saldo);
+    const minSaldo=Math.min(...allSaldos, 0);
+    const maxSaldo=Math.max(...allSaldos, 0);
+    // A linha de saldo é escalada pelo mesmo maxBar para ficar proporcional às barras
+    const baseline=PT+chartH; // linha base Y
+
+    // Altura disponível acima e abaixo da baseline para saldo
+    const saldoRange=Math.max(maxBar, Math.abs(minSaldo), 1);
 
     let bars='';
     hist.forEach((h,i)=>{
       const cx=PL+i*colW+colW/2;
       const op=h.futuro?0.25:1;
       if(h.entradas>0){
-        const bh=(h.entradas/maxVal)*chartH;
-        bars+=`<rect x="${cx-barW-1}" y="${PT+chartH-bh}" width="${barW}" height="${bh}" rx="2" fill="#10B981" opacity="${op}"/>`;
+        const bh=Math.max((h.entradas/maxBar)*chartH, 2);
+        bars+=`<rect x="${(cx-barW-1).toFixed(1)}" y="${(baseline-bh).toFixed(1)}" width="${barW}" height="${bh.toFixed(1)}" rx="2" fill="#10B981" opacity="${op}"/>`;
       }
       if(h.saidas>0){
-        const bh=(h.saidas/maxVal)*chartH;
-        bars+=`<rect x="${cx+1}" y="${PT+chartH-bh}" width="${barW}" height="${bh}" rx="2" fill="#EF4444" opacity="${op*0.8}"/>`;
+        const bh=Math.max((h.saidas/maxBar)*chartH, 2);
+        bars+=`<rect x="${(cx+1).toFixed(1)}" y="${(baseline-bh).toFixed(1)}" width="${barW}" height="${bh.toFixed(1)}" rx="2" fill="#EF4444" opacity="${(op*0.85).toFixed(2)}"/>`;
       }
       const cor=h.atual?'#3B6FF0':h.futuro?'#D1D5DB':'#6B7280';
-      bars+=`<text x="${cx}" y="${H-4}" text-anchor="middle" font-size="8" fill="${cor}" font-family="Cabinet Grotesk" font-weight="${h.atual?'bold':'normal'}">${h.label}</text>`;
+      bars+=`<text x="${cx.toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="8" fill="${cor}" font-family="Cabinet Grotesk" font-weight="${h.atual?'bold':'normal'}">${h.label}</text>`;
     });
 
-    // Linha de saldo
-    const pts=hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0)).map((h,_,arr)=>{
+    // Linha de saldo — escala correta com suporte a negativos
+    const pontosSaldo=hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0));
+    const pts=pontosSaldo.map(h=>{
       const i=hist.indexOf(h);
       const cx=PL+i*colW+colW/2;
-      const sy=PT+chartH-Math.min(Math.max(h.saldo,0)/maxVal*chartH,chartH);
-      return `${cx},${sy}`;
+      // Proporcional ao maxBar: saldo positivo sobe, negativo desce
+      const saldoY=baseline - (h.saldo/saldoRange)*chartH;
+      const sy=Math.max(PT, Math.min(H-PB, saldoY));
+      return `${cx.toFixed(1)},${sy.toFixed(1)}`;
     }).join(' ');
 
+    // Círculos nos pontos do saldo
+    let pontos='';
+    pontosSaldo.forEach(h=>{
+      const i=hist.indexOf(h);
+      const cx=PL+i*colW+colW/2;
+      const saldoY=baseline - (h.saldo/saldoRange)*chartH;
+      const sy=Math.max(PT, Math.min(H-PB, saldoY));
+      const cor=h.saldo>=0?'#3B6FF0':'#EF4444';
+      pontos+=`<circle cx="${cx.toFixed(1)}" cy="${sy.toFixed(1)}" r="3" fill="${cor}" opacity="0.9"/>`;
+    });
+
     chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
-      <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E5E9EF" stroke-width="1.5"/>
+      <!-- Linha de zero (baseline) -->
+      <line x1="${PL}" y1="${baseline}" x2="${W-PR}" y2="${baseline}" stroke="#E5E9EF" stroke-width="1.5"/>
       ${bars}
-      ${pts?`<polyline points="${pts}" fill="none" stroke="#3B6FF0" stroke-width="2" stroke-dasharray="3,3" opacity="0.6"/>`:'' }
+      ${pts?`<polyline points="${pts}" fill="none" stroke="#3B6FF0" stroke-width="2.5" stroke-linejoin="round" opacity="0.85"/>`:'' }
+      ${pontos}
     </svg>
-    <div style="display:flex;gap:12px;padding:6px 0;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;background:#10B981;border-radius:2px"></div>Entradas</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;background:#EF4444;border-radius:2px;opacity:.8"></div>Saídas</div>
-      <div style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--azul)"><div style="width:14px;height:2px;background:#3B6FF0"></div>Saldo</div>
+    <div style="display:flex;gap:16px;padding:6px 0 2px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;background:#10B981;border-radius:2px"></div>Entradas</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)"><div style="width:10px;height:10px;background:#EF4444;border-radius:2px;opacity:.85"></div>Saídas</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--azul)"><div style="width:14px;height:2.5px;background:#3B6FF0;border-radius:2px"></div>Saldo</div>
     </div>`;
   }
 
@@ -3301,7 +3329,7 @@ function renderCats(){
       const isCustom=CATS_CUSTOM.some(x=>x.nome===c.nome);
       const custIdx=CATS_CUSTOM.findIndex(x=>x.nome===c.nome);
       return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'};cursor:pointer;transition:all .2s"
-        onclick="abrirEditarCategoria('${c.nome}',${isCustom},${custIdx})"
+        onclick="abrirEditarCategoria('${c.nome}',${isCustom},${custIdx})">
         ${stIco?`<span class="cc-st">${stIco}</span>`:''}
         <div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)" title="Clique para editar">✏️</div>
         <div class="cc-em">${c.emoji}</div>
@@ -4362,6 +4390,179 @@ function renderDicaDia(){
 }
 
 function function_placeholder_do_not_remove(){}
+
+// ════════════════════════════════════════════════
+// CATEGORIAS — FUNÇÕES DE SUPORTE
+// ════════════════════════════════════════════════
+
+function setCatFiltro(filtro, btn){
+  CAT_FILTRO = filtro;
+  document.querySelectorAll('.catFiltBtn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderCats();
+}
+
+function switchCatTab(tab){
+  CAT_TAB = tab || 'cats';
+  renderCats();
+}
+
+function abrirModalCat(idx=-1){
+  document.getElementById('catModalIdx').value = idx;
+  if(idx >= 0){
+    const c = CATS_CUSTOM[idx];
+    document.getElementById('catModalTitle').textContent = '✏️ Editar Categoria';
+    document.getElementById('catNome').value = c.nome;
+    document.getElementById('catLimite').value = LIMS_LOCAL[c.nome] || 0;
+    document.getElementById('catEmoji').value = c.emoji || '📦';
+    document.getElementById('catCor').value = c.cor || '#EF4444';
+    document.querySelectorAll('#emojiPicker .epick').forEach(e=>{ e.classList.toggle('sel', e.textContent.trim()===c.emoji); });
+    document.querySelectorAll('#colorPicker .cpick').forEach(e=>{ e.classList.toggle('sel', e.style.background===c.cor); });
+  } else {
+    document.getElementById('catModalTitle').textContent = 'Nova Categoria';
+    document.getElementById('catNome').value = '';
+    document.getElementById('catLimite').value = '';
+    document.getElementById('catEmoji').value = '📦';
+    document.getElementById('catCor').value = '#EF4444';
+    document.querySelectorAll('#emojiPicker .epick').forEach(e=>e.classList.remove('sel'));
+    document.querySelectorAll('#colorPicker .cpick').forEach(e=>e.classList.remove('sel'));
+    const firstColor = document.querySelector('#colorPicker .cpick');
+    if(firstColor) firstColor.classList.add('sel');
+  }
+  OM('ovCatModal');
+}
+
+function selEmoji(el, emoji){
+  document.querySelectorAll('#emojiPicker .epick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('catEmoji').value = emoji;
+}
+
+function selColor(el, cor){
+  document.querySelectorAll('#colorPicker .cpick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('catCor').value = cor;
+}
+
+function salvarCatCustom(){
+  const idx = parseInt(document.getElementById('catModalIdx').value);
+  const nome = document.getElementById('catNome').value.trim();
+  const lim = parseFloat(document.getElementById('catLimite').value) || 0;
+  const emoji = document.getElementById('catEmoji').value || '📦';
+  const cor = document.getElementById('catCor').value || '#EF4444';
+  if(!nome) return toast('⚠️ Digite o nome da categoria','warning');
+  const catObj = {nome, emoji, cor};
+  if(idx >= 0){ CATS_CUSTOM[idx] = catObj; } else { CATS_CUSTOM.push(catObj); }
+  if(lim > 0){ LIMS_LOCAL[nome] = lim; salvarLimsLocal(); }
+  salvarCats();
+  atualizarSelectCats();
+  CM('ovCatModal');
+  renderCats();
+  toast('✅ Categoria salva!','success');
+}
+
+function abrirEditarCategoria(nome, isCustom, custIdx){
+  const txMes = MES_DATA.txMes || [];
+  const gastoMap = {};
+  txMes.filter(t=>t.valor<0).forEach(t=>{ gastoMap[t.categoria]=(gastoMap[t.categoria]||0)+Math.abs(t.valor); });
+  const gasto = gastoMap[nome] || 0;
+  const lims = {...LIMS_DEF, ...LIMS_LOCAL};
+  const lim = lims[nome] || 0;
+
+  // Preenche o modal de edição
+  document.getElementById('editCatTitle').textContent = isCustom ? '✏️ Editar Categoria' : '⚙️ Configurar Limite';
+  document.getElementById('editCatPreviewEmoji').textContent = (isCustom && custIdx>=0) ? CATS_CUSTOM[custIdx]?.emoji || EMOJIS[nome] || '📦' : EMOJIS[nome] || '📦';
+  document.getElementById('editCatPreviewNome').textContent = nome;
+  document.getElementById('editCatPreviewGasto').textContent = gasto > 0 ? fmt(gasto) + ' gastos este mês' : 'Sem gastos este mês';
+  document.getElementById('editCatLimite').value = lim || '';
+  document.getElementById('editCatKey').value = nome;
+  document.getElementById('editCatIsCustom').value = isCustom ? '1' : '0';
+  document.getElementById('editCatCustomIdx').value = custIdx;
+  document.getElementById('editCatDelBtn').style.display = isCustom ? '' : 'none';
+  document.getElementById('editCatExtras').style.display = isCustom ? '' : 'none';
+  if(isCustom && custIdx >= 0){
+    const c = CATS_CUSTOM[custIdx];
+    document.getElementById('editCatNome').value = c.nome;
+    document.getElementById('editCatEmoji').value = c.emoji || '📦';
+    document.getElementById('editCatCor').value = c.cor || '#EF4444';
+    document.querySelectorAll('#editEmojiPicker .epick').forEach(e=>{ e.classList.toggle('sel', e.textContent.trim()===c.emoji); });
+    document.querySelectorAll('#editColorPicker .cpick').forEach(e=>{ e.classList.toggle('sel', e.style.background===c.cor); });
+  }
+  atualizarPreviewLimite();
+  OM('ovEditCat');
+}
+
+function atualizarPreviewLimite(){
+  const lim = parseFloat(document.getElementById('editCatLimite').value) || 0;
+  const nome = document.getElementById('editCatKey').value;
+  const txMes = MES_DATA.txMes || [];
+  const gasto = txMes.filter(t=>t.valor<0&&t.categoria===nome).reduce((s,t)=>s+Math.abs(t.valor),0);
+  const info = document.getElementById('editCatLimiteInfo');
+  if(!info) return;
+  if(lim > 0){
+    const rest = Math.max(lim - gasto, 0);
+    const pct = Math.min(gasto/lim*100, 100);
+    info.textContent = `Gasto: ${fmt(gasto)} · Restante: ${fmt(rest)} (${pct.toFixed(0)}%)`;
+  } else {
+    info.textContent = 'Sem limite definido — categoria livre';
+  }
+}
+
+function selEmojiEdit(el, emoji){
+  document.querySelectorAll('#editEmojiPicker .epick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('editCatEmoji').value = emoji;
+  document.getElementById('editCatPreviewEmoji').textContent = emoji;
+}
+
+function selColorEdit(el, cor){
+  document.querySelectorAll('#editColorPicker .cpick').forEach(e=>e.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('editCatCor').value = cor;
+}
+
+function salvarEdicaoCategoria(){
+  const nome = document.getElementById('editCatKey').value;
+  const lim = parseFloat(document.getElementById('editCatLimite').value) || 0;
+  const isCustom = document.getElementById('editCatIsCustom').value === '1';
+  const custIdx = parseInt(document.getElementById('editCatCustomIdx').value);
+
+  // Salva limite
+  LIMS_LOCAL[nome] = lim;
+  salvarLimsLocal();
+
+  // Se custom, atualiza nome/emoji/cor
+  if(isCustom && custIdx >= 0){
+    const novoNome = document.getElementById('editCatNome').value.trim() || nome;
+    const emoji = document.getElementById('editCatEmoji').value || '📦';
+    const cor = document.getElementById('editCatCor').value || '#EF4444';
+    // Se renomeou, migra o limite
+    if(novoNome !== nome){ LIMS_LOCAL[novoNome] = lim; delete LIMS_LOCAL[nome]; salvarLimsLocal(); }
+    CATS_CUSTOM[custIdx] = {nome: novoNome, emoji, cor};
+    salvarCats();
+    atualizarSelectCats();
+  }
+
+  CM('ovEditCat');
+  renderCats();
+  renderDash();
+  toast('✅ Categoria atualizada!','success');
+}
+
+function deletarCatCustomEdit(){
+  const custIdx = parseInt(document.getElementById('editCatCustomIdx').value);
+  if(custIdx < 0) return;
+  const c = CATS_CUSTOM[custIdx];
+  if(!confirm(`Excluir categoria "${c.nome}"?`)) return;
+  delete LIMS_LOCAL[c.nome];
+  salvarLimsLocal();
+  CATS_CUSTOM.splice(custIdx, 1);
+  salvarCats();
+  atualizarSelectCats();
+  CM('ovEditCat');
+  renderCats();
+  toast('🗑️ Categoria excluída','info');
+}
 
 function init(){
   // Dados já carregados em carregarDadosUsuario() antes de init()
