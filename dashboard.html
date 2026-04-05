@@ -1571,8 +1571,14 @@ function calcularMes(){
 
   const lims={...LIMS_DEF,...LIMS_LOCAL};
   const catsArr=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([nome,gasto])=>{
-    const lim=lims[nome]||0,pct=lim>0?gasto/lim*100:0;
-    return{nome,emoji:EMOJIS[nome]||'📦',cor:CORES[nome]||'#9CA3AF',gasto:round2(gasto),limite:lim,pct:round2(pct),status:pct>=100?'estourou':pct>=80?'atencao':gasto>0?'ok':'livre'};
+    // Busca emoji/cor com fallback insensível a maiúsculas/minúsculas
+    const nomeTitle=nome.charAt(0).toUpperCase()+nome.slice(1).toLowerCase();
+    const cc=CATS_CUSTOM.find(x=>x.nome===nome||x.nome===nomeTitle);
+    const emoji=(cc&&cc.emoji)||EMOJIS[nome]||EMOJIS[nomeTitle]||'📦';
+    const cor=(cc&&cc.cor)||CORES[nome]||CORES[nomeTitle]||'#9CA3AF';
+    const limNome=lims[nome]||lims[nomeTitle]||0;
+    const pct=limNome>0?gasto/limNome*100:0;
+    return{nome,emoji,cor,gasto:round2(gasto),limite:limNome,pct:round2(pct),status:pct>=100?'estourou':pct>=80?'atencao':gasto>0?'ok':'livre'};
   });
   const totM=Object.values(mets).reduce((a,b)=>a+b,0)||1;
   const metsArr=Object.entries(mets).sort((a,b)=>b[1]-a[1]).map(([nome,val])=>({nome,valor:round2(val),pct:round2(val/totM*100)}));
@@ -1623,6 +1629,9 @@ async function reload(manual=false){
 // NAVEGAÇÃO
 // ════════════════════════════════════════════════
 function go(page){
+  // Fecha qualquer modal aberto antes de navegar
+  document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
+
   // 'limites' redirects to the unified 'categorias' page on lims tab
   const targetPage = page === 'limites' ? 'categorias' : page;
 
@@ -3344,9 +3353,14 @@ function renderCats(){
 
   // Monta lista completa: padrão + custom, enriquecida com gastos
   const gastoMap={};
+  const gastoMapLow={};
   txMes.filter(t=>t.valor<0).forEach(t=>{
-    gastoMap[t.categoria]=(gastoMap[t.categoria]||0)+Math.abs(t.valor);
+    const cat=t.categoria||'';
+    gastoMap[cat]=(gastoMap[cat]||0)+Math.abs(t.valor);
+    const catLow=cat.toLowerCase();
+    gastoMapLow[catLow]=(gastoMapLow[catLow]||0)+Math.abs(t.valor);
   });
+  const getGasto=nome=>gastoMap[nome]||gastoMapLow[(nome||'').toLowerCase()]||0;
 
   // Mescla padrão + custom: custom pode sobrescrever emoji/cor de padrão, ou adicionar novas
   const customMap={};
@@ -3363,10 +3377,10 @@ function renderCats(){
 
   const padrao=allCatsList.map(c=>({
     ...c,
-    gasto:gastoMap[c.nome]||0,
+    gasto:getGasto(c.nome),
     limite:lims[c.nome]||0,
-    pct:lims[c.nome]>0?(gastoMap[c.nome]||0)/lims[c.nome]*100:0,
-    status:(gastoMap[c.nome]||0)===0?'zerado':((lims[c.nome]>0&&(gastoMap[c.nome]||0)>=lims[c.nome])?'estourou':((lims[c.nome]>0&&(gastoMap[c.nome]||0)>=lims[c.nome]*0.8)?'atencao':'ok')),
+    pct:lims[c.nome]>0?getGasto(c.nome)/lims[c.nome]*100:0,
+    status:getGasto(c.nome)===0?'zerado':((lims[c.nome]>0&&getGasto(c.nome)>=lims[c.nome])?'estourou':((lims[c.nome]>0&&getGasto(c.nome)>=lims[c.nome]*0.8)?'atencao':'ok')),
     custom:CATS_CUSTOM.some(x=>x.nome===c.nome)
   }));
 
@@ -3386,8 +3400,8 @@ function renderCats(){
   // Subtítulo
   document.getElementById('catSubtitle').textContent=`${getMesNome()} — ${visivel.filter(c=>c.gasto>0).length} categorias com gastos`;
 
-  // KPIs rápidos
-  const totalGasto=padrao.reduce((s,c)=>s+c.gasto,0);
+  // KPIs rápidos — usa MES_DATA.saidas para total preciso (inclui todas as categorias)
+  const totalGasto=MES_DATA.saidas||padrao.reduce((s,c)=>s+c.gasto,0);
   const nEstourou=padrao.filter(c=>c.status==='estourou').length;
   const nAtencao=padrao.filter(c=>c.status==='atencao').length;
   const nOk=padrao.filter(c=>c.status==='ok'&&c.gasto>0).length;
