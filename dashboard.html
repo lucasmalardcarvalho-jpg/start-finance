@@ -1132,7 +1132,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <!-- Barra orçamento -->
   <div class="card mb">
     <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="font-size:12px;font-weight:800;color:var(--txt)">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span></div>
+      <div style="font-size:12px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:8px">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span><button onclick="editarOrcamentoTotal()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:11px;cursor:pointer;color:var(--muted2)" title="Editar orçamento total">✏️ Editar</button></div>
       <div style="display:flex;gap:14px;font-size:12px;font-weight:700">
         <span id="limBudgetGasto" style="color:var(--verm)">—</span>
         <span id="limBudgetPct" style="color:var(--muted)">—</span>
@@ -3260,14 +3260,26 @@ function renderCats(){
     gastoMap[t.categoria]=(gastoMap[t.categoria]||0)+Math.abs(t.valor);
   });
 
-  // Pega categorias com gasto OU todas as padrão
-  const padrao=CATS_PADRAO_EXTRA.map(c=>({
+  // Mescla padrão + custom: custom pode sobrescrever emoji/cor de padrão, ou adicionar novas
+  const customMap={};
+  CATS_CUSTOM.forEach(c=>{ customMap[c.nome]=c; });
+  const padraoNomes=new Set(CATS_PADRAO_EXTRA.map(c=>c.nome));
+  // Padrão com override de emoji/cor se houver custom com mesmo nome
+  const padraoList=CATS_PADRAO_EXTRA.map(c=>({
+    ...c,
+    ...(customMap[c.nome]?{emoji:customMap[c.nome].emoji,cor:customMap[c.nome].cor}:{})
+  }));
+  // Categorias custom que NÃO existem no padrão (genuinamente novas)
+  const extraCustom=CATS_CUSTOM.filter(c=>!padraoNomes.has(c.nome));
+  const allCatsList=[...padraoList,...extraCustom];
+
+  const padrao=allCatsList.map(c=>({
     ...c,
     gasto:gastoMap[c.nome]||0,
     limite:lims[c.nome]||0,
     pct:lims[c.nome]>0?(gastoMap[c.nome]||0)/lims[c.nome]*100:0,
     status:(gastoMap[c.nome]||0)===0?'zerado':((lims[c.nome]>0&&(gastoMap[c.nome]||0)>=lims[c.nome])?'estourou':((lims[c.nome]>0&&(gastoMap[c.nome]||0)>=lims[c.nome]*0.8)?'atencao':'ok')),
-    custom:false
+    custom:CATS_CUSTOM.some(x=>x.nome===c.nome)
   }));
 
   // Aplica filtro
@@ -3298,7 +3310,8 @@ function renderCats(){
     <div class="kpi g" style="cursor:pointer" onclick="setCatFiltro('ok',document.querySelector('[data-f=ok]'))"><div class="kpi-top"><div class="kpi-ic">🟢</div></div><div class="kpi-v">${nOk}</div><div class="kpi-l">Dentro do limite</div></div>`;
 
   // ── Barra de orçamento total ──
-  const totalOrçado=Object.values(lims).reduce((s,v)=>s+v,0);
+  const orcOverride=lsUser('orcTotal',0);
+  const totalOrçado=orcOverride>0?orcOverride:Object.values(lims).reduce((s,v)=>s+v,0);
   const pctOrç=totalOrçado>0?Math.min(totalGasto/totalOrçado*100,100):0;
   const barCor=pctOrç>=100?'var(--verm)':pctOrç>=80?'linear-gradient(90deg,var(--verde),var(--lara))':'linear-gradient(90deg,var(--verde),var(--azul))';
   const setBB=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
@@ -3364,26 +3377,9 @@ function renderCats(){
     }).join('')+`</tbody></table></div>`;
   }
 
-  // Categorias personalizadas — renderiza na nova seção
-  const customEl=document.getElementById('catsCustomSection');if(!customEl)return;
-  if(!CATS_CUSTOM.length){
-    customEl.innerHTML='<div class="empty" style="padding:24px"><div class="empty-ic">⭐</div><h3>Nenhuma categoria personalizada</h3><p>Adicione categorias que não existem na lista padrão</p><button class="btn bp" style="margin-top:12px" onclick="abrirModalCat()">+ Adicionar categoria</button></div>';
-  } else {
-    customEl.innerHTML=`<div class="card" style="margin-top:4px">
-      <div class="ch"><div><div class="ct">⭐ Categorias Personalizadas</div><div class="cs">Criadas por você — clique para editar</div></div>
-        <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Adicionar</button>
-      </div>
-      <div style="padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px">
-        ${CATS_CUSTOM.map((c,i)=>{
-          const gasto=gastoMap[c.nome]||0;
-          const lim=lims[c.nome]||0;
-          const pct=lim>0?Math.min(gasto/lim*100,100):0;
-          const bCor2=pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
-          return '<div class="cat-card-item" style="border-top:3px solid '+c.cor+';cursor:pointer" onclick="abrirEditarCategoria('+JSON.stringify(c.nome)+',true,'+i+')" ><div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)">✏️</div><div class="cc-em">'+c.emoji+'</div><div class="cc-nm">'+c.nome+'</div><div class="cc-vl" style="color:'+(gasto>0?'var(--verm)':'var(--muted2)')+'">'+(gasto>0?fmt(gasto):'R$ 0,00')+'</div><div style="font-size:10px;color:var(--muted)">'+(lim>0?'Limite: '+fmt(lim):'Sem limite')+'</div>'+(lim>0?'<div class="cc-bar"><div class="cc-fill" style="width:'+pct+'%;background:'+bCor2+'"></div></div>':'')+'</div>';
-        }).join('')}
-      </div>
-    </div>`;
-  }
+  // Seção custom separada não é mais necessária — tudo já está no grid principal
+  const customEl=document.getElementById('catsCustomSection');
+  if(customEl) customEl.innerHTML='';
 }
 
 function filtrarPorCategoria(cat){
@@ -3890,7 +3886,11 @@ function carregarDadosUsuario(){
   METAS        = lsUser('metas', []);
   INVESTIMENTOS= lsUser('inv', []);
   CARTOES      = lsUser('cartoes', []);
-  CATS_CUSTOM  = lsUser('cats', []);
+  // Carrega e deduplica (remove entradas repetidas pelo nome)
+  const rawCats = lsUser('cats', []);
+  const seenNames = new Set();
+  CATS_CUSTOM = rawCats.filter(c=>{ if(!c.nome||seenNames.has(c.nome)) return false; seenNames.add(c.nome); return true; });
+  if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
   // Carrega transações do localStorage (fallback imediato antes da API)
   const txsLocal = lsUser('txs', []);
   if(txsLocal.length > 0){
@@ -4506,7 +4506,11 @@ function salvarCatCustom(){
   const cor = document.getElementById('catCor').value || '#EF4444';
   if(!nome) return toast('⚠️ Digite o nome da categoria','warning');
   const catObj = {nome, emoji, cor};
-  if(idx >= 0){ CATS_CUSTOM[idx] = catObj; } else { CATS_CUSTOM.push(catObj); }
+  // Deduplicar: busca por idx (edição) ou por nome (evita duplicatas ao criar)
+  const byName = CATS_CUSTOM.findIndex(c=>c.nome===nome);
+  if(idx >= 0){ CATS_CUSTOM[idx] = catObj; }
+  else if(byName >= 0){ CATS_CUSTOM[byName] = catObj; }
+  else { CATS_CUSTOM.push(catObj); }
   if(lim > 0){ LIMS_LOCAL[nome] = lim; salvarLimsLocal(); }
   salvarCats();
   atualizarSelectCats();
@@ -4533,7 +4537,8 @@ function abrirEditarCategoria(nome, isCustom, custIdx){
   document.getElementById('editCatIsCustom').value = isCustom ? '1' : '0';
   document.getElementById('editCatCustomIdx').value = custIdx;
   document.getElementById('editCatDelBtn').style.display = isCustom ? '' : 'none';
-  document.getElementById('editCatExtras').style.display = isCustom ? '' : 'none';
+  // Mostrar campos de edição para TODAS as categorias (padrão e custom)
+  document.getElementById('editCatExtras').style.display = '';
   if(isCustom && custIdx >= 0){
     const c = CATS_CUSTOM[custIdx];
     document.getElementById('editCatNome').value = c.nome;
@@ -4541,6 +4546,13 @@ function abrirEditarCategoria(nome, isCustom, custIdx){
     document.getElementById('editCatCor').value = c.cor || '#EF4444';
     document.querySelectorAll('#editEmojiPicker .epick').forEach(e=>{ e.classList.toggle('sel', e.textContent.trim()===c.emoji); });
     document.querySelectorAll('#editColorPicker .cpick').forEach(e=>{ e.classList.toggle('sel', e.style.background===c.cor); });
+  } else {
+    // Categoria padrão — pré-preenche com valores do sistema
+    document.getElementById('editCatNome').value = nome;
+    document.getElementById('editCatEmoji').value = EMOJIS[nome] || '📦';
+    document.getElementById('editCatCor').value = CORES[nome] || '#9CA3AF';
+    document.querySelectorAll('#editEmojiPicker .epick').forEach(e=>{ e.classList.toggle('sel', e.textContent.trim()===(EMOJIS[nome]||'📦')); });
+    document.querySelectorAll('#editColorPicker .cpick').forEach(e=>{ e.classList.toggle('sel', e.style.background===(CORES[nome]||'#9CA3AF')); });
   }
   atualizarPreviewLimite();
   OM('ovEditCat');
@@ -4585,17 +4597,28 @@ function salvarEdicaoCategoria(){
   LIMS_LOCAL[nome] = lim;
   salvarLimsLocal();
 
-  // Se custom, atualiza nome/emoji/cor
+  // Atualiza nome/emoji/cor para QUALQUER categoria (padrão ou custom)
+  const novoNome = (document.getElementById('editCatNome').value||'').trim() || nome;
+  const emoji = document.getElementById('editCatEmoji').value || '📦';
+  const cor = document.getElementById('editCatCor').value || '#EF4444';
+  // Se renomeou, migra o limite
+  if(novoNome !== nome){ LIMS_LOCAL[novoNome] = lim; delete LIMS_LOCAL[nome]; salvarLimsLocal(); }
   if(isCustom && custIdx >= 0){
-    const novoNome = document.getElementById('editCatNome').value.trim() || nome;
-    const emoji = document.getElementById('editCatEmoji').value || '📦';
-    const cor = document.getElementById('editCatCor').value || '#EF4444';
-    // Se renomeou, migra o limite
-    if(novoNome !== nome){ LIMS_LOCAL[novoNome] = lim; delete LIMS_LOCAL[nome]; salvarLimsLocal(); }
+    // Categoria custom existente — atualiza direto
     CATS_CUSTOM[custIdx] = {nome: novoNome, emoji, cor};
-    salvarCats();
-    atualizarSelectCats();
+  } else {
+    // Categoria padrão — salva override em CATS_CUSTOM (só se algo mudou)
+    const emojiDef = EMOJIS[nome]||'📦';
+    const corDef = CORES[nome]||'#9CA3AF';
+    const mudou = novoNome!==nome || emoji!==emojiDef || cor!==corDef;
+    if(mudou){
+      const existIdx = CATS_CUSTOM.findIndex(c=>c.nome===nome||c.nome===novoNome);
+      if(existIdx>=0){ CATS_CUSTOM[existIdx]={nome:novoNome,emoji,cor}; }
+      else { CATS_CUSTOM.push({nome:novoNome,emoji,cor}); }
+    }
   }
+  salvarCats();
+  atualizarSelectCats();
 
   CM('ovEditCat');
   renderCats();
@@ -4616,6 +4639,18 @@ function deletarCatCustomEdit(){
   CM('ovEditCat');
   renderCats();
   toast('🗑️ Categoria excluída','info');
+}
+
+function editarOrcamentoTotal(){
+  const lims={...LIMS_DEF,...LIMS_LOCAL};
+  const computed=Object.values(lims).reduce((s,v)=>s+v,0);
+  const current=lsUser('orcTotal',0)||computed;
+  const val=prompt('Defina o orçamento total do mês (R$):\n(deixe 0 para calcular automaticamente pela soma dos limites)',current.toFixed(2));
+  if(val===null) return; // cancelou
+  const num=parseFloat(val)||0;
+  saveUser('orcTotal',num);
+  renderCats();
+  toast(num>0?`✅ Orçamento definido: ${fmt(num)}`:'♻️ Orçamento automático restaurado','success');
 }
 
 function init(){
