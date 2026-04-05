@@ -1183,7 +1183,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div style="padding:0 20px 14px">
       <div style="height:10px;background:var(--border);border-radius:100px;overflow:hidden">
-        <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;background:linear-gradient(90deg,var(--verde),var(--azul));transition:width 1.2s"></div>
+        <div id="limBudgetFill" style="height:100%;width:0%;border-radius:100px;background:linear-gradient(90deg,var(--verde),var(--azul));transition:width .4s ease"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:4px">
         <span>0%</span><span style="color:var(--lara);font-weight:700">⚠️ 80%</span><span style="color:var(--verm);font-weight:700">🔴 100%</span>
@@ -1505,7 +1505,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -1519,7 +1519,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -1612,7 +1612,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -1633,7 +1633,7 @@ function go(page){
   window.scrollTo(0,0);
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
@@ -2319,7 +2319,7 @@ function getMesChave(offset){
 }
 
 function editTx(idx){
-  const t=TX_FILT[idx];
+  const t=normalizeTx(TX_FILT[idx]);
   document.getElementById('txTitle').textContent='✏️ Editar Transação';
   document.getElementById('txIdx').value=t.idx;// índice real no Sheets
   // Seleciona o mês correto no dropdown
@@ -2354,7 +2354,7 @@ function editTx(idx){
 let delIdx=null;
 function promptDel(idx){
   delIdx=idx;
-  const t=TX_FILT[idx];
+  const t=normalizeTx(TX_FILT[idx]);
   const isParc=parseInt(t.parcelas)>1;
   DEL_MODO='so_esta';
 
@@ -3488,6 +3488,8 @@ function filtrarPorCategoria(cat){
 
 
 function renderLimits(){
+  // Fallback: se os elementos da view antiga não existem, usa renderCats (que já mostra tudo)
+  if(!document.getElementById('limSubtitle')) { renderCats(); return; }
   const txMes  = MES_DATA.txMes || [];
   const limsStored2 = lsUser('limites',{});
   Object.assign(LIMS_LOCAL, limsStored2);
