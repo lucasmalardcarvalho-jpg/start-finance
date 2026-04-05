@@ -1377,13 +1377,16 @@ const LIMS_DEF={Alimentação:800,Transporte:400,Contas:600,Lazer:300,Saúde:200
 const MESES_PT=["jan.","fev.","mar.","abr.","mai.","jun.","jul.","ago.","set.","out.","nov.","dez."];
 const MESES_NM=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
 const TIPO_CORES={Renda_Fixa:"#3B6FF0",Ações:"#10B981",FIIs:"#F59E0B",Cripto:"#F97316",Internacional:"#8B5CF6",Poupança:"#14B8A6",Outros:"#9CA3AF"};
+// 10 categorias base padrão do sistema
+const CATS_BASE_10 = ['Alimentação','Moradia','Transporte','Saúde','Lazer','Educação','Vestuário','Assinaturas','Veículo','Outros'];
+const CATS_PADRAO_EXTRA = Object.keys(EMOJIS).filter(n=>n!=='Salário'&&n!=='Freelance'&&n!=='Investimento').map(n=>({nome:n,emoji:EMOJIS[n]||'📦',cor:CORES[n]||'#9CA3AF'}));
 
 // ════════════════════════════════════════════════
 // ESTADO GLOBAL
 // ════════════════════════════════════════════════
 let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
-let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={};
+let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[];
 
 // ── Globals de estado das features ──
 let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
@@ -1521,35 +1524,29 @@ async function reload(manual=false){
   const btn=document.getElementById('btnReload');
   if(btn){btn.disabled=true;btn.textContent='⏳...'}
   try{
-    const res=await fetch('/api/todas');
+    const res=await Promise.race([
+      fetch('/api/todas'),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
+    ]);
     const d=await res.json();
     if(d.erro)throw new Error(d.erro);
     TODAS_TX=d.transacoes||[];
     HISTORICO=d.historico||[];
-    calcularMes();
-    renderDash();
-    // Re-renderiza aba ativa
-    const cur=document.querySelector('.page.active')?.id?.replace('page-','');
-    if(cur&&cur!=='dashboard'){
-      const fns={
-        transacoes:renderTxPage,
-        cartoes:renderCartoes,
-        categorias:()=>{ if(CAT_TAB==='lims') renderLimits(); else renderCats(); },
-        limites:()=>{ if(CAT_TAB==='lims') renderLimits(); else renderCats(); },
-        relatorios:renderRel,
-        planejamento:renderPlan,
-        fixas:renderFixas,
-        dividas:renderDividas,
-        metas:renderMetas,
-        investimentos:renderInv
-      };
-      if(fns[cur]) fns[cur]();
-    }
-    if(manual)toast('✅ Atualizado!','success');
+    // Persiste localmente após carregar da API
+    salvarTxsLocal();
   }catch(e){
-    if(manual)toast('❌ '+e.message,'error');
-    else{document.getElementById('loading').innerHTML=`<div style="text-align:center"><div style="font-size:36px;margin-bottom:12px">⚠️</div><div style="font-size:16px;font-weight:700;color:#fff;margin-bottom:8px">Erro ao conectar</div><div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:20px">${e.message}</div><button onclick="reload()" style="background:#fff;color:var(--azul);border:none;padding:10px 20px;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">Tentar novamente</button></div>`;}
-  }finally{if(btn){btn.disabled=false;btn.textContent='🔄 Atualizar'}}
+    // Fallback: carrega do localStorage
+    carregarTxsLocal();
+  }
+  calcularMes();
+  renderDash();
+  const cur=document.querySelector('.page.active')?.id?.replace('page-','');
+  if(cur&&cur!=='dashboard'){
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},limites:()=>{CAT_TAB==='lims'?renderLimits():renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    if(fns[cur])fns[cur]();
+  }
+  if(manual)toast('✅ Atualizado!','success');
+  if(btn){btn.disabled=false;btn.textContent='🔄 Atualizar'}
 }
 
 // ════════════════════════════════════════════════
@@ -2358,7 +2355,8 @@ async function deletarUmaTx(t){
       TODAS_TX.splice(pos,1);
       TODAS_TX.forEach(tx=>{ if(tx.idx>realIdx) tx.idx--; });
     }
-    calcularMes(); renderTxPage();
+    salvarTxsLocal();
+    autoRefresh();
   }catch(e){ toast('❌ '+e.message,'error'); }
 }
 
@@ -2401,7 +2399,8 @@ async function deletarTodasParcelas(t){
   TODAS_TX.length=0;
   novas.sort((a,b)=>b.idx-a.idx).forEach((tx,i)=>{ tx.idx=novas.length-1-i; TODAS_TX.push(tx); });
 
-  calcularMes(); renderTxPage();
+  salvarTxsLocal();
+  autoRefresh();
   if(erros>0) toast(`⚠️ ${erros} parcelas com erro ao excluir`,'warning');
 }
 
@@ -2434,44 +2433,38 @@ async function saveTx(){
     mes_ano:mesAno,
   };
   try{
+    // Salvar localmente (localStorage) como fonte principal de dados
     if(idx===-1){
-      // Nova transação
-      const r=await(await fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)})).json();
-      if(r.erro)throw new Error(r.erro);
+      // Nova transação — gera idx local
+      const novoIdx = TODAS_TX.length > 0 ? Math.max(...TODAS_TX.map(t=>t.idx||0)) + 1 : 0;
+      const novasTx = [{...dados, idx: novoIdx}];
 
-      // ─── Propagar parcelas para meses futuros ───
+      // Propaga parcelas para meses seguintes
       if(totalParc>1){
-        const erros=[];
-        // dados.valor já contém o valor unitário (dividido por totalParc antes de salvar)
-        const valorUnitario = dados.valor; // ex: -1500/3 = -500 por parcela
-
+        const valorUnitario = dados.valor;
         for(let p=2;p<=totalParc;p++){
           const mesParc=somarMes(mesAno,p-1);
-          const dadosParc={
-            ...dados,
-            valor: valorUnitario,          // ✅ valor da parcela, não o total
-            parcela_atual:p,
-            mes_ano:mesParc,
-            descricao: dados.descricao||dados.categoria, // ✅ sem "(2/3)" na descrição
-          };
-          try{
-            const rp=await(await fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dadosParc)})).json();
-            if(rp.erro) erros.push(`Parcela ${p}: ${rp.erro}`);
-          }catch(ep){ erros.push(`Parcela ${p}: erro de rede`); }
+          novasTx.push({...dados, valor:valorUnitario, parcela_atual:p, mes_ano:mesParc, idx:novoIdx+(p-1)});
         }
-        if(erros.length) toast(`⚠️ Parcelas salvas com avisos: ${erros.join(', ')}`, 'warning');
-        else toast(`✅ Lançado! ${totalParc} parcelas adicionadas (${mesAno} → ${somarMes(mesAno,totalParc-1)})`,'success');
+        toast(`✅ Lançado! ${totalParc} parcelas (${mesAno} → ${somarMes(mesAno,totalParc-1)})`,'success');
       } else {
         toast('✅ Lançado!','success');
       }
+      novasTx.forEach(t=>TODAS_TX.push(t));
+
+      // Tenta API em background (sem bloquear UI)
+      fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)}).catch(()=>{});
     } else {
       // Editar existente
-      const r=await(await fetch(`/api/transacao/${idx}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)})).json();
-      if(r.erro)throw new Error(r.erro);
+      const pos=TODAS_TX.findIndex(t=>t.idx===idx);
+      if(pos>=0) TODAS_TX[pos]={...TODAS_TX[pos],...dados,idx};
+      else TODAS_TX.push({...dados,idx});
       toast('✅ Atualizado!','success');
+      fetch(`/api/transacao/${idx}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)}).catch(()=>{});
     }
+    salvarTxsLocal();
     CM('ovTx');
-    await reload();
+    autoRefresh();
     renderTxPage();
   }catch(e){toast('❌ '+e.message,'error')}
   finally{btn.disabled=false;btn.textContent='💾 Salvar'}
@@ -3898,6 +3891,12 @@ function carregarDadosUsuario(){
   INVESTIMENTOS= lsUser('inv', []);
   CARTOES      = lsUser('cartoes', []);
   CATS_CUSTOM  = lsUser('cats', []);
+  // Carrega transações do localStorage (fallback imediato antes da API)
+  const txsLocal = lsUser('txs', []);
+  if(txsLocal.length > 0){
+    TODAS_TX = txsLocal.map((t,i)=>({...t, idx: t.idx!==undefined ? t.idx : i}));
+    HISTORICO = buildHistoricoLocal();
+  }
 }
 
 // ── Salvar dados do usuário ──────────────────
@@ -4387,6 +4386,61 @@ function renderDicaDia(){
       <div class="dica-icon">💡</div>
       <div><div class="dica-title">Dica do dia</div><div class="dica-text">${getDicaHoje()}</div></div>
     </div>`;
+}
+
+// ════════════════════════════════════════════════
+// UTILITÁRIOS ESSENCIAIS
+// ════════════════════════════════════════════════
+function atualizarSelectCats(){
+  // Atualiza o select de categorias no modal de transação
+  const todas = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)];
+  const unicas = [...new Set(todas)].sort();
+  const sel = document.getElementById('txCat');
+  if(!sel) return;
+  const atual = sel.value;
+  sel.innerHTML = unicas.map(c=>`<option${c===atual?' selected':''}>${c}</option>`).join('');
+}
+
+function buildHistoricoLocal(){
+  // Constrói HISTORICO de 12 meses a partir de TODAS_TX (armazenadas em localStorage)
+  const hoje = new Date();
+  const hist = [];
+  for(let i=0;i<12;i++){
+    const d = new Date(hoje.getFullYear(), hoje.getMonth()-11+i, 1);
+    const label = MESES_PT[d.getMonth()].replace('.','');
+    const chave = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+    const txMes = TODAS_TX.filter(t=>t.mes_ano===chave);
+    let e=0,s=0;
+    txMes.forEach(t=>{ const v=parseFloat(t.valor)||0; if(v>0) e+=v; else s+=Math.abs(v); });
+    const isMesAtual = (d.getMonth()===hoje.getMonth()&&d.getFullYear()===hoje.getFullYear());
+    const isFuturo = d > hoje && !isMesAtual;
+    hist.push({label,chave,entradas:Math.round(e*100)/100,saidas:Math.round(s*100)/100,saldo:Math.round((e-s)*100)/100,atual:isMesAtual,futuro:isFuturo});
+  }
+  return hist;
+}
+
+function salvarTxsLocal(){
+  saveUser('txs', TODAS_TX);
+}
+
+function carregarTxsLocal(){
+  const txs = lsUser('txs', []);
+  // Garante índices únicos
+  TODAS_TX = txs.map((t,i)=>({...t, idx: t.idx !== undefined ? t.idx : i}));
+  HISTORICO = buildHistoricoLocal();
+}
+
+function autoRefresh(){
+  // Reconstrói todos os dados e re-renderiza tudo sem chamar API
+  HISTORICO = buildHistoricoLocal();
+  calcularMes();
+  renderDash();
+  // Re-renderiza a aba ativa se não for dashboard
+  const cur = document.querySelector('.page.active')?.id?.replace('page-','');
+  if(cur && cur !== 'dashboard'){
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    if(fns[cur]) fns[cur]();
+  }
 }
 
 function function_placeholder_do_not_remove(){}
