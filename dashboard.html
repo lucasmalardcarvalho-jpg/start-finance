@@ -3455,8 +3455,9 @@ function renderCats(){
       const nTx=txMes.filter(t=>t.categoria===c.nome).length;
       const isCustom=CATS_CUSTOM.some(x=>x.nome===c.nome);
       const custIdx=CATS_CUSTOM.findIndex(x=>x.nome===c.nome);
+      const cNomeQ=c.nome.replace(/'/g,"\\'");
       return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'};cursor:pointer;transition:all .2s"
-        onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">
+        onclick="abrirEditarCategoria('${cNomeQ}',${isCustom},${custIdx})">
         ${stIco?`<span class="cc-st">${stIco}</span>`:''}
         <div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)" title="Clique para editar">✏️</div>
         <div class="cc-em">${c.emoji}</div>
