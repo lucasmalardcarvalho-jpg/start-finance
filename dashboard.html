@@ -1613,8 +1613,9 @@ async function reload(manual=false){
   const btn=document.getElementById('btnReload');
   if(btn){btn.disabled=true;btn.textContent='⏳...'}
   try{
-    // Só chama a API se tiver token válido — evita receber dados de outro usuário
-    if(!AUTH_TOKEN){ carregarTxsLocal(); throw new Error('sem token'); }
+    // Só chama a API com JWT real — usuários locais (isLocal) usam só localStorage
+    const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
+    if(!AUTH_TOKEN || !isJWT){ carregarTxsLocal(); throw new Error('sem token'); }
     const res=await Promise.race([
       fetch('/api/todas', {headers: apiHeaders()}),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
@@ -3892,18 +3893,23 @@ function carregarUsuariosLogin(){
 }
 
 function loginRapido(email){
-  // Se usuário está no banco local, entra direto sem precisar de senha
   const users = getUsers();
   const user = users.find(u => u.email === email);
   if(user){
-    AUTH_USER  = user;
-    AUTH_TOKEN = user.id;
+    AUTH_USER = user;
+    if(user.isLocal){
+      // Usuário local: token é o próprio ID (sem acesso à API)
+      AUTH_TOKEN = user.id;
+    } else {
+      // Usuário de servidor: restaura JWT salvo para manter acesso à API
+      AUTH_TOKEN = ls_get('sf_jwt_' + user.id) || user.id;
+    }
     ls_save('sf_token', AUTH_TOKEN);
     ls_save('sf_user', JSON.stringify(AUTH_USER));
     entrarNoSistema();
     return;
   }
-  // Usuário de servidor não cacheado — preenche email e foca na senha
+  // Usuário de servidor sem cache local — preenche email e pede senha
   document.getElementById('loginEmail').value = email;
   document.getElementById('loginSenha').value = '';
   document.getElementById('loginSenha').focus();
@@ -3937,6 +3943,7 @@ async function criarConta(){
     id: 'u_'+Date.now()+'_'+Math.random().toString(36).slice(2),
     name: nome, email, password: senhaHash,
     avatar, color: cor,
+    isLocal: true,
     createdAt: new Date().toISOString()
   };
   users.push(novoUser);
@@ -3998,10 +4005,12 @@ async function fazerLogin(){
       if(d.token){
         AUTH_TOKEN = d.token;
         AUTH_USER  = d.user;
+        // Guarda JWT por usuário para restaurar no acesso rápido
+        ls_save('sf_jwt_' + d.user.id, d.token);
         const users2 = getUsers();
         if(!users2.find(u=>u.email===d.user.email)){
           const senhaHash = await hashSenha(senha);
-          users2.push({...d.user, password: senhaHash});
+          users2.push({...d.user, password: senhaHash}); // isLocal ausente = usuário de servidor
           saveUsers(users2);
         }
         ls_save('sf_token', d.token);
