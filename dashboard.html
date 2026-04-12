@@ -1179,7 +1179,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <!-- Barra orçamento -->
   <div class="card mb">
     <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div style="font-size:12px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:8px">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span><button onclick="editarOrcamentoTotal()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:2px 7px;font-size:11px;cursor:pointer;color:var(--muted2)" title="Editar orçamento total">✏️ Editar</button></div>
+      <div onclick="editarOrcamentoTotal()" style="font-size:12px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:8px;cursor:pointer" title="Clique para editar orçamento total">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span><span style="font-size:11px;color:var(--muted2)">✏️</span></div>
       <div style="display:flex;gap:14px;font-size:12px;font-weight:700">
         <span id="limBudgetGasto" style="color:var(--verm)">—</span>
         <span id="limBudgetPct" style="color:var(--muted)">—</span>
@@ -1455,7 +1455,7 @@ const CATS_PADRAO_EXTRA = Object.keys(EMOJIS).filter(n=>n!=='Salário'&&n!=='Fre
 // ════════════════════════════════════════════════
 let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
-let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[];
+let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[];
 
 // ── Globals de estado das features ──
 let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
@@ -3398,7 +3398,7 @@ function renderCats(){
   }));
   // Categorias custom que NÃO existem no padrão (genuinamente novas)
   const extraCustom=CATS_CUSTOM.filter(c=>!padraoNomes.has(c.nome));
-  const allCatsList=[...padraoList,...extraCustom];
+  const allCatsList=[...padraoList,...extraCustom].filter(c=>!CATS_OCULTAS.includes(c.nome));
 
   const padrao=allCatsList.map(c=>({
     ...c,
@@ -3431,7 +3431,7 @@ function renderCats(){
   const nAtencao=padrao.filter(c=>c.status==='atencao').length;
   const nOk=padrao.filter(c=>c.status==='ok'&&c.gasto>0).length;
   document.getElementById('catsKpis').innerHTML=`
-    <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(totalGasto)}</div><div class="kpi-l">Total gasto em ${getMesNome()}</div></div>
+    <div class="kpi r" style="cursor:pointer" onclick="go('categorias')" title="Ver categorias"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(totalGasto)}</div><div class="kpi-l">Total gasto em ${getMesNome()}</div></div>
     <div class="kpi r" style="cursor:pointer" onclick="setCatFiltro('estourou',document.querySelector('[data-f=estourou]'))"><div class="kpi-top"><div class="kpi-ic">🔴</div></div><div class="kpi-v">${nEstourou}</div><div class="kpi-l">Categorias estouradas</div></div>
     <div class="kpi y" style="cursor:pointer" onclick="setCatFiltro('atencao',document.querySelector('[data-f=atencao]'))"><div class="kpi-top"><div class="kpi-ic">🟡</div></div><div class="kpi-v">${nAtencao}</div><div class="kpi-l">Em atenção (>80%)</div></div>
     <div class="kpi g" style="cursor:pointer" onclick="setCatFiltro('ok',document.querySelector('[data-f=ok]'))"><div class="kpi-top"><div class="kpi-ic">🟢</div></div><div class="kpi-v">${nOk}</div><div class="kpi-l">Dentro do limite</div></div>`;
@@ -4211,6 +4211,7 @@ function carregarDadosUsuario(){
   const seenNames = new Set();
   CATS_CUSTOM = rawCats.filter(c=>{ if(!c.nome||seenNames.has(c.nome)) return false; seenNames.add(c.nome); return true; });
   if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
+  CATS_OCULTAS = lsUser('cats_ocultas', []);
   // Carrega transações do localStorage (fallback imediato antes da API)
   const txsLocal = lsUser('txs', []);
   if(txsLocal.length > 0){
@@ -4227,6 +4228,7 @@ function salvarInv()      { saveUser('inv', INVESTIMENTOS); }
 function salvarCartoes()  { saveUser('cartoes', CARTOES); }
 function salvarCats()     { saveUser('cats', CATS_CUSTOM); }
 function salvarLimsLocal(){ saveUser('limites', LIMS_LOCAL); }
+function salvarCatsOcultas(){ saveUser('cats_ocultas', CATS_OCULTAS); }
 
 // ── UI do usuário ──────────────────────────────
 function atualizarUIUsuario(){
@@ -4268,7 +4270,7 @@ function logout(){
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
   // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[];
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
@@ -4329,11 +4331,11 @@ function confirmarResetDados(){
 
 function resetDadosUsuario(){
   // Remove todas as chaves namespaced deste usuário
-  const keys = ['txs','fixas','dividas','metas','inv','cartoes','cats','limites','orcTotal'];
+  const keys = ['txs','fixas','dividas','metas','inv','cartoes','cats','limites','orcTotal','cats_ocultas'];
   keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
   // Limpa memória
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[];
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
@@ -4965,7 +4967,7 @@ function abrirEditarCategoria(nome, isCustom, custIdx){
   document.getElementById('editCatKey').value = nome;
   document.getElementById('editCatIsCustom').value = isCustom ? '1' : '0';
   document.getElementById('editCatCustomIdx').value = custIdx;
-  document.getElementById('editCatDelBtn').style.display = isCustom ? '' : 'none';
+  document.getElementById('editCatDelBtn').style.display = '';
   // Mostrar campos de edição para TODAS as categorias (padrão e custom)
   document.getElementById('editCatExtras').style.display = '';
   if(isCustom && custIdx >= 0){
@@ -5057,13 +5059,24 @@ function salvarEdicaoCategoria(){
 
 function deletarCatCustomEdit(){
   const custIdx = parseInt(document.getElementById('editCatCustomIdx').value);
-  if(custIdx < 0) return;
-  const c = CATS_CUSTOM[custIdx];
-  showConfirm(`Excluir a categoria <strong>${c.emoji||''} ${esc(c.nome)}</strong>?<br><span style="font-size:12px;color:var(--muted)">Limite e personalizações serão removidos.</span>`, ()=>{
-    delete LIMS_LOCAL[c.nome];
+  const nome = document.getElementById('editCatKey').value;
+  const isCustom = document.getElementById('editCatIsCustom').value === '1';
+  const displayNome = document.getElementById('editCatPreviewNome').textContent;
+  const displayEmoji = document.getElementById('editCatPreviewEmoji').textContent;
+  showConfirm(`Excluir a categoria <strong>${displayEmoji} ${esc(displayNome)}</strong>?<br><span style="font-size:12px;color:var(--muted)">Limite e personalizações serão removidos.</span>`, ()=>{
+    delete LIMS_LOCAL[nome];
     salvarLimsLocal();
-    CATS_CUSTOM.splice(custIdx, 1);
-    salvarCats();
+    if(isCustom && custIdx >= 0){
+      CATS_CUSTOM.splice(custIdx, 1);
+      salvarCats();
+    } else {
+      // Categoria padrão: oculta para este usuário
+      if(!CATS_OCULTAS.includes(nome)) CATS_OCULTAS.push(nome);
+      salvarCatsOcultas();
+      // Remove também qualquer override em CATS_CUSTOM
+      const overrideIdx = CATS_CUSTOM.findIndex(c=>c.nome===nome);
+      if(overrideIdx >= 0){ CATS_CUSTOM.splice(overrideIdx,1); salvarCats(); }
+    }
     atualizarSelectCats();
     CM('ovEditCat');
     renderCats();
