@@ -609,7 +609,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 </div></div>
 
 <!-- Modal Confirmação Genérico (sem prompt/confirm nativo) -->
-<div class="ov" id="ovConfirm">
+<div class="ov" id="ovConfirm" style="z-index:700">
 <div class="modal" style="max-width:370px">
   <div class="mb2" style="text-align:center;padding:22px 18px 10px">
     <div id="confirmIcon" style="font-size:38px;margin-bottom:10px">⚠️</div>
@@ -646,11 +646,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mb2">
     <div class="fr one" style="margin-bottom:12px"><div class="fg"><label class="fl">Nome</label><input class="fi" id="perfilNome" placeholder="Seu nome"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Nova senha <span style="font-weight:400;color:var(--muted)">(deixe vazio para manter)</span></label><input class="fi" type="password" id="perfilSenha" placeholder="Nova senha (mín. 6 caracteres)"></div></div>
-    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Zona de risco</div>
-      <button class="btn bd btn-sm" style="width:100%" onclick="confirmarResetDados()">🗑️ Limpar todos os meus dados financeiros</button>
-      <div style="font-size:11px;color:var(--muted);margin-top:6px">Remove transações, fixas, dívidas, metas e investimentos desta conta. Irreversível.</div>
-    </div>
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovPerfil')">Cancelar</button><button class="btn bp" onclick="salvarPerfil()">💾 Salvar</button></div>
 </div></div>
@@ -869,6 +864,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
           <div class="user-menu-item" onclick="go('relatorios');toggleUserMenu()">📑 Meus relatórios</div>
           <div class="user-menu-item" onclick="exportRelCSV();toggleUserMenu()">⬇️ Exportar dados</div>
           <div class="user-menu-sep"></div>
+          <div class="user-menu-item danger" onclick="toggleUserMenu();confirmarResetDados()">🗑️ Limpar dados financeiros</div>
           <div class="user-menu-item danger" onclick="confirmarLogout()">🚪 Sair da conta</div>
         </div>
       </div>
@@ -4158,6 +4154,8 @@ async function salvarPerfil(){
 }
 
 function confirmarResetDados(){
+  // Fecha qualquer modal aberto para o confirm aparecer limpo
+  document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
   showConfirm(
     `Apagar <strong>todos os dados financeiros</strong> da conta <strong>${esc(AUTH_USER?.name||'')}</strong>?<br><span style="font-size:12px;color:var(--muted)">Transações, fixas, dívidas, metas, investimentos e cartões serão removidos permanentemente.</span>`,
     resetDadosUsuario, '⚠️', 'Apagar tudo', 'bd'
