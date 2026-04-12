@@ -1300,8 +1300,14 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <div class="modal">
   <div class="mh"><div class="mt" id="catModalTitle">Nova Categoria</div><button class="mc" onclick="CM('ovCatModal')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="catNome" placeholder="Ex: Academia, Pets..."></div>
-    <div class="fg"><label class="fl">Limite (R$)</label><input type="number" class="fi valor-input" id="catLimite" inputmode="decimal" step="0.01" placeholder="0 = sem limite"></div></div>
+    <div class="fr one" style="margin-bottom:12px"><div class="fg">
+      <label class="fl">Nome da categoria</label>
+      <input class="fi" id="catNome" placeholder="Ex: Academia, Pets, Farmácia...">
+    </div></div>
+    <div class="fr one" style="margin-bottom:12px"><div class="fg">
+      <label class="fl">Limite mensal (R$) — 0 = sem limite</label>
+      <input type="number" class="fi valor-input" id="catLimite" inputmode="decimal" step="0.01" placeholder="Ex: 300">
+    </div></div>
     <div class="fr one"><div class="fg"><label class="fl">Emoji</label>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px" id="emojiPicker">
         <span class="epick" onclick="selEmoji(this,'🎯')">🎯</span><span class="epick" onclick="selEmoji(this,'🎮')">🎮</span>
@@ -3477,9 +3483,8 @@ function renderCats(){
     detEl.innerHTML='<div class="empty" style="padding:24px"><p>Sem gastos ou limites definidos — use os cards acima para configurar</p></div>';
   } else {
     detEl.innerHTML=`
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+      <div style="margin-bottom:8px">
         <div style="font-size:12px;font-weight:700;color:var(--muted)">📋 Análise detalhada — use os cards acima para editar categorias e limites</div>
-        <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Nova categoria</button>
       </div>
       <div style="overflow-x:auto">
       <table class="st" style="font-size:12px">
