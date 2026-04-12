@@ -60,7 +60,11 @@ registrar_rotas_auth(app)
 @app.route("/dashboard")
 def dashboard():
     try:
-        return send_file("dashboard.html")
+        resp = send_file("dashboard.html")
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
     except FileNotFoundError:
         return "<h2>dashboard.html não encontrado</h2>", 404
 
