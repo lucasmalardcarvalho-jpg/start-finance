@@ -1306,7 +1306,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div></div>
     <div class="fr one" style="margin-bottom:12px"><div class="fg">
       <label class="fl">Limite mensal (R$) — 0 = sem limite</label>
-      <input type="number" class="fi valor-input" id="catLimite" inputmode="decimal" step="0.01" placeholder="Ex: 300">
+      <input type="number" class="fi" id="catLimite" min="0" step="1" placeholder="Ex: 300">
     </div></div>
     <div class="fr one"><div class="fg"><label class="fl">Emoji</label>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px" id="emojiPicker">
@@ -4930,7 +4930,7 @@ function selColor(el, cor){
 function salvarCatCustom(){
   const idx = parseInt(document.getElementById('catModalIdx').value);
   const nome = document.getElementById('catNome').value.trim();
-  const lim = parseFloat(document.getElementById('catLimite').value) || 0;
+  const lim = parseBRL(document.getElementById('catLimite').value) || parseFloat(document.getElementById('catLimite').value) || 0;
   const emoji = document.getElementById('catEmoji').value || '📦';
   const cor = document.getElementById('catCor').value || '#EF4444';
   if(!nome) return toast('⚠️ Digite o nome da categoria','warning');
