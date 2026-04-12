@@ -3885,7 +3885,7 @@ function carregarUsuariosLogin(){
   if(!el) return;
   if(!users.length){ el.innerHTML=''; return; }
   el.innerHTML = users.slice(0,4).map(u=>`
-    <button class="login-user-btn" onclick="loginRapido(${JSON.stringify(u.email)})">
+    <button class="login-user-btn" data-email="${esc(u.email)}" onclick="loginRapido(this.dataset.email)">
       <span class="lu-av" style="font-size:24px;display:block;margin-bottom:4px">${esc(u.avatar)||'🙂'}</span>
       <span class="lu-nm" style="font-size:12px;font-weight:700">${esc(u.name)}</span>
     </button>`).join('');
