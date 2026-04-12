@@ -251,7 +251,8 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 @media(max-width:720px){.sidebar{display:none}.main{margin-left:0}.kg{grid-template-columns:1fr 1fr}}
 
 /* ════ LOGIN ════ */
-#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1e1b4b 100%);display:flex;align-items:center;justify-content:center;z-index:9000;overflow:hidden}
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1e1b4b 100%);display:flex;align-items:flex-start;justify-content:center;z-index:9000;overflow-y:auto;padding:20px 16px}
+#loginScreen>.login-box{margin:auto}
 #loginScreen.hidden{display:none}
 .login-bg-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.25;animation:orb 8s ease-in-out infinite}
 .login-box{background:rgba(255,255,255,.06);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:44px 40px;width:100%;max-width:420px;position:relative;z-index:1;box-shadow:0 32px 80px rgba(0,0,0,.4)}
@@ -865,6 +866,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
           <div class="user-menu-item" onclick="exportRelCSV();toggleUserMenu()">⬇️ Exportar dados</div>
           <div class="user-menu-sep"></div>
           <div class="user-menu-item danger" onclick="toggleUserMenu();confirmarResetDados()">🗑️ Limpar dados financeiros</div>
+          <div class="user-menu-item danger" onclick="toggleUserMenu();confirmarExcluirConta()">❌ Excluir minha conta</div>
           <div class="user-menu-item danger" onclick="confirmarLogout()">🚪 Sair da conta</div>
         </div>
       </div>
@@ -4172,6 +4174,34 @@ function resetDadosUsuario(){
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
+}
+
+function confirmarExcluirConta(){
+  document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
+  showConfirm(
+    `Excluir permanentemente a conta <strong>${esc(AUTH_USER?.name||'')}</strong>?<br><span style="font-size:12px;color:var(--muted)">Todos os dados e o acesso serão removidos. Esta ação é irreversível.</span>`,
+    excluirConta, '❌', 'Excluir conta', 'bd'
+  );
+}
+
+function excluirConta(){
+  if(!AUTH_USER) return;
+  // Remove dados financeiros
+  const dataKeys = ['txs','fixas','dividas','metas','inv','cartoes','cats','limites','orcTotal'];
+  dataKeys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch(e){} });
+  // Remove JWT cacheado e sessão
+  try{ localStorage.removeItem('sf_jwt_' + AUTH_USER.id); }catch(e){}
+  // Remove do banco de usuários
+  const users = getUsers().filter(u => u.id !== AUTH_USER.id);
+  saveUsers(users);
+  // Limpa sessão ativa
+  ls_save('sf_token', '');
+  ls_save('sf_user', '');
+  AUTH_USER = null;
+  AUTH_TOKEN = null;
+  TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
+  toast('✅ Conta excluída.', 'info');
+  setTimeout(()=>mostrarLogin(), 600);
 }
 
 // ════════════════════════════════════════════════
