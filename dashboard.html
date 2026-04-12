@@ -6,12 +6,12 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>Start Finance</title>
+<title>PenseFinances</title>
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Lora:ital@1&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#F0F2F5;--card:#fff;--card2:#F9FAFB;--border:#E5E9EF;
-  --azul:#3B6FF0;--azul-l:#EEF3FF;--azul-d:#2451C7;
+  --azul:#ee206e;--azul-l:#fce4ef;--azul-d:#c91557;
   --verde:#10B981;--verde-l:#ECFDF5;--verde-d:#059669;
   --verm:#EF4444;--verm-l:#FEF2F2;--verm-d:#DC2626;
   --lara:#F97316;--lara-l:#FFF7ED;
@@ -28,7 +28,7 @@ body{font-family:'Cabinet Grotesk',sans-serif;background:var(--bg);color:var(--t
 button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 /* LOADING */
-#loading{position:fixed;inset:0;background:linear-gradient(135deg,#1e3a8a,#3B6FF0);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:18px;transition:opacity .5s}
+#loading{position:fixed;inset:0;background:linear-gradient(135deg,#130039,#ee206e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:18px;transition:opacity .5s}
 .l-logo{font-size:48px;animation:lp 1.5s ease infinite}@keyframes lp{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 .l-txt{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.5px}
 .l-sub{font-size:13px;color:rgba(255,255,255,.7)}
@@ -36,31 +36,31 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .l-fill{height:100%;background:#fff;border-radius:100px;animation:ld 2.5s ease forwards}@keyframes ld{from{width:0}to{width:100%}}
 
 /* SIDEBAR */
-.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:var(--card);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100}
-.sb-top{padding:18px 14px;border-bottom:1px solid var(--border)}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sw);background:#130039;border-right:none;display:flex;flex-direction:column;z-index:100}
+.sb-top{padding:18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
 .logo{display:flex;align-items:center;gap:9px;margin-bottom:12px}
-.logo-ic{width:34px;height:34px;background:linear-gradient(135deg,var(--azul),var(--azul-d));border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 4px 10px rgba(59,111,240,.3);flex-shrink:0}
-.logo-nm{font-size:15px;font-weight:900;letter-spacing:-.4px}.logo-nm span{color:var(--azul)}
-.logo-vr{font-size:9px;font-weight:700;background:var(--azul-l);color:var(--azul);padding:2px 7px;border-radius:100px}
-.mes-ctrl{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:0;overflow:hidden}
+.logo-ic{width:34px;height:34px;background:linear-gradient(135deg,#ee206e,#c91557);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff;box-shadow:0 4px 10px rgba(238,32,110,.4);flex-shrink:0}
+.logo-nm{font-size:15px;font-weight:900;letter-spacing:-.4px;color:#fff}.logo-nm span{color:#ee206e}
+.logo-vr{font-size:9px;font-weight:700;background:rgba(238,32,110,.2);color:#ee206e;padding:2px 7px;border-radius:100px}
+.mes-ctrl{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-sm);padding:0;overflow:hidden}
 .mes-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
-.mes-nm{font-size:13px;font-weight:800;color:var(--txt2)}
+.mes-nm{font-size:13px;font-weight:800;color:rgba(255,255,255,.9)}
 .mes-btns{display:flex;gap:2px}
-.mes-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:5px;transition:all .15s}
-.mes-btn:hover{background:var(--border);color:var(--azul)}
-.mes-hoje{width:100%;padding:5px;background:none;border:none;border-top:1px solid var(--border);font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s}
-.mes-hoje:hover{background:var(--azul-l);color:var(--azul)}
+.mes-btn{background:none;border:none;color:rgba(255,255,255,.45);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:5px;transition:all .15s}
+.mes-btn:hover{background:rgba(255,255,255,.1);color:#fff}
+.mes-hoje{width:100%;padding:5px;background:none;border:none;border-top:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:600;color:rgba(255,255,255,.45);cursor:pointer;transition:all .15s}
+.mes-hoje:hover{background:rgba(238,32,110,.15);color:#ee206e}
 
 .sb-nav{flex:1;overflow-y:auto;padding:8px 8px;scrollbar-width:thin}
-.nsec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted2);padding:9px 8px 4px}
-.ni{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;position:relative}
-.ni:hover{background:var(--bg);color:var(--txt)}
-.ni.active{background:var(--azul-l);color:var(--azul)}
-.ni.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:65%;background:var(--azul);border-radius:0 3px 3px 0}
+.nsec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);padding:9px 8px 4px}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);font-size:13px;font-weight:600;color:rgba(255,255,255,.55);cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;position:relative}
+.ni:hover{background:rgba(255,255,255,.08);color:#fff}
+.ni.active{background:rgba(238,32,110,.18);color:#ee206e}
+.ni.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:65%;background:#ee206e;border-radius:0 3px 3px 0}
 .nic{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 
-.sb-bot{padding:10px 10px;border-top:1px solid var(--border)}
-.tg-card{background:linear-gradient(135deg,#2AABEE18,#229ED910);border:1px solid #2AABEE28;border-radius:var(--r-sm);padding:10px}
+.sb-bot{padding:10px 10px;border-top:1px solid rgba(255,255,255,.08)}
+.tg-card{background:rgba(238,32,110,.1);border:1px solid rgba(238,32,110,.2);border-radius:var(--r-sm);padding:10px}
 .tg-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
 .tg-st{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--verde);font-weight:600;margin-left:auto}
 .tg-dot{width:5px;height:5px;background:var(--verde);border-radius:50%;animation:blink 2s infinite}
@@ -251,22 +251,22 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 @media(max-width:720px){.sidebar{display:none}.main{margin-left:0}.kg{grid-template-columns:1fr 1fr}}
 
 /* ════ LOGIN ════ */
-#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1e1b4b 100%);display:flex;align-items:flex-start;justify-content:center;z-index:9000;overflow-y:auto;padding:20px 16px}
+#loginScreen{position:fixed;inset:0;background:linear-gradient(135deg,#130039 0%,#2a0060 50%,#130039 100%);display:flex;align-items:flex-start;justify-content:center;z-index:9000;overflow-y:auto;padding:20px 16px}
 #loginScreen>.login-box{margin:auto}
 #loginScreen.hidden{display:none}
 .login-bg-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.25;animation:orb 8s ease-in-out infinite}
 .login-box{background:rgba(255,255,255,.06);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.12);border-radius:24px;padding:44px 40px;width:100%;max-width:420px;position:relative;z-index:1;box-shadow:0 32px 80px rgba(0,0,0,.4)}
 .login-logo{text-align:center;margin-bottom:32px}
-.login-logo-icon{width:60px;height:60px;background:linear-gradient(135deg,var(--azul),var(--azul-d));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:12px;box-shadow:0 8px 24px rgba(59,111,240,.5)}
+.login-logo-icon{width:60px;height:60px;background:linear-gradient(135deg,#ee206e,#c91557);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;margin-bottom:12px;box-shadow:0 8px 24px rgba(238,32,110,.5)}
 .login-logo-name{font-size:24px;font-weight:900;color:#fff;letter-spacing:-.5px}
 .login-logo-sub{font-size:12px;color:rgba(255,255,255,.55);margin-top:3px}
 .login-field{margin-bottom:16px}
 .login-label{font-size:12px;font-weight:700;color:rgba(255,255,255,.7);margin-bottom:6px;display:block}
 .login-input{width:100%;padding:12px 16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;font-size:14px;font-family:'Cabinet Grotesk',sans-serif;outline:none;transition:all .2s}
 .login-input::placeholder{color:rgba(255,255,255,.35)}
-.login-input:focus{border-color:var(--azul);background:rgba(59,111,240,.15);box-shadow:0 0 0 3px rgba(59,111,240,.2)}
-.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,var(--azul),var(--azul-d));border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;margin-top:8px;letter-spacing:.02em}
-.login-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(59,111,240,.4)}
+.login-input:focus{border-color:#ee206e;background:rgba(238,32,110,.12);box-shadow:0 0 0 3px rgba(238,32,110,.2)}
+.login-btn{width:100%;padding:13px;background:linear-gradient(135deg,#ee206e,#c91557);border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;transition:all .2s;margin-top:8px;letter-spacing:.02em}
+.login-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(238,32,110,.4)}
 .login-btn:active{transform:translateY(0)}
 .login-btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
 .login-err{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:10px 14px;color:#fca5a5;font-size:13px;margin-top:12px;display:none}
@@ -397,14 +397,14 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- ════ LOGIN SCREEN ════ -->
 <div id="loginScreen">
-  <div class="login-bg-orb" style="width:400px;height:400px;background:#3B6FF0;top:-100px;right:-100px;animation-delay:0s"></div>
-  <div class="login-bg-orb" style="width:300px;height:300px;background:#8B5CF6;bottom:-50px;left:-50px;animation-delay:3s"></div>
-  <div class="login-bg-orb" style="width:200px;height:200px;background:#10B981;top:50%;left:30%;animation-delay:5s"></div>
+  <div class="login-bg-orb" style="width:400px;height:400px;background:#ee206e;top:-100px;right:-100px;animation-delay:0s"></div>
+  <div class="login-bg-orb" style="width:300px;height:300px;background:#130039;bottom:-50px;left:-50px;animation-delay:3s"></div>
+  <div class="login-bg-orb" style="width:200px;height:200px;background:#ee206e;top:50%;left:30%;animation-delay:5s"></div>
 
   <div class="login-box" id="loginBox">
     <div class="login-logo">
-      <div class="login-logo-icon">🌅</div>
-      <div class="login-logo-name">Start Finance</div>
+      <div class="login-logo-icon">PF</div>
+      <div class="login-logo-name">PenseFinances</div>
       <div class="login-logo-sub">Seu universo financeiro</div>
     </div>
 
@@ -431,7 +431,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         <label class="login-label">Senha</label>
         <input class="login-input" type="password" id="loginSenha" placeholder="••••••••" onkeydown="if(event.key==='Enter')fazerLogin()">
       </div>
-      <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no Start Finance</button>
+      <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no PenseFinances</button>
       <div class="login-err" id="loginErr"></div>
       <div style="text-align:center;margin-top:14px">
         <span style="font-size:12px;color:rgba(255,255,255,.45)">Não tem conta? </span>
@@ -503,7 +503,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <div id="loading">
   <div class="l-logo">🌅</div>
-  <div class="l-txt">Start Finance</div>
+  <div class="l-txt">PenseFinances</div>
   <div class="l-sub">Carregando seu universo financeiro...</div>
   <div class="l-bar"><div class="l-fill"></div></div>
 </div>
@@ -783,20 +783,20 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="sb-top">
     <div class="logo" style="flex-direction:column;gap:10px">
       <div style="display:flex;align-items:center;gap:9px">
-        <div class="logo-ic">🌅</div>
+        <div class="logo-ic">PF</div>
         <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-          <div class="logo-nm"><span>Start</span> Finance</div>
-          <span class="logo-vr">Ultimate</span>
+          <div class="logo-nm"><span>Pense</span>Finances</div>
+          <span class="logo-vr">Pro</span>
         </div>
       </div>
       <!-- User info no sidebar -->
-      <div style="display:flex;align-items:center;gap:8px;background:var(--bg);border-radius:var(--r-sm);padding:8px 10px;border:1px solid var(--border)">
-        <div id="sbUserAvatar" style="width:30px;height:30px;border-radius:50%;background:var(--azul-l);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🙂</div>
+      <div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.07);border-radius:var(--r-sm);padding:8px 10px;border:1px solid rgba(255,255,255,.1)">
+        <div id="sbUserAvatar" style="width:30px;height:30px;border-radius:50%;background:rgba(238,32,110,.25);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">🙂</div>
         <div style="flex:1;min-width:0">
-          <div id="sbUserName" style="font-size:12px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
-          <div id="sbUserEmail" style="font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="sbUserName" style="font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
+          <div id="sbUserEmail" style="font-size:10px;color:rgba(255,255,255,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">—</div>
         </div>
-        <button onclick="confirmarLogout()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:2px;border-radius:5px;transition:all .15s" title="Sair" onmouseenter="this.style.background='var(--verm-l)';this.style.color='var(--verm)'" onmouseleave="this.style.background='none';this.style.color='var(--muted)'">⬆️</button>
+        <button onclick="confirmarLogout()" style="background:none;border:none;cursor:pointer;color:rgba(255,255,255,.4);font-size:14px;padding:2px;border-radius:5px;transition:all .15s" title="Sair" onmouseenter="this.style.background='rgba(238,32,110,.2)';this.style.color='#ee206e'" onmouseleave="this.style.background='none';this.style.color='rgba(255,255,255,.4)'">⬆️</button>
       </div>
     </div>
     <div class="mes-ctrl">
@@ -828,7 +828,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
   <div class="sb-bot">
     <div class="tg-card">
-      <div class="tg-row"><span style="font-size:14px">🤖</span><span style="font-size:12px;font-weight:700;color:var(--txt2)">@startfinance_bot</span><div class="tg-st"><span class="tg-dot"></span> Online</div></div>
+      <div class="tg-row"><span style="font-size:14px">🤖</span><span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7)">@pensefinances_bot</span><div class="tg-st"><span class="tg-dot"></span> Online</div></div>
       <div style="font-size:10px;color:var(--muted)">Registre via Telegram 24h</div>
     </div>
   </div>
@@ -1040,7 +1040,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div style="text-align:center;flex-shrink:0">
       <div style="font-size:32px;margin-bottom:6px">📱</div>
-      <div style="background:rgba(255,255,255,.22);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:800">@startfinance_bot</div>
+      <div style="background:rgba(255,255,255,.22);border-radius:9px;padding:9px 16px;font-size:13px;font-weight:800">@pensefinances_bot</div>
     </div>
   </div>
 
@@ -2909,7 +2909,7 @@ function renderTxTable(){
 function exportCSV(){
   const rows=TX_FILT.map(t=>`${t.data},${t.hora},${t.valor},${t.tipo},${t.categoria},${t.subcategoria||''},${t.descricao||''},${t.localizacao||''},${t.metodo||''},${t.cartao||''},${t.parcelas||0}`);
   const csv=['Data,Hora,Valor,Tipo,Categoria,Subcategoria,Descrição,Localização,Método,Cartão,Parcelas',...rows].join('\n');
-  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download=`start-finance-${getMesChave().replace('/','_')}.csv`;a.click();
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download=`pensefinances-${getMesChave().replace('/','_')}.csv`;a.click();
   toast('⬇️ CSV exportado!','success');
 }
 
@@ -3867,7 +3867,7 @@ function seedHellennn(){
   const DID='hellennn_demo';
   const users=getUsers();
   if(users.find(u=>u.id===DID)) return;
-  users.push({id:DID,name:'Hellennn',email:'hellennn@startfinance.com',password:'hellen123',avatar:'👩‍💼',color:'#EC4899',isLocal:true,createdAt:'2026-01-01T00:00:00.000Z'});
+  users.push({id:DID,name:'Hellennn',email:'hellennn@pensefinances.com',password:'hellen123',avatar:'👩‍💼',color:'#EC4899',isLocal:true,createdAt:'2026-01-01T00:00:00.000Z'});
   saveUsers(users);
   const ns=k=>`sf_${DID}_${k}`;
   const E={Alimentação:"🍽️",Transporte:"🚗",Contas:"⚡",Lazer:"🎮",Saúde:"❤️",Educação:"📚",Moradia:"🏠",Beleza:"💅",Vestuário:"👗",Pet:"🐾",Tecnologia:"📱",Presentes:"🎁",Veículo:"🚘",Impostos:"🧾",Assinaturas:"📺",Salário:"💰",Freelance:"💼",Investimento:"📈",Outros:"📦"};
@@ -4154,7 +4154,7 @@ async function fazerLogin(){
       AUTH_TOKEN = AUTH_USER.id;
       ls_save('sf_token', AUTH_USER.id);
       ls_save('sf_user', JSON.stringify(AUTH_USER));
-      setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no Start Finance'; }, 400);
+      setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no PenseFinances'; }, 400);
       return;
     }
   }
@@ -4186,7 +4186,7 @@ async function fazerLogin(){
       errEl.textContent='❌ Email ou senha incorretos';
       errEl.classList.add('show');
     })
-    .finally(()=>{ btn.disabled=false; btn.textContent='Entrar no Start Finance'; });
+    .finally(()=>{ btn.disabled=false; btn.textContent='Entrar no PenseFinances'; });
 }
 
 // ── Entrar no sistema ──────────────────────────
