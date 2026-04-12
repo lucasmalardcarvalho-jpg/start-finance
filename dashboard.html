@@ -515,8 +515,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="fr"><div class="fg"><label class="fl">Data</label>
       <div class="dp-wrap">
         <input class="fi" id="txData" placeholder="DD/MM/YYYY" readonly
-          onclick="abrirDP()" style="cursor:pointer;background:var(--card)"
-          style="cursor:pointer">
+          onclick="abrirDP()" style="cursor:pointer;background:var(--card)">
         <div class="dp-pop" id="dpPop">
           <div class="dp-header">
             <button type="button" class="dp-nav" onclick="dpNav(-1)">◀</button>
@@ -536,7 +535,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </div>
       </div>
     </div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="txValor" class="fi valor-input" inputmode="decimal" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi valor-input" id="txValor" inputmode="decimal" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
     <!-- txParc hidden — gerenciado pelo sistema de parcelamento -->
     <input type="hidden" id="txParc" value="0">
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="txCat"><option>Alimentação</option><option>Transporte</option><option>Contas</option><option>Lazer</option><option>Saúde</option><option>Educação</option><option>Moradia</option><option>Beleza</option><option>Vestuário</option><option>Pet</option><option>Tecnologia</option><option>Filhos</option><option>Presentes</option><option>Veículo</option><option>Impostos</option><option>Assinaturas</option><option>Salário</option><option>Freelance</option><option>Investimento</option><option>Outros</option></select></div><div class="fg"><label class="fl">Subcategoria</label><input class="fi" id="txSub" placeholder="Ex: Almoço, Uber..."></div></div>
@@ -644,6 +643,11 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mb2">
     <div class="fr one" style="margin-bottom:12px"><div class="fg"><label class="fl">Nome</label><input class="fi" id="perfilNome" placeholder="Seu nome"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Nova senha <span style="font-weight:400;color:var(--muted)">(deixe vazio para manter)</span></label><input class="fi" type="password" id="perfilSenha" placeholder="Nova senha (mín. 6 caracteres)"></div></div>
+    <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Zona de risco</div>
+      <button class="btn bd btn-sm" style="width:100%" onclick="confirmarResetDados()">🗑️ Limpar todos os meus dados financeiros</button>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px">Remove transações, fixas, dívidas, metas e investimentos desta conta. Irreversível.</div>
+    </div>
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovPerfil')">Cancelar</button><button class="btn bp" onclick="salvarPerfil()">💾 Salvar</button></div>
 </div></div>
@@ -653,7 +657,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <div class="modal">
   <div class="mh"><div class="mt" id="fxTitle">Nova Despesa Fixa</div><button class="mc" onclick="CM('ovFx')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="fxValor" class="fi valor-input" inputmode="decimal" step="0.01"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi valor-input" id="fxValor" inputmode="decimal" step="0.01"></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"><option>Contas</option><option>Moradia</option><option>Saúde</option><option>Educação</option><option>Assinaturas</option><option>Transporte</option><option>Outros</option></select></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Observação</label><input class="fi" id="fxObs" placeholder="Opcional"></div></div>
     <input type="hidden" id="fxIdx" value="-1">
@@ -667,7 +671,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="ctTitle">Adicionar Cartão</div><button class="mc" onclick="CM('ovCt')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome do Cartão</label><input class="fi" id="ctNome" placeholder="Ex: Nubank Roxinho, Itaú..."></div><div class="fg"><label class="fl">Bandeira</label><select class="fs" id="ctBand"><option>Visa</option><option>Mastercard</option><option>Elo</option><option>American Express</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="number" class="fi" id="ctLim" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="number" class="fi valor-input" id="ctLim" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor do Cartão</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="coresGrid">
         <div class="cor-opt sel" style="background:linear-gradient(135deg,#6B21A8,#A855F7)" onclick="selCor(this,'linear-gradient(135deg,#6B21A8,#A855F7)')"></div>
@@ -692,7 +696,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="dvTitle">Nova Dívida</div><button class="mc" onclick="CM('ovDv')">✕</button></div>
   <div class="mb2">
     <div class="fr one"><div class="fg"><label class="fl">Nome da Dívida</label><input class="fi" id="dvNome" placeholder="Ex: Financiamento do carro..."></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="number" class="fi" id="dvTotal" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="number" class="fi" id="dvMensal" class="fi valor-input" inputmode="decimal" step="0.01"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="number" class="fi valor-input" id="dvTotal" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="number" class="fi valor-input" id="dvMensal" inputmode="decimal" step="0.01"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="dvPagas" min="0" value="0"></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="dvVenc" min="1" max="31" value="5"></div></div>
     <input type="hidden" id="dvIdx" value="-1">
   </div>
@@ -756,7 +760,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <input type="hidden" id="mtEmoji" value="🎯">
     </div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="number" class="fi" id="mtTotal" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="number" class="fi" id="mtAtual" class="fi valor-input" inputmode="decimal" step="0.01" value="0"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="number" class="fi" id="mtMensal" step="0.01"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="number" class="fi valor-input" id="mtTotal" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="number" class="fi valor-input" id="mtAtual" inputmode="decimal" step="0.01" value="0"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="number" class="fi" id="mtMensal" step="0.01"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="mtDesc" placeholder="Descreva seu objetivo"></div></div>
     <input type="hidden" id="mtIdx" value="-1">
   </div>
@@ -769,7 +773,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="ivTitle">Novo Investimento</div><button class="mc" onclick="CM('ovIv')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="ivNome" placeholder="Ex: Tesouro Selic, PETR4..."></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="ivTipo"><option>Renda Fixa</option><option>Ações</option><option>FIIs</option><option>Cripto</option><option>Internacional</option><option>Poupança</option><option>Outros</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="number" class="fi" id="ivValor" class="fi valor-input" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Valor Atual</label><input type="number" class="fi" id="ivAtual" step="0.01"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="number" class="fi valor-input" id="ivValor" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Valor Atual</label><input type="number" class="fi" id="ivAtual" step="0.01"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
     <input type="hidden" id="ivIdx" value="-1">
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovIv')">Cancelar</button><button class="btn bp" onclick="saveIv()">💾 Salvar</button></div>
@@ -840,7 +844,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <!-- TOPBAR -->
   <div class="ph">
     <div>
-      <h1 id="dashGreet">Olá, Lucas 👋</h1>
+      <h1 id="dashGreet">Olá 👋</h1>
       <p id="dashSubtitle">Carregando dados...</p>
     </div>
     <div class="pa">
@@ -1296,7 +1300,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="catModalTitle">Nova Categoria</div><button class="mc" onclick="CM('ovCatModal')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="catNome" placeholder="Ex: Academia, Pets..."></div>
-    <div class="fg"><label class="fl">Limite (R$)</label><input type="number" class="fi" id="catLimite" class="fi valor-input" inputmode="decimal" step="0.01" placeholder="0 = sem limite"></div></div>
+    <div class="fg"><label class="fl">Limite (R$)</label><input type="number" class="fi valor-input" id="catLimite" inputmode="decimal" step="0.01" placeholder="0 = sem limite"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Emoji</label>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px" id="emojiPicker">
         <span class="epick" onclick="selEmoji(this,'🎯')">🎯</span><span class="epick" onclick="selEmoji(this,'🎮')">🎮</span>
@@ -1457,6 +1461,12 @@ let DP_VIEW = new Date(); // mês em exibição no date picker
 const fmt=v=>'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const parseBRL=s=>parseFloat((s||'').toString().replace(/[R$\s.]/g,'').replace(',','.'))||0;
 
+// Escape de HTML — previne XSS em todos os innerHTML com dados do usuário
+function esc(s){
+  if(s===null||s===undefined) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function mascaraValor(el){
   let v=el.value.replace(/\D/g,'');
   if(!v){el.value='';return;}
@@ -1600,13 +1610,20 @@ async function reload(manual=false){
   const btn=document.getElementById('btnReload');
   if(btn){btn.disabled=true;btn.textContent='⏳...'}
   try{
+    // Só chama a API se tiver token válido — evita receber dados de outro usuário
+    if(!AUTH_TOKEN){ carregarTxsLocal(); throw new Error('sem token'); }
     const res=await Promise.race([
-      fetch('/api/todas'),
+      fetch('/api/todas', {headers: apiHeaders()}),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
     ]);
     const d=await res.json();
     if(d.erro)throw new Error(d.erro);
-    TODAS_TX=d.transacoes||[];
+    // Valida que a resposta pertence ao usuário atual antes de sobrescrever
+    if(d.user_id && d.user_id !== AUTH_USER?.id) throw new Error('user_mismatch');
+    // Valida pelas transações: se a primeira tem user_id e não é nosso, rejeita
+    const txs = d.transacoes||[];
+    if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) throw new Error('user_mismatch');
+    TODAS_TX=txs;
     HISTORICO=d.historico||[];
     // Persiste localmente após carregar da API
     salvarTxsLocal();
@@ -1941,7 +1958,7 @@ function renderDonut(elId,cats){
   top.forEach(c=>{const pct=c.gasto/tot;const dash=pct*circ;svg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${c.cor}" stroke-width="14" stroke-dasharray="${dash.toFixed(1)} ${(circ-dash).toFixed(1)}" stroke-dashoffset="${(-off*circ).toFixed(1)}" transform="rotate(-90 50 50)"/>`;off+=pct;});
   svg+=`<text x="50" y="46" text-anchor="middle" font-size="9" font-weight="800" fill="#111" font-family="Cabinet Grotesk">Total</text><text x="50" y="58" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Cabinet Grotesk">${fmtSm(totAll)}</text></svg>`;
   let leg=`<div style="flex:1;display:flex;flex-direction:column;gap:5px">`;
-  top.forEach(c=>{const p=Math.round(c.gasto/totAll*100);leg+=`<div class="dl" onclick="go('categorias')"><div class="dc" style="background:${c.cor}"></div>${c.emoji} ${c.nome}<span style="margin-left:auto;color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800;margin-left:6px">${fmt(c.gasto)}</span></div>`;});
+  top.forEach(c=>{const p=Math.round(c.gasto/totAll*100);leg+=`<div class="dl" onclick="go('categorias')"><div class="dc" style="background:${c.cor}"></div>${c.emoji} ${esc(c.nome)}<span style="margin-left:auto;color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800;margin-left:6px">${fmt(c.gasto)}</span></div>`;});
   leg+=`</div>`;
   document.getElementById(elId).innerHTML=`<div class="dw">${svg}${leg}</div>`;
 }
@@ -1957,7 +1974,7 @@ function renderCatListDash(cats){
     return `<div style="display:grid;grid-template-columns:22px 1fr 65px 20px;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:13px">${c.emoji}</span>
       <div><div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:12px;font-weight:700;color:var(--txt2)">${c.nome}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--txt2)">${esc(c.nome)}</div>
           <div style="font-size:10px;color:${bCor};font-weight:700">${c.limite>0?Math.round(c.pct)+'%':''}</div>
         </div>
         <div style="height:5px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:3px"><div style="height:100%;width:0%;background:${bCor};border-radius:100px;transition:width 1s" data-w="${bPct}%"></div></div></div>
@@ -1978,10 +1995,10 @@ function renderDashTxs(txMes){
     return `<div style="display:flex;align-items:center;gap:9px;padding:9px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onclick="go('transacoes')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
       <div style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;background:${t.cor}20;border:1px solid ${t.cor}30;flex-shrink:0">${t.emoji}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)">${t.descricao||t.categoria}</div>
+        <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)">${esc(t.descricao||t.categoria)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:4px">
-          <span>${t.categoria}${t.subcategoria?' · '+t.subcategoria:''}</span>
-          ${metIcon?`<span style="background:var(--bg);border-radius:4px;padding:1px 5px;border:1px solid var(--border)">${metIcon} ${t.cartao||t.metodo}</span>`:''}
+          <span>${esc(t.categoria)}${t.subcategoria?' · '+esc(t.subcategoria):''}</span>
+          ${metIcon?`<span style="background:var(--bg);border-radius:4px;padding:1px 5px;border:1px solid var(--border)">${metIcon} ${esc(t.cartao||t.metodo)}</span>`:''}
           ${t.parcelas>0?`<span style="background:var(--lara-l);color:var(--lara);border-radius:4px;padding:1px 5px;font-weight:700">${t.parcelas}x</span>`:''}
         </div>
       </div>
@@ -2012,7 +2029,7 @@ function renderCartoesDash(){
       <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;align-items:center">
         <span style="display:flex;align-items:center;gap:6px">
           <span style="width:12px;height:12px;border-radius:3px;background:${cardCor};display:inline-block;flex-shrink:0"></span>
-          ${c.nome}
+          ${esc(c.nome)}
         </span>
         <span><span style="color:var(--verm)">${fmt(fatMes)}</span><span style="color:var(--muted);font-size:10px"> fatura</span></span>
       </div>
@@ -2039,7 +2056,7 @@ function renderDividasDash(){
     const barCor=pct>=100?'var(--verde)':pct>=60?'var(--azul)':'var(--lara)';
     return `<div style="margin-bottom:10px;padding:10px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;transition:all .15s" onclick="go('dividas')" onmouseenter="this.style.background='var(--azul-l)'" onmouseleave="this.style.background='var(--bg)'">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
-        <span style="font-size:12px;font-weight:800">${d.nome}</span>
+        <span style="font-size:12px;font-weight:800">${esc(d.nome)}</span>
         <span style="font-size:10px;color:var(--muted)">${pagas}/${total} parcelas</span>
       </div>
       <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:4px">
@@ -2058,7 +2075,7 @@ function renderMetasDash(){
   if(!METAS.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">🎯</div><p>Nenhuma meta</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'metas\')">Criar meta</button></div>';return;}
   el.innerHTML=METAS.slice(0,3).map(m=>{
     const pct=Math.min((m.atual/m.total)*100,100);
-    return `<div style="margin-bottom:10px;cursor:pointer" onclick="go('metas')"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><span style="font-size:16px">${m.emoji}</span><div style="flex:1"><div style="font-size:12px;font-weight:700">${m.nome}</div><div style="font-size:10px;color:var(--muted)">${fmt(m.atual)} / ${fmt(m.total)}</div></div><span style="font-size:12px;font-weight:700;color:var(--azul)">${Math.round(pct)}%</span></div><div class="pw"><div class="pf2" style="width:${pct}%;background:var(--azul)"></div></div></div>`;
+    return `<div style="margin-bottom:10px;cursor:pointer" onclick="go('metas')"><div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><span style="font-size:16px">${m.emoji}</span><div style="flex:1"><div style="font-size:12px;font-weight:700">${esc(m.nome)}</div><div style="font-size:10px;color:var(--muted)">${fmt(m.atual)} / ${fmt(m.total)}</div></div><span style="font-size:12px;font-weight:700;color:var(--azul)">${Math.round(pct)}%</span></div><div class="pw"><div class="pf2" style="width:${pct}%;background:var(--azul)"></div></div></div>`;
   }).join('');
 }
 
@@ -2082,7 +2099,7 @@ function txMetChange(){
     row.style.display='';
     const sel=document.getElementById('txCartaoSel');
     sel.innerHTML='<option value="">— Selecione o cartão —</option>'+
-      CARTOES.map(c=>`<option value="${c.nome}" data-fech="${c.fech||0}">${c.nome} (${c.bandeira})</option>`).join('');
+      CARTOES.map(c=>`<option value="${esc(c.nome)}" data-fech="${c.fech||0}">${esc(c.nome)} (${esc(c.bandeira)})</option>`).join('');
 
     const mesRow=document.getElementById('txMesAnoRow');
     if(met==='Cartão crédito'){
@@ -2372,7 +2389,7 @@ function promptDel(idx){
     const pt=parseInt(t.parcelas);
     document.getElementById('delMsg').innerHTML=`
       <div style="margin-bottom:12px">
-        Excluir <strong>${t.descricao||t.categoria}</strong> — parcela <strong>${pa}/${pt}</strong> de <strong>${fmt(Math.abs(t.valor))}</strong>?
+        Excluir <strong>${esc(t.descricao||t.categoria)}</strong> — parcela <strong>${pa}/${pt}</strong> de <strong>${fmt(Math.abs(t.valor))}</strong>?
       </div>
       <div style="display:flex;flex-direction:column;gap:8px">
         <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);cursor:pointer;border:1px solid var(--border)" onclick="DEL_MODO='so_esta';this.style.borderColor='var(--azul)';document.querySelector('.del-opt-todas').style.borderColor='var(--border)'">
@@ -2381,11 +2398,11 @@ function promptDel(idx){
         </label>
         <label class="del-opt-todas" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--verm-l);border-radius:var(--r-sm);cursor:pointer;border:1px solid rgba(239,68,68,.2)" onclick="DEL_MODO='todas';this.style.borderColor='var(--verm)';document.querySelector('[value=so_esta]').parentElement.style.borderColor='var(--border)'">
           <input type="radio" name="delOpt" value="todas" style="accent-color:var(--verm)">
-          <div><div style="font-size:13px;font-weight:700;color:var(--verm)">🗑️ Excluir todas as ${pt} parcelas</div><div style="font-size:11px;color:var(--muted)">Remove da ${t.cartao?'fatura do '+t.cartao:''} e de todos os meses</div></div>
+          <div><div style="font-size:13px;font-weight:700;color:var(--verm)">🗑️ Excluir todas as ${pt} parcelas</div><div style="font-size:11px;color:var(--muted)">Remove da ${t.cartao?'fatura do '+esc(t.cartao):''} e de todos os meses</div></div>
         </label>
       </div>`;
   } else {
-    document.getElementById('delMsg').innerHTML=`Excluir <strong>${t.descricao||t.categoria}</strong> de <strong>${fmt(Math.abs(t.valor))}</strong>?<br><span style="font-size:11px;color:var(--muted)">Esta ação não pode ser desfeita.</span>`;
+    document.getElementById('delMsg').innerHTML=`Excluir <strong>${esc(t.descricao||t.categoria)}</strong> de <strong>${fmt(Math.abs(t.valor))}</strong>?<br><span style="font-size:11px;color:var(--muted)">Esta ação não pode ser desfeita.</span>`;
   }
   OM('ovDel');
 }
@@ -2426,7 +2443,7 @@ async function confirmDel(){
 async function deletarUmaTx(t){
   const realIdx=t.idx;
   try{
-    const r=await(await fetch(`/api/transacao/${realIdx}`,{method:'DELETE'})).json();
+    const r=await(await fetch(`/api/transacao/${realIdx}`,{method:'DELETE',headers:apiHeaders()})).json();
     if(r.erro)throw new Error(r.erro);
     // Remove local imediatamente
     const pos=TODAS_TX.findIndex(tx=>tx.idx===realIdx);
@@ -2465,7 +2482,7 @@ async function deletarTodasParcelas(t){
   let erros=0;
   for(const tx of sorted){
     try{
-      const r=await(await fetch(`/api/transacao/${tx.idx}`,{method:'DELETE'})).json();
+      const r=await(await fetch(`/api/transacao/${tx.idx}`,{method:'DELETE',headers:apiHeaders()})).json();
       if(r.erro) erros++;
     }catch{ erros++; }
   }
@@ -2535,14 +2552,14 @@ async function saveTx(){
       novasTx.forEach(t=>TODAS_TX.push(t));
 
       // Tenta API em background (sem bloquear UI)
-      fetch('/api/transacao/nova',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)}).catch(()=>{});
+      fetch('/api/transacao/nova',{method:'POST',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
     } else {
       // Editar existente
       const pos=TODAS_TX.findIndex(t=>t.idx===idx);
       if(pos>=0) TODAS_TX[pos]={...TODAS_TX[pos],...dados,idx};
       else TODAS_TX.push({...dados,idx});
       toast('✅ Atualizado!','success');
-      fetch(`/api/transacao/${idx}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(dados)}).catch(()=>{});
+      fetch(`/api/transacao/${idx}`,{method:'PUT',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
     }
     salvarTxsLocal();
     CM('ovTx');
@@ -2855,11 +2872,11 @@ function renderTxTable(){
     const tp=r.tipo==='Receita'?'pill pr':r.tipo==='Gasto'?'pill pg':'pill pf';
     return `<tr>
       <td><div style="font-weight:700;font-size:12px">${r.data}</div><div style="font-size:10px;color:var(--muted)">${r.hora||''}</div></td>
-      <td><div style="display:flex;align-items:center;gap:7px"><div style="width:26px;height:26px;border-radius:7px;background:${r.cor}22;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${r.emoji}</div><div><div style="font-weight:700;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.descricao||r.categoria}</div>${r.localizacao?`<div style="font-size:10px;color:var(--muted)">📍 ${r.localizacao}</div>`:''}</div></div></td>
-      <td><span class="pill pcat">${r.emoji} ${r.categoria}</span>${r.subcategoria?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${r.subcategoria}</div>`:''}</td>
+      <td><div style="display:flex;align-items:center;gap:7px"><div style="width:26px;height:26px;border-radius:7px;background:${r.cor}22;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0">${r.emoji}</div><div><div style="font-weight:700;font-size:12px;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.descricao||r.categoria)}</div>${r.localizacao?`<div style="font-size:10px;color:var(--muted)">📍 ${esc(r.localizacao)}</div>`:''}</div></div></td>
+      <td><span class="pill pcat">${r.emoji} ${esc(r.categoria)}</span>${r.subcategoria?`<div style="font-size:10px;color:var(--muted);margin-top:2px">${esc(r.subcategoria)}</div>`:''}</td>
       <td class="${neg?'vn':'vp'}">${neg?'−':'+'}${fmt(r.valor)}</td>
       <td style="font-size:12px">
-        ${r.metodo&&r.cartao ? `<span style="font-weight:700">${r.metodo}</span> <span style="color:var(--azul);font-weight:700">/ ${r.cartao}</span>` : r.metodo||'—'}
+        ${r.metodo&&r.cartao ? `<span style="font-weight:700">${esc(r.metodo)}</span> <span style="color:var(--azul);font-weight:700">/ ${esc(r.cartao)}</span>` : esc(r.metodo)||'—'}
       </td>
       <td>${(()=>{
         const pt=parseInt(r.parcelas)||0;
@@ -2944,7 +2961,7 @@ function renderCartoes(){
     const txCartao=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0);
     return `<div>
       <div class="credit-card" style="background:${c.cor}">
-        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:10px">${c.nome} · ${c.bandeira}</div>
+        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:10px">${esc(c.nome)} · ${esc(c.bandeira)}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:4px">Fatura ${getMesNome()}</div>
         <div style="font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:6px">Total comprometido: ${fmt(comprometido)}</div>
@@ -2964,7 +2981,7 @@ function renderCartoes(){
       <!-- Lançamentos deste cartão -->
       ${txCartao.length?`<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
         <div style="padding:8px 12px;background:var(--bg);font-size:11px;font-weight:700;color:var(--txt2)">📋 ${txCartao.length} lançamento(s) este mês</div>
-        ${txCartao.slice(0,4).map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-top:1px solid var(--border);font-size:12px"><span style="color:var(--txt2)">${t.descricao||t.categoria}</span><span style="font-weight:700;color:var(--verm)">−${fmt(t.valor)}</span></div>`).join('')}
+        ${txCartao.slice(0,4).map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-top:1px solid var(--border);font-size:12px"><span style="color:var(--txt2)">${esc(t.descricao||t.categoria)}</span><span style="font-weight:700;color:var(--verm)">−${fmt(t.valor)}</span></div>`).join('')}
         ${txCartao.length>4?`<div style="padding:6px 12px;font-size:11px;color:var(--muted);text-align:center;border-top:1px solid var(--border)">+${txCartao.length-4} mais</div>`:''}
       </div>`:'<div style="margin-top:8px;font-size:12px;color:var(--muted);text-align:center">Nenhum lançamento neste cartão este mês</div>'}
     </div>`;
@@ -2983,7 +3000,7 @@ function renderCtTxTable(gastos){
     const disp=Math.max(c.limite-g,0);
     const pct=c.limite>0?g/c.limite*100:0;
     const nTx=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome).length;
-    return `<tr><td style="font-weight:700">💳 ${c.nome}</td><td>${c.bandeira}</td><td class="vn">${fmt(g)}</td><td class="vp">${fmt(disp)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(pct,100)}%;background:${pct>80?'var(--verm)':pct>60?'var(--lara)':'var(--verde)'}"></div></div><span style="font-size:11px">${pct.toFixed(1)}%</span></div></td><td style="font-weight:700;color:var(--azul)">${nTx}</td></tr>`;
+    return `<tr><td style="font-weight:700">💳 ${esc(c.nome)}</td><td>${esc(c.bandeira)}</td><td class="vn">${fmt(g)}</td><td class="vp">${fmt(disp)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(pct,100)}%;background:${pct>80?'var(--verm)':pct>60?'var(--lara)':'var(--verde)'}"></div></div><span style="font-size:11px">${pct.toFixed(1)}%</span></div></td><td style="font-weight:700;color:var(--azul)">${nTx}</td></tr>`;
   }).join('')+`</tbody></table>`;
 }
 
@@ -3020,12 +3037,12 @@ function renderFixas(){
   if(!FIXAS.length){el.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-ic">📌</div><h3>Sem despesas fixas</h3><p>Adicione compromissos recorrentes</p></div></td></tr>`;return;}
   el.innerHTML=FIXAS.map((f,i)=>{
     const sp=f.status==='Pago'?'pill pr':f.status==='Em atraso'?'pill pa2':'pill pp';
-    return `<tr><td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${emjs[f.cat]||'📦'}</span><span style="font-weight:700">${f.desc}</span></div></td>
-    <td><span class="pill pcat">${f.cat}</span></td>
+    return `<tr><td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${emjs[f.cat]||'📦'}</span><span style="font-weight:700">${esc(f.desc)}</span></div></td>
+    <td><span class="pill pcat">${esc(f.cat)}</span></td>
     <td class="vn">${fmt(f.valor)}</td>
     <td style="font-size:12px">${f.venc?'Dia '+f.venc:'—'}</td>
-    <td><span class="${sp}">${f.status}</span></td>
-    <td style="font-size:12px;color:var(--muted)">${f.obs||'—'}</td>
+    <td><span class="${sp}">${esc(f.status)}</span></td>
+    <td style="font-size:12px;color:var(--muted)">${esc(f.obs)||'—'}</td>
     <td><div style="display:flex;gap:4px">
       <button style="background:${f.status==='Pago'?'var(--verm-l)':'var(--verde-l)'};color:${f.status==='Pago'?'var(--verm)':'var(--verde-d)'};border:none;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer" onclick="toggleFx(${i})">${f.status==='Pago'?'↩️':'✅'}</button>
       <button style="background:var(--azul-l);color:var(--azul);border:none;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer" onclick="openFx(${i})">✏️</button>
@@ -3050,7 +3067,7 @@ function saveDv(){
   if(i>=0)DIVIDAS[i]=d;else DIVIDAS.push(d);
   salvarDividas();CM('ovDv');renderDividas();renderDash();toast('✅ Salva!','success');
 }
-function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();renderDash();salvarDividas();renderDividas();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
+function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();renderDash();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
 function delDv(i){DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')}
 
 function renderDividas(){
@@ -3072,7 +3089,7 @@ function renderDividas(){
     const vRest=Math.max(total-pago,0);  // correto: total - já pago
     const pct=parcelas>0?Math.min(pagas/parcelas*100,100):0;
     return `<div class="dv-card">
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:15px;font-weight:800">${d.nome}</div><button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px" onclick="openDv(${i})">✏️</button></div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:15px;font-weight:800">${esc(d.nome)}</div><button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px" onclick="openDv(${i})">✏️</button></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
         <div><div style="font-size:10px;color:var(--muted)">Progresso</div><div style="font-size:14px;font-weight:800">${pagas}/${parcelas} parcelas</div></div>
         <div><div style="font-size:10px;color:var(--muted)">Mensal</div><div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(d.mensal)}</div></div>
@@ -3149,8 +3166,8 @@ function renderMetas(){
     const cor=pct>=100?'var(--verde)':pct>=70?'var(--azul)':pct>=40?'var(--lara)':'var(--muted2)';
     return `<div class="meta-card">
       <div style="font-size:32px;margin-bottom:10px;text-align:center">${m.emoji}</div>
-      <div style="font-size:14px;font-weight:800;margin-bottom:3px">${m.nome}</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${m.desc||'Meta financeira'}</div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:3px">${esc(m.nome)}</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${esc(m.desc)||'Meta financeira'}</div>
       <div class="pw" style="margin-bottom:7px"><div class="pf2" style="width:${pct}%;background:${cor}"></div></div>
       <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:8px"><span style="color:var(--azul)">${fmt(m.atual)}</span><span style="color:var(--muted)">${fmt(m.total)}</span></div>
       ${meses>0?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">⏳ ~${meses} meses a ${fmt(m.mensal)}/mês</div>`:''}
@@ -3193,8 +3210,8 @@ function renderInv(){
   if(!INVESTIMENTOS.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">📈</div><h3>Carteira vazia</h3><p>Adicione seus investimentos</p><button class="btn bp" style="margin-top:12px" onclick="openIv()">+ Adicionar</button></div></div>`;document.getElementById('invDonut').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Sem dados</div>';return;}
   el.innerHTML=INVESTIMENTOS.map((v,i)=>{
     const diff=(v.atual||v.valor)-v.valor;const pct=v.valor>0?diff/v.valor*100:0;
-    return `<div class="inv-card"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${v.tipo}</div>
-      <div style="font-size:14px;font-weight:800;margin-bottom:4px">${v.nome}</div>
+    return `<div class="inv-card"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${esc(v.tipo)}</div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:4px">${esc(v.nome)}</div>
       <div style="font-size:20px;font-weight:900;color:var(--azul)">${fmt(v.atual||v.valor)}</div>
       <div style="font-size:11px;font-weight:700;color:${pct>=0?'var(--verde)':'var(--verm)'};margin-top:4px">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}% | R$${diff>=0?'+':''}${diff.toFixed(0)}</div>
       <div style="display:flex;gap:5px;margin-top:10px">
@@ -3209,10 +3226,10 @@ function renderInv(){
   const totD=topT.reduce((s,[,v])=>s+v,0)||1;
   const circ=2*Math.PI*40;let off=0;
   let svg=`<svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" stroke-width="14"/>`;
-  topT.forEach(([tp,val])=>{const p=val/totD;const d=p*circ;const cor=TIPO_CORES[tp.replace(' ','_')]||'#9CA3AF';svg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${cor}" stroke-width="14" stroke-dasharray="${d.toFixed(1)} ${(circ-d).toFixed(1)}" stroke-dashoffset="${(-off*circ).toFixed(1)}" transform="rotate(-90 50 50)"/>`;off+=p;});
+  topT.forEach(([tp,val])=>{const p=val/totD;const d=p*circ;const cor=TIPO_CORES[tp.replace(/ /g,'_')]||'#9CA3AF';svg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${cor}" stroke-width="14" stroke-dasharray="${d.toFixed(1)} ${(circ-d).toFixed(1)}" stroke-dashoffset="${(-off*circ).toFixed(1)}" transform="rotate(-90 50 50)"/>`;off+=p;});
   svg+=`<text x="50" y="46" text-anchor="middle" font-size="9" font-weight="800" fill="#111" font-family="Cabinet Grotesk">Carteira</text><text x="50" y="58" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Cabinet Grotesk">${fmtSm(totA)}</text></svg>`;
   let leg=`<div style="flex:1;display:flex;flex-direction:column;gap:6px">`;
-  topT.forEach(([tp,val])=>{const p=Math.round(val/totD*100);const cor=TIPO_CORES[tp.replace(' ','_')]||'#9CA3AF';leg+=`<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:7px;height:7px;border-radius:50%;background:${cor}"></div>${tp}<span style="margin-left:auto;color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800">${fmtSm(val)}</span></div>`;});
+  topT.forEach(([tp,val])=>{const p=Math.round(val/totD*100);const cor=TIPO_CORES[tp.replace(/ /g,'_')]||'#9CA3AF';leg+=`<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:7px;height:7px;border-radius:50%;background:${cor}"></div>${tp}<span style="margin-left:auto;color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800">${fmtSm(val)}</span></div>`;});
   leg+=`</div>`;
   document.getElementById('invDonut').innerHTML=`<div class="dw">${svg}${leg}</div>`;
 }
@@ -3437,11 +3454,11 @@ function renderCats(){
       const isCustom=CATS_CUSTOM.some(x=>x.nome===c.nome);
       const custIdx=CATS_CUSTOM.findIndex(x=>x.nome===c.nome);
       return `<div class="cat-card-item" style="border-top:3px solid ${c.gasto>0?c.cor:'var(--border)'};cursor:pointer;transition:all .2s"
-        onclick="abrirEditarCategoria('${c.nome}',${isCustom},${custIdx})">
+        onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">
         ${stIco?`<span class="cc-st">${stIco}</span>`:''}
         <div style="position:absolute;top:8px;right:8px;font-size:10px;color:var(--muted2)" title="Clique para editar">✏️</div>
         <div class="cc-em">${c.emoji}</div>
-        <div class="cc-nm">${c.nome}</div>
+        <div class="cc-nm">${esc(c.nome)}</div>
         <div class="cc-vl" style="color:${c.gasto>0?'var(--verm)':'var(--muted2)'}">${c.gasto>0?fmt(c.gasto):'R$ 0,00'}</div>
         <div style="font-size:10px;color:var(--muted);margin:2px 0">${c.limite>0?'Limite: '+fmt(c.limite):'Toque para definir limite'}${nTx>0?' · '+nTx+' tx':''}</div>
         ${c.limite>0?`<div class="cc-bar"><div class="cc-fill" style="width:0%;background:${bCor}" data-w="${bPct}%"></div></div>`:'<div style="height:3px;background:var(--border);border-radius:100px;margin-top:6px;opacity:.3"></div>'}
@@ -3466,8 +3483,8 @@ function renderCats(){
       const nTx=txMes.filter(t=>t.categoria===c.nome&&t.valor<0).length;
       const media=nTx>0?c.gasto/nTx:0;
       const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':'var(--verde)';
-      return `<tr style="cursor:pointer" onclick="filtrarPorCategoria('${c.nome}')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
-        <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${c.emoji}</span><strong>${c.nome}</strong></div></td>
+      return `<tr style="cursor:pointer" onclick="filtrarPorCategoria(${JSON.stringify(c.nome)})" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
+        <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${c.emoji}</span><strong>${esc(c.nome)}</strong></div></td>
         <td class="vn">${fmt(c.gasto)}</td>
         <td style="color:var(--muted)">${lim>0?fmt(lim):'—'}</td>
         <td style="color:var(--verde);font-weight:700">${rest!==null?fmt(rest):'—'}</td>
@@ -3582,7 +3599,7 @@ function renderLimits(){
         <div style="display:flex;align-items:center;gap:9px">
           <div style="width:36px;height:36px;border-radius:9px;background:${d.stBg};display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${EMOJIS[d.cat]||'📦'}</div>
           <div>
-            <div style="font-size:13px;font-weight:800;color:var(--txt)">${d.cat}</div>
+            <div style="font-size:13px;font-weight:800;color:var(--txt)">${esc(d.cat)}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:1px">${d.nTx > 0 ? d.nTx+' transação(ões) · ' : ''}${getMesNome()}</div>
           </div>
         </div>
@@ -3600,7 +3617,7 @@ function renderLimits(){
           <div style="display:flex;align-items:center;gap:5px">
             <input type="number" value="${d.lim}" step="50" min="0"
               style="width:90px;font-size:14px;font-weight:900;color:var(--azul);border:none;background:none;outline:none;cursor:text;padding:0;font-family:'Cabinet Grotesk',sans-serif"
-              onchange="editarLimiteInline('${d.cat}',this.value)"
+              onchange="editarLimiteInline(${JSON.stringify(d.cat)},this.value)"
               onclick="this.select()"
               title="Clique para editar">
             <span style="font-size:10px;color:var(--muted)">✏️</span>
@@ -3637,8 +3654,8 @@ function renderLimits(){
 
   // ── TABELA (view alternativa) ──
   document.getElementById('limBody').innerHTML = catData.map(d => `<tr>
-    <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${EMOJIS[d.cat]||'📦'}</span><span style="font-weight:700">${d.cat}</span></div></td>
-    <td><input type="number" class="fi" style="width:110px;text-align:center;font-weight:700;color:var(--azul)" value="${d.lim}" onchange="LIMS_LOCAL['${d.cat}']=parseFloat(this.value)||0"></td>
+    <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${EMOJIS[d.cat]||'📦'}</span><span style="font-weight:700">${esc(d.cat)}</span></div></td>
+    <td><input type="number" class="fi" style="width:110px;text-align:center;font-weight:700;color:var(--azul)" value="${d.lim}" onchange="LIMS_LOCAL[${JSON.stringify(d.cat)}]=parseFloat(this.value)||0"></td>
     <td class="vn">${fmt(d.g)}</td>
     <td class="vp">${d.lim>0?fmt(d.rest):'—'}</td>
     <td style="min-width:130px"><div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(d.pct,100)}%;background:${d.cor};border-radius:100px"></div></div></td>
@@ -3695,7 +3712,7 @@ function renderRel(){
     const CMET={'Cartão crédito':'#3B6FF0','Cartão débito':'#EF4444','Pix':'#2AABEE','Dinheiro':'#10B981','Boleto':'#F97316','Cartão':'#8B5CF6'};
     el_met.innerHTML=d.metodos.map(m=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
       <div style="width:30px;height:30px;border-radius:8px;background:${CMET[m.nome]||'#9CA3AF'}22;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">💳</div>
-      <div style="flex:1"><div style="font-size:12px;font-weight:700">${m.nome}</div><div style="height:5px;background:var(--border);border-radius:100px;margin-top:4px;overflow:hidden"><div style="height:100%;width:${m.pct}%;background:${CMET[m.nome]||'#9CA3AF'};border-radius:100px"></div></div></div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:700">${esc(m.nome)}</div><div style="height:5px;background:var(--border);border-radius:100px;margin-top:4px;overflow:hidden"><div style="height:100%;width:${m.pct}%;background:${CMET[m.nome]||'#9CA3AF'};border-radius:100px"></div></div></div>
       <div style="text-align:right;font-size:12px;font-weight:800">${fmt(m.valor)}<div style="font-size:10px;color:var(--muted)">${m.pct.toFixed(1)}%</div></div>
     </div>`).join('');
   }else el_met.innerHTML='<div style="padding:16px;color:var(--muted);text-align:center;font-size:13px">Sem métodos registrados neste mês</div>';
@@ -3723,7 +3740,7 @@ function renderRel(){
     return `<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)">
       <span style="font-size:16px;font-weight:900;color:var(--muted2);min-width:18px">${i+1}</span>
       <span style="font-size:14px">${c.emoji}</span>
-      <div style="flex:1"><div style="font-size:12px;font-weight:700">${c.nome}</div><div style="height:4px;background:var(--border);border-radius:100px;margin-top:3px;overflow:hidden"><div style="height:100%;width:${(c.gasto/total*100).toFixed(1)}%;background:${c.cor};border-radius:100px"></div></div></div>
+      <div style="flex:1"><div style="font-size:12px;font-weight:700">${esc(c.nome)}</div><div style="height:4px;background:var(--border);border-radius:100px;margin-top:3px;overflow:hidden"><div style="height:100%;width:${(c.gasto/total*100).toFixed(1)}%;background:${c.cor};border-radius:100px"></div></div></div>
       <div style="text-align:right"><div style="font-size:13px;font-weight:800;color:var(--verm)">${fmt(c.gasto)}</div><div style="font-size:10px;color:var(--muted)">${(c.gasto/total*100).toFixed(1)}%</div></div>
     </div>`;
   }).join('')||'<div style="padding:16px;color:var(--muted);text-align:center">Sem gastos neste mês</div>';
@@ -3745,8 +3762,8 @@ function renderRel(){
   if(d.saldo>0)insights.push({e:'💚',t:'Saldo positivo! Parabéns!',d:`Você economizou ${fmt(d.saldo)} em ${mes}`,c:'var(--verde-l)',b:'var(--verde)'});
   else insights.push({e:'⚠️',t:'Saldo negativo este mês',d:`Gastos superaram receitas em ${fmt(Math.abs(d.saldo))}`,c:'var(--verm-l)',b:'var(--verm)'});
   const estouros=(d.categorias||[]).filter(c=>c.status==='estourou');
-  if(estouros.length)insights.push({e:'🔴',t:`${estouros.length} categoria(s) estouraram`,d:estouros.map(c=>c.nome).join(', '),c:'var(--lara-l)',b:'var(--lara)'});
-  if(METAS.length){const m=METAS[0];const p=m.total>0?(m.atual/m.total)*100:0;insights.push({e:'🎯',t:`Meta "${m.nome}": ${Math.round(p)}%`,d:`Faltam ${fmt(Math.max(m.total-m.atual,0))} para concluir`,c:'var(--azul-l)',b:'var(--azul)'});}
+  if(estouros.length)insights.push({e:'🔴',t:`${estouros.length} categoria(s) estouraram`,d:estouros.map(c=>esc(c.nome)).join(', '),c:'var(--lara-l)',b:'var(--lara)'});
+  if(METAS.length){const m=METAS[0];const p=m.total>0?(m.atual/m.total)*100:0;insights.push({e:'🎯',t:`Meta &ldquo;${esc(m.nome)}&rdquo;: ${Math.round(p)}%`,d:`Faltam ${fmt(Math.max(m.total-m.atual,0))} para concluir`,c:'var(--azul-l)',b:'var(--azul)'});}
   if(DIVIDAS.length){const totD=DIVIDAS.reduce((s,d)=>s+d.mensal,0);insights.push({e:'⛓️',t:'Compromisso com dívidas',d:`${fmt(totD)}/mês em parcelas (${(totD/d.entradas*100).toFixed(1)}% da receita)`,c:'var(--roxo-l)',b:'var(--roxo)'});}
   const gastoCC=d.metodos?.find(m=>m.nome==='Cartão crédito');
   if(gastoCC)insights.push({e:'💳',t:'Gastos no cartão de crédito',d:`${fmt(gastoCC.valor)} neste mês (${gastoCC.pct.toFixed(1)}% dos gastos)`,c:'var(--bg)',b:'var(--border)'});
@@ -3761,10 +3778,10 @@ function renderRel(){
   // ── Tabela completa ──
   document.getElementById('relBody').innerHTML=txMes.map(t=>`<tr>
     <td>${t.data}</td>
-    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${t.descricao||t.categoria}</td>
-    <td><span style="font-size:11px">${t.emoji} ${t.categoria}</span></td>
-    <td style="font-size:11px">${t.metodo||'—'}</td>
-    <td style="font-size:11px;color:var(--azul)">${t.cartao||'—'}</td>
+    <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.descricao||t.categoria)}</td>
+    <td><span style="font-size:11px">${t.emoji} ${esc(t.categoria)}</span></td>
+    <td style="font-size:11px">${esc(t.metodo)||'—'}</td>
+    <td style="font-size:11px;color:var(--azul)">${esc(t.cartao)||'—'}</td>
     <td class="${t.valor<0?'vn':'vp'}" style="white-space:nowrap">${t.valor<0?'−':'+'}${fmt(t.valor)}</td>
   </tr>`).join('');
 
@@ -3800,21 +3817,17 @@ function getUserById(id){
   return getUsers().find(u=>u.id===id)||null;
 }
 
-// Seed: garante que usuários padrão existam no primeiro acesso
+// ── Hash de senha com SHA-256 (crypto.subtle) ──
+async function hashSenha(s){
+  const enc = new TextEncoder();
+  const buf = await crypto.subtle.digest('SHA-256', enc.encode(s));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function isHash(s){ return /^[0-9a-f]{64}$/.test(s||''); }
+
+// Seed: sem credenciais hardcoded — usuários criam próprias contas
 function seedUsers(){
-  const users = getUsers();
-  const defaults = [
-    {id:'lucas-default',name:'Lucas',email:'lucas@startfinance.com',password:'start123',avatar:'🧑‍💼',color:'#3B6FF0',createdAt:new Date().toISOString()},
-    {id:'hellen-default',name:'Hellen',email:'hellen@startfinance.com',password:'start123',avatar:'👩‍💼',color:'#EC4899',createdAt:new Date().toISOString()},
-  ];
-  let changed = false;
-  defaults.forEach(d=>{
-    if(!users.find(u=>u.email===d.email)){
-      users.push(d);
-      changed=true;
-    }
-  });
-  if(changed) saveUsers(users);
+  // Nenhum usuário padrão — segurança: não armazenar senhas hardcoded
 }
 
 // ── Funções de namespace por usuário ───────────
@@ -3869,20 +3882,20 @@ function carregarUsuariosLogin(){
   if(!el) return;
   if(!users.length){ el.innerHTML=''; return; }
   el.innerHTML = users.slice(0,4).map(u=>`
-    <button class="login-user-btn" onclick="loginRapido('${u.email}','${u.password}')">
-      <span class="lu-av" style="font-size:24px;display:block;margin-bottom:4px">${u.avatar||'🙂'}</span>
-      <span class="lu-nm" style="font-size:12px;font-weight:700">${u.name}</span>
+    <button class="login-user-btn" onclick="loginRapido(${JSON.stringify(u.email)})">
+      <span class="lu-av" style="font-size:24px;display:block;margin-bottom:4px">${esc(u.avatar)||'🙂'}</span>
+      <span class="lu-nm" style="font-size:12px;font-weight:700">${esc(u.name)}</span>
     </button>`).join('');
 }
 
-function loginRapido(email, senha){
+function loginRapido(email){
   document.getElementById('loginEmail').value = email;
-  document.getElementById('loginSenha').value = senha;
-  fazerLogin();
+  document.getElementById('loginSenha').value = '';
+  document.getElementById('loginSenha').focus();
 }
 
 // ── Criar conta ────────────────────────────────
-function criarConta(){
+async function criarConta(){
   const btn    = document.getElementById('regBtn');
   const errEl  = document.getElementById('regErr');
   const nome   = document.getElementById('regNome').value.trim();
@@ -3904,27 +3917,26 @@ function criarConta(){
 
   btn.disabled=true; btn.textContent='⏳ Criando conta...';
 
+  const senhaHash = await hashSenha(senha);
   const novoUser = {
     id: 'u_'+Date.now()+'_'+Math.random().toString(36).slice(2),
-    name: nome, email, password: senha,
+    name: nome, email, password: senhaHash,
     avatar, color: cor,
     createdAt: new Date().toISOString()
   };
   users.push(novoUser);
   saveUsers(users);
 
-  setTimeout(()=>{
-    AUTH_USER = novoUser;
-    ls_save('sf_token', novoUser.id);
-    ls_save('sf_user', JSON.stringify(novoUser));
-    carregarUsuariosLogin();
-    entrarNoSistema();
-    btn.disabled=false; btn.textContent='🚀 Criar minha conta';
-  }, 600);
+  AUTH_USER = novoUser;
+  ls_save('sf_token', novoUser.id);
+  ls_save('sf_user', JSON.stringify(novoUser));
+  carregarUsuariosLogin();
+  entrarNoSistema();
+  btn.disabled=false; btn.textContent='🚀 Criar minha conta';
 }
 
 // ── Login ──────────────────────────────────────
-function fazerLogin(){
+async function fazerLogin(){
   const btn   = document.getElementById('loginBtn');
   const errEl = document.getElementById('loginErr');
   const email = document.getElementById('loginEmail').value.trim().toLowerCase();
@@ -3935,29 +3947,48 @@ function fazerLogin(){
 
   btn.disabled=true; btn.textContent='Entrando...';
 
-  // Busca nos usuários locais primeiro
+  // Busca nos usuários locais
   const users = getUsers();
-  const user = users.find(u=>u.email===email && u.password===senha);
+  const userByEmail = users.find(u=>u.email===email);
 
-  if(user){
-    AUTH_USER  = user;
-    AUTH_TOKEN = user.id;
-    ls_save('sf_token', user.id);
-    ls_save('sf_user', JSON.stringify(user));
-    setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no Start Finance'; }, 400);
-    return;
+  if(userByEmail){
+    let match = false;
+    if(isHash(userByEmail.password)){
+      // Senha já está hasheada — compara hash com hash
+      const inputHash = await hashSenha(senha);
+      match = (inputHash === userByEmail.password);
+    } else {
+      // Migração: senha ainda em plaintext — compara direto e re-hasheia
+      if(userByEmail.password === senha){
+        match = true;
+        const idx = users.indexOf(userByEmail);
+        users[idx].password = await hashSenha(senha);
+        saveUsers(users);
+      }
+    }
+    if(match){
+      AUTH_USER  = users.find(u=>u.email===email); // relê após possível migração
+      AUTH_TOKEN = AUTH_USER.id;
+      ls_save('sf_token', AUTH_USER.id);
+      ls_save('sf_user', JSON.stringify(AUTH_USER));
+      setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no Start Finance'; }, 400);
+      return;
+    }
   }
 
-  // Tenta API remota
+  // Tenta API remota (sem expor senha em cache local)
   fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})})
     .then(r=>r.json())
-    .then(d=>{
+    .then(async d=>{
       if(d.token){
         AUTH_TOKEN = d.token;
         AUTH_USER  = d.user;
-        // Salva no banco local também
         const users2 = getUsers();
-        if(!users2.find(u=>u.email===d.user.email)) { users2.push({...d.user,password:senha}); saveUsers(users2); }
+        if(!users2.find(u=>u.email===d.user.email)){
+          const senhaHash = await hashSenha(senha);
+          users2.push({...d.user, password: senhaHash});
+          saveUsers(users2);
+        }
         ls_save('sf_token', d.token);
         ls_save('sf_user', JSON.stringify(d.user));
         entrarNoSistema();
@@ -4051,8 +4082,9 @@ function confirmarLogout(){
 function logout(){
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
-  // Limpa estado financeiro
+  // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
   LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[];
+  TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
   document.getElementById('loginSenha').value='';
@@ -4066,21 +4098,32 @@ function logout(){
 function ls_save(k,v){try{localStorage.setItem(k,v)}catch{}}
 function ls_get(k){try{return localStorage.getItem(k)||''}catch{return''}}
 
+// ── Headers de autenticação para todas as chamadas à API ──
+function apiHeaders(extra={}){
+  const h = {'Content-Type':'application/json'};
+  if(AUTH_TOKEN) h['Authorization'] = 'Bearer ' + AUTH_TOKEN;
+  if(AUTH_USER?.id) h['X-User-Id'] = AUTH_USER.id;
+  return {...h, ...extra};
+}
+
 // ── Perfil de usuário: trocar senha ──────────
 function abrirPerfil(){
   document.getElementById('perfilNome').value = AUTH_USER?.name||'';
   document.getElementById('perfilSenha').value = '';
   OM('ovPerfil');
 }
-function salvarPerfil(){
+async function salvarPerfil(){
   const nome = document.getElementById('perfilNome').value.trim();
   const nova = document.getElementById('perfilSenha').value.trim();
   const users = getUsers();
   const idx = users.findIndex(u=>u.id===AUTH_USER?.id);
   if(idx>=0){
     if(nome) users[idx].name=nome;
-    if(nova&&nova.length>=6) users[idx].password=nova;
-    else if(nova&&nova.length>0) return toast('⚠️ Senha mínima de 6 caracteres','warning');
+    if(nova&&nova.length>=6){
+      users[idx].password = await hashSenha(nova);
+    } else if(nova&&nova.length>0){
+      return toast('⚠️ Senha mínima de 6 caracteres','warning');
+    }
     saveUsers(users);
     AUTH_USER = users[idx];
     ls_save('sf_user', JSON.stringify(AUTH_USER));
@@ -4088,6 +4131,25 @@ function salvarPerfil(){
     CM('ovPerfil');
     toast('✅ Perfil atualizado!','success');
   }
+}
+
+function confirmarResetDados(){
+  showConfirm(
+    `Apagar <strong>todos os dados financeiros</strong> da conta <strong>${esc(AUTH_USER?.name||'')}</strong>?<br><span style="font-size:12px;color:var(--muted)">Transações, fixas, dívidas, metas, investimentos e cartões serão removidos permanentemente.</span>`,
+    resetDadosUsuario, '⚠️', 'Apagar tudo', 'bd'
+  );
+}
+
+function resetDadosUsuario(){
+  // Remove todas as chaves namespaced deste usuário
+  const keys = ['txs','fixas','dividas','metas','inv','cartoes','cats','limites','orcTotal'];
+  keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
+  // Limpa memória
+  TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[];
+  CM('ovPerfil');
+  autoRefresh();
+  toast('🗑️ Dados apagados. Conta limpa!','success');
 }
 
 // ════════════════════════════════════════════════
@@ -4216,7 +4278,7 @@ function renderResumoMes(d, mes){
   if(!positivo)   alertas.push({ico:'🔴',txt:`Gastos superaram receitas em ${fmt(Math.abs(saldo))}`,cor:'var(--verm)',bg:'var(--verm-l)'});
   if(taxaPoup>20) alertas.push({ico:'🏆',txt:`Taxa de poupança de ${taxaPoup.toFixed(0)}% — ótimo desempenho!`,cor:'var(--verde-d)',bg:'var(--verde-l)'});
   if(dividasMes>0) alertas.push({ico:'📅',txt:`${fmt(dividasMes)}/mês em parcelas de dívidas`,cor:'var(--muted)',bg:'var(--bg)'});
-  if(cats.find(c=>c.status==='estourou')) alertas.push({ico:'🔴',txt:`Limite estourado em: ${cats.filter(c=>c.status==='estourou').map(c=>c.nome).join(', ')}`,cor:'var(--verm)',bg:'var(--verm-l)'});
+  if(cats.find(c=>c.status==='estourou')) alertas.push({ico:'🔴',txt:`Limite estourado em: ${cats.filter(c=>c.status==='estourou').map(c=>esc(c.nome)).join(', ')}`,cor:'var(--verm)',bg:'var(--verm-l)'});
 
   el.innerHTML = `
     <!-- KPIs mini -->
@@ -4250,7 +4312,7 @@ function renderResumoMes(d, mes){
           <span style="font-size:14px">${c.emoji}</span>
           <div style="flex:1">
             <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">
-              <span>${c.nome}</span>
+              <span>${esc(c.nome)}</span>
               <span style="color:var(--verm)">${fmt(c.gasto)} <span style="font-weight:400;color:var(--muted)">${pct.toFixed(0)}%</span></span>
             </div>
             <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
@@ -4374,8 +4436,8 @@ function renderVencimentos(){
               <div style="display:flex;align-items:center;gap:8px">
                 <div style="width:10px;height:28px;border-radius:4px;background:${f.cartao.cor||'var(--azul)'};flex-shrink:0"></div>
                 <div>
-                  <div style="font-size:13px;font-weight:800;color:var(--txt)">${f.cartao.nome}</div>
-                  <div style="font-size:10px;color:var(--muted)">${f.cartao.bandeira} · ${f.mesNome}</div>
+                  <div style="font-size:13px;font-weight:800;color:var(--txt)">${esc(f.cartao.nome)}</div>
+                  <div style="font-size:10px;color:var(--muted)">${esc(f.cartao.bandeira)} · ${esc(f.mesNome)}</div>
                 </div>
               </div>
               <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px;background:${c.badgeBg};color:${c.badgeColor}">${diasTxt}</span>
@@ -4492,7 +4554,7 @@ function renderVencimentosCal(){
       border:${isHoje?'2px solid var(--azul)':urgMax?'1.5px solid '+corUrg[urgMax]+'44':'1px solid transparent'};
       cursor:${vens.length?'pointer':'default'};
       position:relative"
-      ${vens.length?`onclick="vcalSelDia(${d},${ano},${mes})" title="${vens.map(v=>v.nome).join(', ')}"`:''}>
+      ${vens.length?`onclick="vcalSelDia(${d},${ano},${mes})" title="${vens.map(v=>esc(v.nome)).join(', ')}"`:''}>
       ${d}
       ${vens.length?`<span style="font-size:7px;margin-top:1px">${vens.length>1?vens.length+'v':'●'}</span>`:''}
     </div>`;
@@ -4510,10 +4572,10 @@ function renderVencimentosCal(){
     const bgUrg=it.urgencia==='critico'?'var(--verm-l)':it.urgencia==='atencao'?'var(--amar-l)':'var(--bg)';
     return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;align-items:center;gap:8px">
-        <div style="width:32px;height:32px;border-radius:8px;background:${bgUrg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${it.nome.split(' ')[0]}</div>
+        <div style="width:32px;height:32px;border-radius:8px;background:${bgUrg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${esc(it.nome.split(' ')[0])}</div>
         <div>
-          <div style="font-size:12px;font-weight:700">${it.nome.replace(/^[^ ]+ /,'')}</div>
-          <div style="font-size:10px;color:var(--muted)">${it.desc} · Dia ${it.dia}</div>
+          <div style="font-size:12px;font-weight:700">${esc(it.nome.replace(/^[^ ]+ /,''))}</div>
+          <div style="font-size:10px;color:var(--muted)">${esc(it.desc)} · Dia ${it.dia}</div>
         </div>
       </div>
       <div style="text-align:right">
@@ -4527,8 +4589,8 @@ function renderVencimentosCal(){
 function vcalSelDia(dia, ano, mes){
   const items=coletarVencimentos(ano,mes).filter(i=>i.dia===dia);
   if(!items.length) return;
-  const msg=items.map(it=>`${it.nome}: ${it.valor>0?fmt(it.valor):'—'} (${it.desc})`).join('\n');
-  alert(`Vencimentos dia ${dia}:\n\n${msg}`);
+  const linhas=items.map(it=>`<div style="padding:4px 0;border-bottom:1px solid var(--borda)"><strong>${esc(it.nome)}</strong>: ${it.valor>0?fmt(it.valor):'—'} <span style="color:var(--muted)">(${esc(it.desc)})</span></div>`).join('');
+  showConfirm(`<div style="font-weight:800;margin-bottom:8px">📅 Vencimentos — Dia ${dia}</div>${linhas}`,()=>{}, '📅','Fechar','bp');
 }
 
 function renderDicaDia(){
@@ -4596,7 +4658,6 @@ function autoRefresh(){
   }
 }
 
-function function_placeholder_do_not_remove(){}
 
 // ════════════════════════════════════════════════
 // CATEGORIAS — FUNÇÕES DE SUPORTE
@@ -4783,7 +4844,7 @@ function deletarCatCustomEdit(){
   const custIdx = parseInt(document.getElementById('editCatCustomIdx').value);
   if(custIdx < 0) return;
   const c = CATS_CUSTOM[custIdx];
-  showConfirm(`Excluir a categoria <strong>${c.emoji||''} ${c.nome}</strong>?<br><span style="font-size:12px;color:var(--muted)">Limite e personalizações serão removidos.</span>`, ()=>{
+  showConfirm(`Excluir a categoria <strong>${c.emoji||''} ${esc(c.nome)}</strong>?<br><span style="font-size:12px;color:var(--muted)">Limite e personalizações serão removidos.</span>`, ()=>{
     delete LIMS_LOCAL[c.nome];
     salvarLimsLocal();
     CATS_CUSTOM.splice(custIdx, 1);
