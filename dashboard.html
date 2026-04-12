@@ -3469,31 +3469,64 @@ function renderCats(){
     setTimeout(()=>el.querySelectorAll('[data-w]').forEach(b=>b.style.width=b.dataset.w),100);
   }
 
-  // Tabela análise detalhada — só cats com gasto
-  const comGasto=padrao.filter(c=>c.gasto>0).sort((a,b)=>b.gasto-a.gasto);
+  // Tabela análise detalhada — cats com gasto OU com limite definido
+  const comGasto=padrao.filter(c=>c.gasto>0||c.limite>0).sort((a,b)=>b.gasto-a.gasto);
   const detEl=document.getElementById('catsDetail');if(!detEl)return;
   if(!comGasto.length){
-    detEl.innerHTML='<div class="empty" style="padding:24px"><p>Sem gastos registrados neste mês</p></div>';
+    detEl.innerHTML='<div class="empty" style="padding:24px"><p>Sem gastos ou limites definidos — use os cards acima para configurar</p></div>';
   } else {
     detEl.innerHTML=`
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+        <div style="font-size:12px;font-weight:700;color:var(--muted)">📋 Análise detalhada — clique na linha para editar, edite o limite diretamente no campo</div>
+        <button class="btn bp btn-sm" onclick="abrirModalCat()">+ Nova categoria</button>
+      </div>
       <div style="overflow-x:auto">
       <table class="st" style="font-size:12px">
-        <thead><tr><th>Categoria</th><th>Gasto</th><th>Limite</th><th>Restante</th><th>Progresso</th><th>Status</th><th>Transações</th><th>Média/tx</th></tr></thead>
+        <thead><tr><th>Categoria</th><th>Gasto</th><th>Limite ✏️</th><th>Disponível</th><th>Progresso</th><th>Status</th><th>Transações</th><th>Média/tx</th></tr></thead>
         <tbody>`+comGasto.map(c=>{
       const lim=c.limite;
       const rest=lim>0?Math.max(lim-c.gasto,0):null;
       const nTx=txMes.filter(t=>t.categoria===c.nome&&t.valor<0).length;
       const media=nTx>0?c.gasto/nTx:0;
-      const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':'var(--verde)';
-      return `<tr style="cursor:pointer" onclick="filtrarPorCategoria(${JSON.stringify(c.nome)})" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
-        <td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${c.emoji}</span><strong>${esc(c.nome)}</strong></div></td>
-        <td class="vn">${fmt(c.gasto)}</td>
-        <td style="color:var(--muted)">${lim>0?fmt(lim):'—'}</td>
-        <td style="color:var(--verde);font-weight:700">${rest!==null?fmt(rest):'—'}</td>
-        <td style="min-width:100px"><div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(c.pct,100)}%;background:${bCor};border-radius:100px"></div></div><div style="font-size:10px;color:var(--muted);margin-top:2px">${c.pct.toFixed(1)}%</div></td>
-        <td>${c.status==='estourou'?'🔴 Estourou':c.status==='atencao'?'🟡 Atenção':c.status==='ok'?'🟢 OK':'♾️ Livre'}</td>
-        <td style="color:var(--azul);font-weight:700">${nTx}</td>
-        <td style="color:var(--muted)">${nTx>0?fmt(media):'—'}</td>
+      const bCor=c.status==='estourou'?'var(--verm)':c.status==='atencao'?'var(--lara)':c.status==='ok'?'var(--verde)':'var(--muted2)';
+      const isCustom=CATS_CUSTOM.some(x=>x.nome===c.nome);
+      const custIdx=CATS_CUSTOM.findIndex(x=>x.nome===c.nome);
+      const pctTxt=c.pct>0?c.pct.toFixed(1)+'%':'—';
+      const statusBadge=c.status==='estourou'?'<span style="color:var(--verm);font-weight:700">🔴 Estourou</span>':c.status==='atencao'?'<span style="color:var(--lara);font-weight:700">🟡 Atenção</span>':c.status==='ok'?'<span style="color:var(--verde-d);font-weight:700">🟢 OK</span>':'<span style="color:var(--muted)">♾️ Livre</span>';
+      return `<tr onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
+        <td style="cursor:pointer" onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="font-size:16px">${c.emoji}</span>
+            <strong>${esc(c.nome)}</strong>
+            <span style="font-size:10px;color:var(--muted2)">✏️</span>
+          </div>
+        </td>
+        <td class="vn" style="cursor:pointer" onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">${c.gasto>0?fmt(c.gasto):'<span style="color:var(--muted)">—</span>'}</td>
+        <td onclick="event.stopPropagation()" style="padding:4px 8px">
+          <input type="number" min="0" step="50"
+            value="${lim>0?lim:''}" placeholder="Definir"
+            title="Digite o limite e pressione Enter ou clique fora para salvar"
+            style="width:95px;border:1px solid var(--border);border-radius:7px;padding:4px 8px;font-size:12px;font-weight:700;color:var(--txt);background:var(--card);text-align:right;outline:none;cursor:text"
+            onfocus="this.style.borderColor='var(--azul)';this.style.boxShadow='0 0 0 2px rgba(59,111,240,.15)'"
+            onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none';editarLimiteInline(${JSON.stringify(c.nome)},this.value)"
+            onkeydown="if(event.key==='Enter'){this.blur()}"
+            onclick="event.stopPropagation()">
+        </td>
+        <td style="color:${rest!==null&&rest===0?'var(--verm)':'var(--verde)'};font-weight:700;cursor:pointer" onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">${rest!==null?fmt(rest):'<span style="color:var(--muted)">—</span>'}</td>
+        <td style="min-width:110px;cursor:pointer" onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">
+          <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(c.pct,100)}%;background:${bCor};border-radius:100px;transition:width .3s"></div>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:2px">${pctTxt}</div>
+        </td>
+        <td style="cursor:pointer" onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">${statusBadge}</td>
+        <td onclick="event.stopPropagation()" style="padding:4px 8px">
+          <button onclick="filtrarPorCategoria(${JSON.stringify(c.nome)})"
+            style="background:var(--azul-l);border:none;border-radius:6px;padding:3px 9px;font-size:11px;cursor:pointer;color:var(--azul);font-weight:700;white-space:nowrap">
+            ${nTx} tx →
+          </button>
+        </td>
+        <td style="color:var(--muted);cursor:pointer" onclick="abrirEditarCategoria(${JSON.stringify(c.nome)},${isCustom},${custIdx})">${nTx>0?fmt(media):'—'}</td>
       </tr>`;
     }).join('')+`</tbody></table></div>`;
   }
