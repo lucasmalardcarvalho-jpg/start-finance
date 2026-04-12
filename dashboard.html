@@ -3889,6 +3889,18 @@ function carregarUsuariosLogin(){
 }
 
 function loginRapido(email){
+  // Se usuário está no banco local, entra direto sem precisar de senha
+  const users = getUsers();
+  const user = users.find(u => u.email === email);
+  if(user){
+    AUTH_USER  = user;
+    AUTH_TOKEN = user.id;
+    ls_save('sf_token', AUTH_TOKEN);
+    ls_save('sf_user', JSON.stringify(AUTH_USER));
+    entrarNoSistema();
+    return;
+  }
+  // Usuário de servidor não cacheado — preenche email e foca na senha
   document.getElementById('loginEmail').value = email;
   document.getElementById('loginSenha').value = '';
   document.getElementById('loginSenha').focus();
