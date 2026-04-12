@@ -60,6 +60,10 @@ registrar_rotas_auth(app)
 def serve_logo():
     return send_file("logo.svg", mimetype="image/svg+xml")
 
+@app.route("/logo-icon.svg")
+def serve_logo_icon():
+    return send_file("logo-icon.svg", mimetype="image/svg+xml")
+
 
 # ── Dashboard HTML ──────────────────────────────────────────────────
 @app.route("/")
