@@ -3832,6 +3832,139 @@ function seedUsers(){
   // Nenhum usuário padrão — segurança: não armazenar senhas hardcoded
 }
 
+// ── Perfil demo "Hellennn" com dados mockados do ano inteiro ──────────
+function seedHellennn(){
+  const DID='hellennn_demo';
+  const users=getUsers();
+  if(users.find(u=>u.id===DID)) return;
+  users.push({id:DID,name:'Hellennn',email:'hellennn@startfinance.com',password:'hellen123',avatar:'👩‍💼',color:'#EC4899',isLocal:true,createdAt:'2026-01-01T00:00:00.000Z'});
+  saveUsers(users);
+  const ns=k=>`sf_${DID}_${k}`;
+  const E={Alimentação:"🍽️",Transporte:"🚗",Contas:"⚡",Lazer:"🎮",Saúde:"❤️",Educação:"📚",Moradia:"🏠",Beleza:"💅",Vestuário:"👗",Pet:"🐾",Tecnologia:"📱",Presentes:"🎁",Veículo:"🚘",Impostos:"🧾",Assinaturas:"📺",Salário:"💰",Freelance:"💼",Investimento:"📈",Outros:"📦"};
+  const C={Alimentação:"#EF4444",Transporte:"#F97316",Contas:"#3B6FF0",Lazer:"#8B5CF6",Saúde:"#10B981",Educação:"#F59E0B",Moradia:"#6366F1",Beleza:"#EC4899",Vestuário:"#14B8A6",Pet:"#84CC16",Tecnologia:"#0EA5E9",Presentes:"#FB923C",Veículo:"#64748B",Impostos:"#78716C",Assinaturas:"#A78BFA",Salário:"#10B981",Freelance:"#34D399",Investimento:"#3B6FF0",Outros:"#9CA3AF"};
+  const t=(idx,dt,hr,vl,tp,cat,sub,desc,loc,met,cart,pa,pt,mes)=>({idx,data:dt,hora:hr,valor:vl,tipo:tp,categoria:cat,subcategoria:sub||'',descricao:desc,localizacao:loc||'',metodo:met,cartao:cart||'',parcela_atual:pa||1,parcelas:pt||0,mes_ano:mes,emoji:E[cat]||'📦',cor:C[cat]||'#9CA3AF'});
+  const txs=[
+    // ──────── JANEIRO 2026 ────────
+    t(0,'05/01/2026','08:00',5500,'Receita','Salário','','Salário Janeiro','','Pix','',1,0,'jan./2026'),
+    t(1,'03/01/2026','19:30',-52.90,'Gasto','Alimentação','Delivery','iFood - Pizza','','Pix','',1,0,'jan./2026'),
+    t(2,'05/01/2026','09:00',-1200,'Gasto','Moradia','Aluguel','Aluguel Apto 302','Centro','Pix','',1,0,'jan./2026'),
+    t(3,'07/01/2026','10:30',-380.40,'Gasto','Alimentação','Mercado','Supermercado Extra','Extra Hiper','Débito','Bradesco Débito',1,0,'jan./2026'),
+    t(4,'08/01/2026','18:20',-32,'Gasto','Transporte','App','Uber - trabalho','','Pix','',1,0,'jan./2026'),
+    t(5,'08/01/2026','23:55',-39.90,'Gasto','Assinaturas','Streaming','Netflix Padrão','','Débito','Bradesco Débito',1,0,'jan./2026'),
+    t(6,'10/01/2026','10:00',-89.90,'Gasto','Contas','Internet','Vivo Fibra 200MB','','Débito','Bradesco Débito',1,0,'jan./2026'),
+    t(7,'12/01/2026','08:00',-99.90,'Gasto','Saúde','Academia','Smart Fit Mensal','Smart Fit','Débito','Bradesco Débito',1,0,'jan./2026'),
+    t(8,'13/01/2026','14:20',-76.50,'Gasto','Saúde','Farmácia','Pague Menos - medicamentos','','Crédito','Nubank Roxo',1,0,'jan./2026'),
+    t(9,'15/01/2026','20:30',-145,'Gasto','Alimentação','Restaurante','Outback Steakhouse','Shopping','Crédito','Nubank Roxo',1,0,'jan./2026'),
+    t(10,'17/01/2026','09:00',-145,'Gasto','Contas','Energia','CELPE - Conta de Luz','','Pix','',1,0,'jan./2026'),
+    t(11,'18/01/2026','23:55',-16.90,'Gasto','Assinaturas','Música','Spotify Premium','','Débito','Bradesco Débito',1,0,'jan./2026'),
+    t(12,'18/01/2026','09:30',-68,'Gasto','Contas','Água','COMPESA - Conta de Água','','Pix','',1,0,'jan./2026'),
+    t(13,'20/01/2026','18:45',-140,'Gasto','Transporte','Combustível','Posto Ipiranga','Posto Ipiranga','Crédito','Itaú Uniclass',1,0,'jan./2026'),
+    t(14,'22/01/2026','16:00',-160,'Gasto','Beleza','Maquiagem','Sephora - Kit maquiagem','Sephora','Crédito','Nubank Roxo',1,2,'jan./2026'),
+    t(15,'22/01/2026','16:00',-160,'Gasto','Beleza','Maquiagem','Sephora - Kit maquiagem','Sephora','Crédito','Nubank Roxo',2,2,'fev./2026'),
+    t(16,'24/01/2026','11:00',-130,'Gasto','Pet','Veterinário','Clínica Vet + ração','PetSmart','Crédito','Nubank Roxo',1,0,'jan./2026'),
+    t(17,'25/01/2026','14:30',-200,'Gasto','Saúde','Consulta','Dermatologista Dra. Ana','Clínica Pele','Pix','',1,0,'jan./2026'),
+    t(18,'26/01/2026','22:00',-85,'Gasto','Lazer','Saídas','Bar Beco da Saudade','Boa Viagem','Pix','',1,0,'jan./2026'),
+    t(19,'28/01/2026','09:00',1200,'Receita','Freelance','Design','Projeto logo startup','','Pix','',1,0,'jan./2026'),
+    t(20,'29/01/2026','15:30',-81.67,'Gasto','Vestuário','Roupas','Renner - vestidos verão','Renner Recife','Crédito','Itaú Uniclass',1,3,'jan./2026'),
+    t(21,'29/01/2026','15:30',-81.67,'Gasto','Vestuário','Roupas','Renner - vestidos verão','Renner Recife','Crédito','Itaú Uniclass',2,3,'fev./2026'),
+    t(22,'29/01/2026','15:30',-81.67,'Gasto','Vestuário','Roupas','Renner - vestidos verão','Renner Recife','Crédito','Itaú Uniclass',3,3,'mar./2026'),
+    t(23,'31/01/2026','10:00',-500,'Gasto','Investimento','Renda Fixa','Aporte Tesouro Selic','','Pix','',1,0,'jan./2026'),
+    // ──────── FEVEREIRO 2026 ────────
+    t(24,'05/02/2026','08:00',5500,'Receita','Salário','','Salário Fevereiro','','Pix','',1,0,'fev./2026'),
+    t(25,'01/02/2026','10:30',-298.60,'Gasto','Alimentação','Mercado','Bompreço Semanal','Bompreço','Débito','Bradesco Débito',1,0,'fev./2026'),
+    t(26,'04/02/2026','20:15',-38.90,'Gasto','Alimentação','Delivery','iFood - Hamburguer','','Pix','',1,0,'fev./2026'),
+    t(27,'05/02/2026','09:00',-1200,'Gasto','Moradia','Aluguel','Aluguel Apto 302','Centro','Pix','',1,0,'fev./2026'),
+    t(28,'06/02/2026','08:30',-45,'Gasto','Transporte','App','Uber - diversas corridas','','Pix','',1,0,'fev./2026'),
+    t(29,'08/02/2026','23:55',-39.90,'Gasto','Assinaturas','Streaming','Netflix Padrão','','Débito','Bradesco Débito',1,0,'fev./2026'),
+    t(30,'10/02/2026','10:00',-89.90,'Gasto','Contas','Internet','Vivo Fibra 200MB','','Débito','Bradesco Débito',1,0,'fev./2026'),
+    t(31,'12/02/2026','08:00',-99.90,'Gasto','Saúde','Academia','Smart Fit Mensal','Smart Fit','Débito','Bradesco Débito',1,0,'fev./2026'),
+    t(32,'13/02/2026','16:00',-52,'Gasto','Saúde','Farmácia','SãoJoão Farmácias','','Crédito','Nubank Roxo',1,0,'fev./2026'),
+    t(33,'14/02/2026','20:00',-280,'Gasto','Lazer','Jantar','Jantar Dia dos Namorados','Restaurante Fino','Crédito','Nubank Roxo',1,0,'fev./2026'),
+    t(34,'15/02/2026','18:00',-180,'Gasto','Lazer','Eventos','Carnaval - camarote','Camarote Oficial','Pix','',1,0,'fev./2026'),
+    t(35,'17/02/2026','09:30',-132,'Gasto','Contas','Energia','CELPE - Conta de Luz','','Pix','',1,0,'fev./2026'),
+    t(36,'18/02/2026','23:55',-16.90,'Gasto','Assinaturas','Música','Spotify Premium','','Débito','Bradesco Débito',1,0,'fev./2026'),
+    t(37,'18/02/2026','09:00',-62,'Gasto','Contas','Água','COMPESA - Conta de Água','','Pix','',1,0,'fev./2026'),
+    t(38,'20/02/2026','17:00',-155,'Gasto','Transporte','Combustível','Posto Shell','Posto Shell','Crédito','Itaú Uniclass',1,0,'fev./2026'),
+    t(39,'21/02/2026','14:00',-150,'Gasto','Beleza','Salão','Corte + escova - Studio Beleza','Studio Beleza','Pix','',1,0,'fev./2026'),
+    t(40,'22/02/2026','16:30',-190,'Gasto','Vestuário','Roupas','Shopping RioMar - blusas','Shopping RioMar','Crédito','Itaú Uniclass',1,0,'fev./2026'),
+    t(41,'24/02/2026','11:00',-98,'Gasto','Pet','Ração','Royal Canin 15kg','PetLove','Crédito','Nubank Roxo',1,0,'fev./2026'),
+    t(42,'25/02/2026','14:00',-200,'Gasto','Impostos','Parcela','Parcela financiamento notebook','','Pix','',1,0,'fev./2026'),
+    t(43,'28/02/2026','10:00',-500,'Gasto','Investimento','Renda Fixa','Aporte Tesouro Selic','','Pix','',1,0,'fev./2026'),
+    // ──────── MARÇO 2026 ────────
+    t(44,'05/03/2026','08:00',5500,'Receita','Salário','','Salário Março','','Pix','',1,0,'mar./2026'),
+    t(45,'02/03/2026','10:30',-410.80,'Gasto','Alimentação','Mercado','Supermercado Extra','Extra Hiper','Débito','Bradesco Débito',1,0,'mar./2026'),
+    t(46,'04/03/2026','19:30',-67.80,'Gasto','Alimentação','Delivery','iFood - Japonesa','','Pix','',1,0,'mar./2026'),
+    t(47,'05/03/2026','09:00',-1200,'Gasto','Moradia','Aluguel','Aluguel Apto 302','Centro','Pix','',1,0,'mar./2026'),
+    t(48,'07/03/2026','08:15',-38,'Gasto','Transporte','App','Uber - trabalho semana','','Pix','',1,0,'mar./2026'),
+    t(49,'08/03/2026','12:00',-120,'Gasto','Presentes','Dia da Mulher','Flores + chocolate importado','Floricultura','Pix','',1,0,'mar./2026'),
+    t(50,'08/03/2026','23:55',-39.90,'Gasto','Assinaturas','Streaming','Netflix Padrão','','Débito','Bradesco Débito',1,0,'mar./2026'),
+    t(51,'10/03/2026','10:00',-89.90,'Gasto','Contas','Internet','Vivo Fibra 200MB','','Débito','Bradesco Débito',1,0,'mar./2026'),
+    t(52,'12/03/2026','08:00',-99.90,'Gasto','Saúde','Academia','Smart Fit Mensal','Smart Fit','Débito','Bradesco Débito',1,0,'mar./2026'),
+    t(53,'14/03/2026','10:30',-250,'Gasto','Saúde','Consulta','Ginecologista Dra. Carla','Clínica Saúde','Pix','',1,0,'mar./2026'),
+    t(54,'15/03/2026','20:00',-65,'Gasto','Lazer','Cinema','Cinemark - 2 ingressos IMAX','Cinemark','Crédito','Nubank Roxo',1,0,'mar./2026'),
+    t(55,'17/03/2026','09:00',-168,'Gasto','Contas','Energia','CELPE - Conta de Luz','','Pix','',1,0,'mar./2026'),
+    t(56,'18/03/2026','23:55',-16.90,'Gasto','Assinaturas','Música','Spotify Premium','','Débito','Bradesco Débito',1,0,'mar./2026'),
+    t(57,'18/03/2026','09:30',-75,'Gasto','Contas','Água','COMPESA - Conta de Água','','Pix','',1,0,'mar./2026'),
+    t(58,'20/03/2026','18:00',-135,'Gasto','Transporte','Combustível','Posto BR','Posto BR','Crédito','Itaú Uniclass',1,0,'mar./2026'),
+    t(59,'22/03/2026','16:00',-99,'Gasto','Educação','Curso','Marketing Digital - Udemy','Udemy','Crédito','Nubank Roxo',1,3,'mar./2026'),
+    t(60,'22/03/2026','16:00',-99,'Gasto','Educação','Curso','Marketing Digital - Udemy','Udemy','Crédito','Nubank Roxo',2,3,'abr./2026'),
+    t(61,'22/03/2026','16:00',-99,'Gasto','Educação','Curso','Marketing Digital - Udemy','Udemy','Crédito','Nubank Roxo',3,3,'mai./2026'),
+    t(62,'24/03/2026','11:30',-145,'Gasto','Pet','Veterinário','Vacinas anuais + banho tosa','Vet Saúde Animal','Crédito','Nubank Roxo',1,0,'mar./2026'),
+    t(63,'25/03/2026','14:00',-80,'Gasto','Beleza','Manicure','Manicure + pedicure completo','Studio Unhas','Pix','',1,0,'mar./2026'),
+    t(64,'27/03/2026','17:00',1800,'Receita','Freelance','Design','Identidade visual empresa','','Pix','',1,0,'mar./2026'),
+    t(65,'28/03/2026','23:00',-155,'Gasto','Lazer','Balada','Festa aniversário Club','Club Retrô','Pix','',1,0,'mar./2026'),
+    t(66,'30/03/2026','14:00',-200,'Gasto','Impostos','Parcela','Parcela financiamento notebook','','Pix','',1,0,'mar./2026'),
+    t(67,'31/03/2026','10:00',-800,'Gasto','Investimento','Renda Fixa','Aporte Tesouro Selic','','Pix','',1,0,'mar./2026'),
+    // ──────── ABRIL 2026 (até dia 12) ────────
+    t(68,'05/04/2026','08:00',6000,'Receita','Salário','','Salário Abril — com aumento!','','Pix','',1,0,'abr./2026'),
+    t(69,'01/04/2026','10:30',-365.20,'Gasto','Alimentação','Mercado','Supermercado Extra','Extra Hiper','Débito','Bradesco Débito',1,0,'abr./2026'),
+    t(70,'03/04/2026','20:00',-44.90,'Gasto','Alimentação','Delivery','iFood - Mexicana','','Pix','',1,0,'abr./2026'),
+    t(71,'05/04/2026','09:00',-1200,'Gasto','Moradia','Aluguel','Aluguel Apto 302','Centro','Pix','',1,0,'abr./2026'),
+    t(72,'07/04/2026','18:30',-55,'Gasto','Transporte','App','Uber - fim de semana','','Pix','',1,0,'abr./2026'),
+    t(73,'08/04/2026','23:55',-39.90,'Gasto','Assinaturas','Streaming','Netflix Padrão','','Débito','Bradesco Débito',1,0,'abr./2026'),
+    t(74,'09/04/2026','11:00',-180,'Gasto','Saúde','Consulta','Ortopedista Dr. Paulo','Clínica Ortho','Pix','',1,0,'abr./2026'),
+    t(75,'10/04/2026','10:00',-89.90,'Gasto','Contas','Internet','Vivo Fibra 200MB','','Débito','Bradesco Débito',1,0,'abr./2026'),
+    t(76,'11/04/2026','18:00',-120,'Gasto','Transporte','Combustível','Posto Ipiranga','Posto Ipiranga','Crédito','Itaú Uniclass',1,0,'abr./2026'),
+    t(77,'12/04/2026','08:00',-99.90,'Gasto','Saúde','Academia','Smart Fit Mensal','Smart Fit','Débito','Bradesco Débito',1,0,'abr./2026'),
+  ];
+  localStorage.setItem(ns('txs'),JSON.stringify(txs));
+  localStorage.setItem(ns('fixas'),JSON.stringify([
+    {desc:'Aluguel',valor:1200,cat:'Moradia',venc:'5',status:'Pago',obs:'Apto 302 - Centro'},
+    {desc:'Vivo Fibra 200MB',valor:89.90,cat:'Contas',venc:'10',status:'Pago',obs:'Internet fibra óptica'},
+    {desc:'Smart Fit',valor:99.90,cat:'Saúde',venc:'12',status:'Pago',obs:'Academia mensal'},
+    {desc:'Netflix Padrão',valor:39.90,cat:'Assinaturas',venc:'8',status:'Pago',obs:'Plano Padrão - 2 telas'},
+    {desc:'Spotify Premium',valor:16.90,cat:'Assinaturas',venc:'18',status:'Pago',obs:'Plano Individual'},
+    {desc:'Seguro Auto Itaú',valor:180,cat:'Veículo',venc:'25',status:'A pagar',obs:'Seguro completo Fiat Argo'},
+  ]));
+  localStorage.setItem(ns('dividas'),JSON.stringify([
+    {nome:'Financiamento Notebook Dell',total:3600,parcelas:18,mensal:200,pagas:4,venc:'10'},
+    {nome:'Cartão Itaú - Compras Natal 2025',total:2400,parcelas:12,mensal:200,pagas:4,venc:'22'},
+  ]));
+  localStorage.setItem(ns('metas'),JSON.stringify([
+    {nome:'Viagem Europa 2027',emoji:'✈️',total:12000,atual:4800,mensal:800,desc:'Sonho de conhecer Paris, Roma e Londres'},
+    {nome:'Reserva de Emergência',emoji:'🛡️',total:18000,atual:9500,mensal:500,desc:'6 meses de despesas cobertas'},
+    {nome:'MacBook Pro M4',emoji:'💻',total:12000,atual:2800,mensal:400,desc:'Upgrade do equipamento para trabalho'},
+    {nome:'Entrada para Carro',emoji:'🚗',total:15000,atual:4200,mensal:600,desc:'Entrada para financiar Fiat Argo'},
+  ]));
+  localStorage.setItem(ns('inv'),JSON.stringify([
+    {nome:'Tesouro Selic 2027',tipo:'Renda Fixa',valor:8000,atual:8760,rent:9.5},
+    {nome:'CDB Nubank 110% CDI',tipo:'Renda Fixa',valor:5000,atual:5320,rent:12.2},
+    {nome:'VALE3 - Vale',tipo:'Ações',valor:3200,atual:3680,rent:15.0},
+    {nome:'MXRF11 - Maxi Renda',tipo:'FIIs',valor:2000,atual:2180,rent:8.9},
+    {nome:'Bitcoin - Binance',tipo:'Cripto',valor:1500,atual:2240,rent:49.3},
+  ]));
+  localStorage.setItem(ns('cartoes'),JSON.stringify([
+    {nome:'Nubank Roxo',bandeira:'Mastercard',limite:5000,cor:'#8B5CF6',fech:'10',venc:'17'},
+    {nome:'Itaú Uniclass',bandeira:'Visa',limite:8000,cor:'#FF6B00',fech:'15',venc:'22'},
+    {nome:'Bradesco Débito',bandeira:'Visa Débito',limite:0,cor:'#CC0000',fech:'',venc:''},
+  ]));
+  localStorage.setItem(ns('limites'),JSON.stringify({
+    Alimentação:800,Transporte:400,Contas:600,Lazer:400,Saúde:400,
+    Educação:300,Moradia:1500,Beleza:250,Vestuário:400,Pet:250,
+    Assinaturas:150,Veículo:300,Presentes:200,Impostos:400,Investimento:1000
+  }));
+}
+
 // ── Funções de namespace por usuário ───────────
 function userKey(k){
   const uid = AUTH_USER?.id || 'anonymous';
@@ -4920,7 +5053,8 @@ function init(){
 }
 
 function iniciar(){
-  seedUsers(); // garante usuários padrão
+  seedUsers();
+  seedHellennn(); // perfil demo com dados do ano inteiro
   const token   = ls_get('sf_token');
   const userStr = ls_get('sf_user');
   if(token && token !== '' && userStr){
