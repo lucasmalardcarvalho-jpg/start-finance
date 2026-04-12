@@ -55,6 +55,12 @@ def gerar_narrativa(entradas, saidas, saldo, n, top_cats, mes):
 registrar_rotas_auth(app)
 
 
+# ── Static assets ───────────────────────────────────────────────────
+@app.route("/logo.svg")
+def serve_logo():
+    return send_file("logo.svg", mimetype="image/svg+xml")
+
+
 # ── Dashboard HTML ──────────────────────────────────────────────────
 @app.route("/")
 @app.route("/dashboard")
