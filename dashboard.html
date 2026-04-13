@@ -478,6 +478,27 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .kg{grid-template-columns:1fr}
   #catsGrid{grid-template-columns:1fr 1fr!important}
 }
+
+/* ── PRINT / PDF ──────────────────────────────── */
+@media print{
+  body{background:#fff!important;color:#111!important;font-family:Arial,sans-serif!important}
+  .sidebar,.ph,.pa,#loginScreen,#btnReload,#btnNotif,button,
+  .ov,.toast-container,.user-menu,nav{display:none!important}
+  .main{margin:0!important;padding:0!important}
+  .page{display:none!important;padding:0!important}
+  #print-report{display:block!important}
+  .prf-section{page-break-inside:avoid;margin-bottom:18px}
+  .prf-table{width:100%;border-collapse:collapse;font-size:11px}
+  .prf-table th{background:#130039;color:#fff;padding:6px 8px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+  .prf-table td{padding:5px 8px;border-bottom:1px solid #e5e7eb}
+  .prf-table tr:last-child td{border-bottom:none}
+  .prf-kpi{display:inline-block;border:1px solid #e5e7eb;border-radius:8px;padding:10px 16px;margin:4px;text-align:center;min-width:100px}
+  .prf-kpi-v{font-size:18px;font-weight:900}
+  .prf-kpi-l{font-size:10px;color:#6b7280;font-weight:600;text-transform:uppercase}
+  .prf-bar{background:#f3f4f6;border-radius:4px;overflow:hidden;height:8px;margin:4px 0}
+  .prf-bar-fill{height:100%;border-radius:4px}
+}
+#print-report{display:none}
 </style>
 </head>
 <body>
@@ -597,6 +618,56 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <div class="toast" id="toast"></div>
 
+<!-- Modal: Novo/Editar Projeto -->
+<div class="ov" id="ovProjeto">
+  <div class="modal" style="max-width:440px">
+    <div class="mh"><h3 id="projetoModalTitle">🗂️ Novo Projeto</h3><button class="cl" onclick="CM('ovProjeto')">✕</button></div>
+    <div class="mb2">
+      <input type="hidden" id="projIdx" value="-1">
+      <div class="fg">
+        <label class="fl">Nome do projeto *</label>
+        <input class="sf-f" id="projNome" placeholder="Ex: Viagem Europa, Reforma Cozinha…">
+      </div>
+      <div class="fg">
+        <label class="fl">Orçamento (R$)</label>
+        <input class="sf-f valor-input" id="projOrcamento" placeholder="0,00" inputmode="decimal">
+      </div>
+      <div class="fg">
+        <label class="fl">Cor</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap" id="projCores">
+          <span class="cor-proj-opt" data-cor="#3B6FF0" style="background:#3B6FF0;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#3B6FF0')"></span>
+          <span class="cor-proj-opt" data-cor="#10B981" style="background:#10B981;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#10B981')"></span>
+          <span class="cor-proj-opt" data-cor="#EF4444" style="background:#EF4444;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#EF4444')"></span>
+          <span class="cor-proj-opt" data-cor="#F59E0B" style="background:#F59E0B;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#F59E0B')"></span>
+          <span class="cor-proj-opt" data-cor="#8B5CF6" style="background:#8B5CF6;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#8B5CF6')"></span>
+          <span class="cor-proj-opt" data-cor="#EC4899" style="background:#EC4899;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#EC4899')"></span>
+          <span class="cor-proj-opt" data-cor="#F97316" style="background:#F97316;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#F97316')"></span>
+          <span class="cor-proj-opt" data-cor="#6366F1" style="background:#6366F1;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#6366F1')"></span>
+        </div>
+        <input type="hidden" id="projCor" value="#3B6FF0">
+      </div>
+      <div class="fg">
+        <label class="fl">Período (opcional)</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <input class="sf-f" id="projInicio" placeholder="Início DD/MM/AAAA" maxlength="10">
+          <input class="sf-f" id="projFim" placeholder="Fim DD/MM/AAAA" maxlength="10">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Descrição</label>
+        <textarea class="sf-f" id="projDesc" rows="2" placeholder="Detalhe o projeto…" style="resize:vertical"></textarea>
+      </div>
+    </div>
+    <div class="mf" style="justify-content:space-between">
+      <button class="btn bd btn-sm" id="projDelBtn" onclick="deletarProjeto()" style="display:none">🗑️ Excluir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn bs btn-sm" onclick="CM('ovProjeto')">Cancelar</button>
+        <button class="btn bp" onclick="salvarProjeto()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAIS -->
 <!-- Modal Transação -->
 <div class="ov" id="ovTx">
@@ -678,6 +749,12 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </div></div>
         <div id="txMesesInfo" style="display:none;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-top:8px"></div>
       </div>
+    </div>
+    <div class="fg" id="fgTxProjeto">
+      <label class="fl">🗂️ Projeto (opcional)</label>
+      <select class="fs" id="txProjeto">
+        <option value="">— Sem projeto —</option>
+      </select>
     </div>
     <input type="hidden" id="txIdx" value="-1">
     <!-- Mês/Ano selecionável — oculto para cartão crédito (data de corte controla) -->
@@ -997,6 +1074,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <button class="ni" data-p="categorias"><span class="nic">📂</span> Categorias & Limites</button>
     <button class="ni" data-p="vencimentos"><span class="nic">📅</span> Vencimentos</button>
     <button class="ni" data-p="fluxo"><span class="nic">🔮</span> Fluxo de Caixa</button>
+    <button class="ni" data-p="projetos"><span class="nic">🗂️</span> Projetos</button>
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
   <div class="sb-bot">
@@ -1745,10 +1823,35 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
+<!-- ═══ PROJETOS / CENTROS DE CUSTO ═══ -->
+<div class="page" id="page-projetos">
+  <div class="ph">
+    <div><h1>🗂️ Projetos</h1><p>Centros de custo e orçamentos por projeto</p></div>
+    <div class="pa">
+      <button class="btn bp" onclick="abrirModalProjeto()">+ Novo Projeto</button>
+    </div>
+  </div>
+
+  <!-- KPI cards -->
+  <div class="g4 mb" id="projetosKpis"></div>
+
+  <!-- List of projects -->
+  <div id="projetosLista" style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px"></div>
+
+  <!-- Transactions linked to a project (shown when clicking a project) -->
+  <div id="projetoDetalheCard" class="card" style="display:none">
+    <div class="ch">
+      <div><div class="ct" id="projetoDetalheTitulo">Transações do Projeto</div><div class="cs" id="projetoDetalheTotal">—</div></div>
+      <button class="btn bs btn-sm" onclick="fecharDetalhesProjeto()">✕ Fechar</button>
+    </div>
+    <div id="projetoDetalheTxs" style="padding:0 4px 8px"></div>
+  </div>
+</div>
+
 <!-- ═══ RELATÓRIOS ═══ -->
 <div class="page" id="page-relatorios">
   <div class="ph"><div><h1>📑 Relatórios</h1><p id="relSubtitle">Análise completa do mês</p></div>
-  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄 Atualizar</button><button class="btn bp" onclick="exportRelCSV()">⬇️ Exportar CSV</button></div></div>
+  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄 Atualizar</button><button class="btn bs" onclick="exportRelCSV()">⬇️ Exportar CSV</button><button class="btn bp" onclick="gerarRelatorioPDF()">🖨️ Exportar PDF</button></div></div>
 
   <!-- KPIs relatório -->
   <div class="g4 mb" id="relKpis"></div>
@@ -1934,6 +2037,7 @@ const CATS_PADRAO_EXTRA = Object.keys(EMOJIS).filter(n=>n!=='Salário'&&n!=='Fre
 let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
 let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[], RECORRENCIAS=[];
+let PROJETOS = [];
 
 // ── Globals de estado das features ──
 let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
@@ -2000,7 +2104,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2014,7 +2118,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -2121,7 +2225,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -2145,7 +2249,7 @@ function go(page){
   window.scrollTo(0,0);
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},fluxo:renderFluxo};
+  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},fluxo:renderFluxo,projetos:renderProjetos};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
@@ -3061,6 +3165,7 @@ function resetTxForm(){
   document.querySelectorAll('.parc-btn').forEach(b=>b.classList.remove('sel'));
   const custEl=document.getElementById('txParcCustom');
   if(custEl) custEl.value='';
+  popularSelectProjeto();
 }
 
 // getMesChave com offset customizável
@@ -3232,6 +3337,7 @@ async function saveTx(){
   const tipo=document.getElementById('txTipo').value;
   const valor=parseBRL(document.getElementById('txValor').value)||parseFloat(document.getElementById('txValor').value)||0;
   const cartao=document.getElementById('txMetodo').value==='Cartão crédito'?document.getElementById('txCartaoSel').value:'';
+  const projeto = document.getElementById('txProjeto')?.value || '';
   const totalParc=parseInt(document.getElementById('txParc').value)||0;
   const mesAno=document.getElementById('txMesAno').value||getMesChave();
   // Valor bruto digitado
@@ -3253,6 +3359,7 @@ async function saveTx(){
     parcelas:totalParc,                                  // ✅ campo correto (era total_parcelas)
     parcela_atual:1,
     cartao,
+    projeto,
     mes_ano:mesAno,
     emoji: getEmojiCat(catVal),   // ✅ salva emoji junto
     cor:   getCorCat(catVal),     // ✅ salva cor junto
@@ -5598,6 +5705,7 @@ function carregarDadosUsuario(){
   if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
   CATS_OCULTAS  = lsUser('cats_ocultas', []);
   RECORRENCIAS  = lsUser('recorrencias', []);
+  PROJETOS       = lsUser('projetos', []);
   // Carrega transações do localStorage (fallback imediato antes da API)
   const txsLocal = lsUser('txs', []);
   if(txsLocal.length > 0){
@@ -5611,6 +5719,7 @@ function salvarFixas()        { saveUser('fixas', FIXAS); }
 function salvarDividas()      { saveUser('dividas', DIVIDAS); }
 function salvarMetas()        { saveUser('metas', METAS); }
 function salvarRecorrencias() { saveUser('recorrencias', RECORRENCIAS); }
+function salvarProjetos()     { saveUser('projetos', PROJETOS); }
 
 // ════════════════════════════════════════════════
 // RECORRÊNCIAS AUTOMÁTICAS
@@ -5771,6 +5880,200 @@ function calcFaturaCartao(nomeCartao){
     .reduce((s,t) => s + parseFloat(t.valor||0), 0));
 }
 
+// ════════════════════════════════════════════════
+// PROJETOS / CENTROS DE CUSTO
+// ════════════════════════════════════════════════
+function renderProjetos(){
+  // KPIs
+  const total = PROJETOS.length;
+  const gastosTotal = PROJETOS.reduce((s,p)=>s+calcGastoProjeto(p.id),0);
+  const orcTotal = PROJETOS.reduce((s,p)=>s+parseFloat(p.orcamento||0),0);
+  const ativos = PROJETOS.filter(p=>p.status!=='encerrado').length;
+  const kpisEl = document.getElementById('projetosKpis');
+  if(kpisEl) kpisEl.innerHTML = `
+    <div class="kpi g"><div class="kpi-top"><div class="kpi-ic">🗂️</div></div><div class="kpi-v">${total}</div><div class="kpi-l">Projetos</div></div>
+    <div class="kpi b"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v">${ativos}</div><div class="kpi-l">Ativos</div></div>
+    <div class="kpi r"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v" style="color:var(--verm)">${fmt(gastosTotal)}</div><div class="kpi-l">Total gasto</div></div>
+    <div class="kpi y"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v">${fmt(orcTotal)}</div><div class="kpi-l">Orçamento total</div></div>
+  `;
+
+  const lista = document.getElementById('projetosLista');
+  if(!lista) return;
+  if(!PROJETOS.length){
+    lista.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--muted)">
+      <div style="font-size:40px;margin-bottom:12px">🗂️</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:6px">Nenhum projeto ainda</div>
+      <div style="font-size:13px">Crie projetos para organizar seus gastos por objetivo</div>
+    </div>`;
+    return;
+  }
+
+  lista.innerHTML = PROJETOS.map((p,i)=>{
+    const gasto = calcGastoProjeto(p.id);
+    const orc = parseFloat(p.orcamento||0);
+    const pct = orc>0 ? Math.min(gasto/orc*100,100) : 0;
+    const cor = p.cor || '#3B6FF0';
+    const status = pct>=100?'🔴 Estourado':pct>=80?'🟠 Atenção':'🟢 No prazo';
+    return `<div class="card" style="border-top:3px solid ${cor};cursor:pointer" onclick="verDetalhesProjeto('${p.id}')">
+      <div style="padding:14px 16px">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:15px;font-weight:800">${esc(p.nome)}</div>
+            ${p.desc?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(p.desc)}</div>`:''}
+          </div>
+          <button class="btn bs btn-sm" style="flex-shrink:0" onclick="event.stopPropagation();abrirModalProjeto(${i})">✏️</button>
+        </div>
+        ${orc>0?`
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
+          <span>Gasto: <b style="color:var(--txt)">${fmt(gasto)}</b></span>
+          <span>Orçamento: <b>${fmt(orc)}</b></span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:6px">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:${pct>=100?'var(--verm)':pct>=80?'var(--lara)':cor};border-radius:100px;transition:width .6s ease"></div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:right">${status} — ${pct.toFixed(0)}%</div>
+        `:`<div style="font-size:13px;font-weight:700;color:var(--txt)">${fmt(gasto)} <span style="font-size:11px;color:var(--muted);font-weight:400">gasto</span></div>`}
+        ${(p.inicio||p.fim)?`<div style="font-size:10px;color:var(--muted);margin-top:6px">📅 ${p.inicio||'?'} → ${p.fim||'em aberto'}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function calcGastoProjeto(projId){
+  return Math.abs(TODAS_TX
+    .filter(t=>t.projeto===projId && parseFloat(t.valor||0)<0)
+    .reduce((s,t)=>s+parseFloat(t.valor||0),0));
+}
+
+function verDetalhesProjeto(projId){
+  const p = PROJETOS.find(pr=>pr.id===projId);
+  if(!p) return;
+  const txs = TODAS_TX.filter(t=>t.projeto===projId).sort((a,b)=>{
+    const da = a.data.split('/').reverse().join('-');
+    const db = b.data.split('/').reverse().join('-');
+    return db.localeCompare(da);
+  });
+  const total = txs.reduce((s,t)=>s+parseFloat(t.valor||0),0);
+  const card = document.getElementById('projetoDetalheCard');
+  const titulo = document.getElementById('projetoDetalheTitulo');
+  const totalEl = document.getElementById('projetoDetalheTotal');
+  const txsEl = document.getElementById('projetoDetalheTxs');
+  if(!card) return;
+  if(titulo) titulo.textContent = `🗂️ ${p.nome}`;
+  if(totalEl){
+    totalEl.textContent = `${txs.length} transações — Saldo: ${total>=0?'':'−'}${fmt(Math.abs(total))}`;
+    totalEl.style.color = total>=0?'var(--verde)':'var(--verm)';
+  }
+  if(txsEl){
+    if(!txs.length){ txsEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Nenhuma transação vinculada</div>'; }
+    else txsEl.innerHTML = txs.map(t=>{
+      const v=parseFloat(t.valor||0);
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border)">
+        <div style="font-size:18px">${t.emoji||'📦'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.descricao||t.categoria)}</div>
+          <div style="font-size:11px;color:var(--muted)">${t.data} · ${t.categoria}</div>
+        </div>
+        <div style="font-size:14px;font-weight:800;color:${v>=0?'var(--verde)':'var(--verm)'};white-space:nowrap">${v>=0?'':'−'}${fmt(Math.abs(v))}</div>
+      </div>`;
+    }).join('');
+  }
+  card.style.display='';
+  card.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function fecharDetalhesProjeto(){
+  const card = document.getElementById('projetoDetalheCard');
+  if(card) card.style.display='none';
+}
+
+function abrirModalProjeto(i=-1){
+  document.getElementById('projIdx').value = i;
+  const delBtn = document.getElementById('projDelBtn');
+  if(i>=0){
+    const p = PROJETOS[i];
+    document.getElementById('projNome').value = p.nome||'';
+    document.getElementById('projOrcamento').value = parseFloat(p.orcamento||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    document.getElementById('projCor').value = p.cor||'#3B6FF0';
+    document.getElementById('projInicio').value = p.inicio||'';
+    document.getElementById('projFim').value = p.fim||'';
+    document.getElementById('projDesc').value = p.desc||'';
+    document.getElementById('projetoModalTitle').textContent = '✏️ Editar Projeto';
+    if(delBtn) delBtn.style.display='';
+    // Seleciona cor visual
+    document.querySelectorAll('.cor-proj-opt').forEach(el=>{
+      el.style.border = el.dataset.cor===(p.cor||'#3B6FF0') ? '3px solid white' : '3px solid transparent';
+    });
+  } else {
+    document.getElementById('projNome').value='';
+    document.getElementById('projOrcamento').value='';
+    document.getElementById('projCor').value='#3B6FF0';
+    document.getElementById('projInicio').value='';
+    document.getElementById('projFim').value='';
+    document.getElementById('projDesc').value='';
+    document.getElementById('projetoModalTitle').textContent='🗂️ Novo Projeto';
+    if(delBtn) delBtn.style.display='none';
+    document.querySelectorAll('.cor-proj-opt').forEach((el,idx)=>{
+      el.style.border = idx===0 ? '3px solid white' : '3px solid transparent';
+    });
+  }
+  OM('ovProjeto');
+}
+
+function selCorProjeto(el, cor){
+  document.querySelectorAll('.cor-proj-opt').forEach(e=>e.style.border='3px solid transparent');
+  el.style.border='3px solid white';
+  document.getElementById('projCor').value=cor;
+}
+
+function salvarProjeto(){
+  const i = parseInt(document.getElementById('projIdx').value);
+  const nome = document.getElementById('projNome').value.trim();
+  if(!nome){ toast('Nome do projeto é obrigatório','err'); return; }
+  const orcRaw = document.getElementById('projOrcamento').value;
+  const orc = parseBRL ? parseBRL(orcRaw) : parseFloat(orcRaw.replace(/\./g,'').replace(',','.'));
+  const cor = document.getElementById('projCor').value || '#3B6FF0';
+  const inicio = document.getElementById('projInicio').value.trim();
+  const fim = document.getElementById('projFim').value.trim();
+  const desc = document.getElementById('projDesc').value.trim();
+
+  const proj = {
+    id: i>=0 ? PROJETOS[i].id : 'proj_'+Date.now(),
+    nome, orcamento: isNaN(orc)?0:orc, cor, inicio, fim, desc,
+    status: 'ativo', criado: i>=0 ? (PROJETOS[i].criado||new Date().toISOString()) : new Date().toISOString()
+  };
+
+  if(i>=0) PROJETOS[i]=proj; else PROJETOS.push(proj);
+  salvarProjetos();
+  CM('ovProjeto');
+  renderProjetos();
+  popularSelectProjeto();
+  toast(i>=0?'✅ Projeto atualizado!':'✅ Projeto criado!','ok');
+}
+
+function deletarProjeto(){
+  const i = parseInt(document.getElementById('projIdx').value);
+  if(i<0) return;
+  if(!confirm('Excluir este projeto? As transações vinculadas perderão o vínculo.')) return;
+  const projId = PROJETOS[i].id;
+  PROJETOS.splice(i,1);
+  salvarProjetos();
+  // Remove vínculo das transações
+  TODAS_TX.forEach(t=>{ if(t.projeto===projId) delete t.projeto; });
+  salvarTxsLocal();
+  CM('ovProjeto');
+  renderProjetos();
+  popularSelectProjeto();
+  toast('🗑️ Projeto excluído','ok');
+}
+
+function popularSelectProjeto(){
+  const sel = document.getElementById('txProjeto');
+  if(!sel) return;
+  sel.innerHTML = `<option value="">— Sem projeto —</option>` +
+    PROJETOS.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');
+}
+
 function openRecorr(i=-1){
   // Preenche select de categorias
   const catSel = document.getElementById('rcCat');
@@ -5913,7 +6216,7 @@ function logout(){
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
   // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[]; PROJETOS=[];
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
@@ -5978,7 +6281,7 @@ function resetDadosUsuario(){
   keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
   // Limpa memória
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[]; PROJETOS=[];
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
@@ -7340,6 +7643,138 @@ function importConfirm(){
   CM('ovImport');
   toast(`✅ ${importadas} transação(ões) importada(s) com sucesso!`, 'success');
   renderTxPage();
+}
+
+// ════════════════════════════════════════════════
+// RELATÓRIO MENSAL PDF (via window.print)
+// ════════════════════════════════════════════════
+function gerarRelatorioPDF(){
+  const mesSel = document.getElementById('relMesSel')?.value || getMesChave();
+  const mesNome = mesSel || getMesNome();
+  const user = AUTH_USER;
+  const nomeUsuario = user?.name || 'Usuário';
+
+  // Filtra transações do mês
+  const txsMes = TODAS_TX.filter(t => t.mes_ano === mesSel || t.mes_ano === getMesChave());
+  const entradas = txsMes.filter(t=>parseFloat(t.valor||0)>0).reduce((s,t)=>s+parseFloat(t.valor||0),0);
+  const saidas   = txsMes.filter(t=>parseFloat(t.valor||0)<0).reduce((s,t)=>s+Math.abs(parseFloat(t.valor||0)),0);
+  const saldo    = entradas - saidas;
+
+  // Gastos por categoria
+  const cats = {};
+  txsMes.filter(t=>parseFloat(t.valor||0)<0).forEach(t=>{
+    const c = t.categoria||'Outros';
+    cats[c] = (cats[c]||0) + Math.abs(parseFloat(t.valor||0));
+  });
+  const catsSorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+
+  // Score de saúde
+  const scoreEl = document.getElementById('saudeScoreNum');
+  const scoreLblEl = document.getElementById('saudeScoreLabel');
+  const scoreNum = scoreEl?.textContent || '—';
+  const scoreLbl = scoreLblEl?.textContent || '';
+
+  // Metas
+  const metasHtml = METAS.map(m=>{
+    const atual = parseFloat(m.atual||0);
+    const alvo  = parseFloat(m.valor||0);
+    const pct   = alvo>0 ? Math.min(atual/alvo*100,100) : 0;
+    return `<tr><td>${esc(m.nome)}</td><td>${fmt(atual)}</td><td>${fmt(alvo)}</td><td>
+      <div class="prf-bar"><div class="prf-bar-fill" style="width:${pct.toFixed(0)}%;background:#10B981"></div></div>
+      ${pct.toFixed(0)}%
+    </td></tr>`;
+  }).join('');
+
+  // Transações ordenadas por data (mais recentes primeiro)
+  const txsHtml = txsMes
+    .sort((a,b)=>{const da=a.data.split('/').reverse().join('-');const db=b.data.split('/').reverse().join('-');return db.localeCompare(da);})
+    .map(t=>{
+      const v = parseFloat(t.valor||0);
+      const cor = v>=0?'#10B981':'#EF4444';
+      return `<tr>
+        <td>${t.data}</td>
+        <td>${esc(t.descricao||'—')}</td>
+        <td>${esc(t.categoria||'—')}</td>
+        <td>${esc(t.metodo||'—')}</td>
+        <td style="text-align:right;color:${cor};font-weight:700">${v>=0?'':'-'}${fmt(Math.abs(v))}</td>
+      </tr>`;
+    }).join('');
+
+  const html = `
+  <div id="print-report" style="font-family:Arial,sans-serif;max-width:900px;margin:0 auto;padding:0 20px">
+    <!-- Cabeçalho -->
+    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #130039;padding-bottom:12px;margin-bottom:20px">
+      <div>
+        <div style="font-size:22px;font-weight:900;color:#130039">PenseFinances</div>
+        <div style="font-size:13px;color:#6b7280">Relatório Financeiro — ${esc(mesNome)}</div>
+      </div>
+      <div style="text-align:right;font-size:12px;color:#6b7280">
+        <div>${esc(nomeUsuario)}</div>
+        <div>Gerado em ${new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="prf-section">
+      <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#130039;margin-bottom:8px">Resumo do Mês</div>
+      <div>
+        <div class="prf-kpi"><div class="prf-kpi-v" style="color:#10B981">${fmt(entradas)}</div><div class="prf-kpi-l">Receitas</div></div>
+        <div class="prf-kpi"><div class="prf-kpi-v" style="color:#EF4444">${fmt(saidas)}</div><div class="prf-kpi-l">Gastos</div></div>
+        <div class="prf-kpi"><div class="prf-kpi-v" style="color:${saldo>=0?'#10B981':'#EF4444'}">${saldo<0?'-':''}${fmt(Math.abs(saldo))}</div><div class="prf-kpi-l">Saldo</div></div>
+        <div class="prf-kpi"><div class="prf-kpi-v" style="color:#3B6FF0">${txsMes.length}</div><div class="prf-kpi-l">Transações</div></div>
+        <div class="prf-kpi"><div class="prf-kpi-v" style="color:#8B5CF6">${scoreNum}</div><div class="prf-kpi-l">Score Saúde</div></div>
+      </div>
+    </div>
+
+    <!-- Gastos por categoria -->
+    ${catsSorted.length?`
+    <div class="prf-section">
+      <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#130039;margin-bottom:8px">Gastos por Categoria</div>
+      <table class="prf-table">
+        <thead><tr><th>Categoria</th><th>Valor</th><th>% do Total</th><th>Barra</th></tr></thead>
+        <tbody>${catsSorted.map(([cat,v])=>`<tr>
+          <td>${esc(cat)}</td>
+          <td style="font-weight:700">${fmt(v)}</td>
+          <td>${saidas>0?(v/saidas*100).toFixed(1):0}%</td>
+          <td><div class="prf-bar"><div class="prf-bar-fill" style="width:${saidas>0?(v/saidas*100).toFixed(0):0}%;background:#3B6FF0"></div></div></td>
+        </tr>`).join('')}</tbody>
+      </table>
+    </div>`:''}
+
+    <!-- Metas -->
+    ${METAS.length?`
+    <div class="prf-section">
+      <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#130039;margin-bottom:8px">Metas & Economias</div>
+      <table class="prf-table">
+        <thead><tr><th>Meta</th><th>Atual</th><th>Objetivo</th><th>Progresso</th></tr></thead>
+        <tbody>${metasHtml}</tbody>
+      </table>
+    </div>`:''}
+
+    <!-- Todas as transações -->
+    ${txsMes.length?`
+    <div class="prf-section">
+      <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#130039;margin-bottom:8px">Todas as Transações</div>
+      <table class="prf-table">
+        <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Método</th><th style="text-align:right">Valor</th></tr></thead>
+        <tbody>${txsHtml}</tbody>
+      </table>
+    </div>`:''}
+
+    <div style="text-align:center;margin-top:30px;font-size:10px;color:#9ca3af;border-top:1px solid #e5e7eb;padding-top:12px">
+      PenseFinances — Relatório gerado automaticamente · ${new Date().toLocaleString('pt-BR')}
+    </div>
+  </div>`;
+
+  // Insere no DOM temporariamente, chama print, depois remove
+  let printDiv = document.getElementById('print-report');
+  if(!printDiv){ printDiv = document.createElement('div'); printDiv.id='print-report'; document.body.appendChild(printDiv); }
+  printDiv.innerHTML = html.replace(/<div id="print-report"[^>]*>/,'').replace(/<\/div>\s*$/,'');
+  printDiv.style.display='block';
+  setTimeout(()=>{
+    window.print();
+    setTimeout(()=>{ printDiv.style.display='none'; printDiv.innerHTML=''; }, 1000);
+  }, 200);
 }
 </script>
 </body>
