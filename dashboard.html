@@ -752,8 +752,14 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div class="fg" id="fgTxProjeto">
       <label class="fl">🗂️ Projeto (opcional)</label>
-      <select class="fs" id="txProjeto">
+      <select class="sf-f" id="txProjeto">
         <option value="">— Sem projeto —</option>
+      </select>
+    </div>
+    <div class="fg" id="fgTxMembro">
+      <label class="fl">👨‍👩‍👧 Membro da família (opcional)</label>
+      <select class="sf-f" id="txMembro">
+        <option value="">— Eu mesmo —</option>
       </select>
     </div>
     <input type="hidden" id="txIdx" value="-1">
@@ -1075,6 +1081,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <button class="ni" data-p="vencimentos"><span class="nic">📅</span> Vencimentos</button>
     <button class="ni" data-p="fluxo"><span class="nic">🔮</span> Fluxo de Caixa</button>
     <button class="ni" data-p="projetos"><span class="nic">🗂️</span> Projetos</button>
+    <button class="ni" data-p="familia"><span class="nic">👨‍👩‍👧</span> Orçamento Familiar</button>
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
   <div class="sb-bot">
@@ -1873,6 +1880,75 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
+<!-- ═══ ORÇAMENTO FAMILIAR ═══ -->
+<div class="page" id="page-familia">
+  <div class="ph">
+    <div><h1>👨‍👩‍👧 Orçamento Familiar</h1><p>Gerencie o orçamento com todos os membros da família</p></div>
+    <div class="pa">
+      <button class="btn bp" onclick="abrirModalMembro()">+ Adicionar Membro</button>
+    </div>
+  </div>
+
+  <!-- KPIs família -->
+  <div class="g4 mb" id="familiaKpis"></div>
+
+  <!-- Membros -->
+  <div class="card mb">
+    <div class="ch"><div><div class="ct">👥 Membros da Família</div><div class="cs">Clique para ver gastos por membro</div></div></div>
+    <div id="familiaMembros" style="padding:0 18px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
+  </div>
+
+  <!-- Orçamento por categoria (família) -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
+    <div class="card">
+      <div class="ch"><div><div class="ct">📊 Gastos por Membro</div><div class="cs" id="familiaMesSub">Este mês</div></div></div>
+      <div id="familiaGastosMembros" style="padding:0 18px 14px"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">📋 Últimas Transações da Família</div></div></div>
+      <div id="familiaTxsRecentes" style="padding:0 4px 8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Membro da Família -->
+<div class="ov" id="ovMembro">
+  <div class="modal" style="max-width:380px">
+    <div class="mh"><h3 id="membroModalTitle">👤 Novo Membro</h3><button class="cl" onclick="CM('ovMembro')">✕</button></div>
+    <div class="mb2">
+      <input type="hidden" id="membroIdx" value="-1">
+      <div class="fg">
+        <label class="fl">Nome *</label>
+        <input class="sf-f" id="membroNome" placeholder="Ex: João, Maria, filho…">
+      </div>
+      <div class="fg">
+        <label class="fl">Avatar</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span onclick="selAvatarMembro(this,'👨')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">👨</span>
+          <span onclick="selAvatarMembro(this,'👩')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">👩</span>
+          <span onclick="selAvatarMembro(this,'👦')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">👦</span>
+          <span onclick="selAvatarMembro(this,'👧')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">👧</span>
+          <span onclick="selAvatarMembro(this,'👴')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">👴</span>
+          <span onclick="selAvatarMembro(this,'👵')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">👵</span>
+          <span onclick="selAvatarMembro(this,'🐾')" style="font-size:24px;cursor:pointer;padding:4px;border-radius:8px;border:2px solid transparent">🐾</span>
+        </div>
+        <input type="hidden" id="membroAvatar" value="👨">
+      </div>
+      <div class="fg">
+        <label class="fl">Limite mensal (R$, opcional)</label>
+        <input class="sf-f valor-input" id="membroLimite" placeholder="0,00" inputmode="decimal">
+      </div>
+    </div>
+    <div class="mf" style="justify-content:space-between">
+      <button class="btn bd btn-sm" id="membroDelBtn" onclick="deletarMembro()" style="display:none">🗑️ Excluir</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn bs btn-sm" onclick="CM('ovMembro')">Cancelar</button>
+        <button class="btn bp" onclick="salvarMembro()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ RELATÓRIOS ═══ -->
 <div class="page" id="page-relatorios">
   <div class="ph"><div><h1>📑 Relatórios</h1><p id="relSubtitle">Análise completa do mês</p></div>
@@ -2063,6 +2139,8 @@ let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
 let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[], RECORRENCIAS=[];
 let PROJETOS = [];
+let FAMILIA_MEMBROS = []; // [{id, nome, avatar, cor}]
+let CAT_MODEL = {};
 
 // ── Globals de estado das features ──
 let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
@@ -2129,7 +2207,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos,familia:renderFamilia};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2143,7 +2221,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos,familia:renderFamilia};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -2250,7 +2328,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos,familia:renderFamilia};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -2274,7 +2352,7 @@ function go(page){
   window.scrollTo(0,0);
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},fluxo:renderFluxo,projetos:renderProjetos};
+  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},fluxo:renderFluxo,projetos:renderProjetos,familia:renderFamilia};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
@@ -3191,6 +3269,7 @@ function resetTxForm(){
   const custEl=document.getElementById('txParcCustom');
   if(custEl) custEl.value='';
   popularSelectProjeto();
+  popularSelectMembro();
 }
 
 // getMesChave com offset customizável
@@ -3363,6 +3442,7 @@ async function saveTx(){
   const valor=parseBRL(document.getElementById('txValor').value)||parseFloat(document.getElementById('txValor').value)||0;
   const cartao=document.getElementById('txMetodo').value==='Cartão crédito'?document.getElementById('txCartaoSel').value:'';
   const projeto = document.getElementById('txProjeto')?.value || '';
+  const membro  = document.getElementById('txMembro')?.value || '';
   const totalParc=parseInt(document.getElementById('txParc').value)||0;
   const mesAno=document.getElementById('txMesAno').value||getMesChave();
   // Valor bruto digitado
@@ -3385,6 +3465,7 @@ async function saveTx(){
     parcela_atual:1,
     cartao,
     projeto,
+    membro,
     mes_ano:mesAno,
     emoji: getEmojiCat(catVal),   // ✅ salva emoji junto
     cor:   getCorCat(catVal),     // ✅ salva cor junto
@@ -3408,6 +3489,7 @@ async function saveTx(){
         toast('✅ Lançado!','success');
       }
       novasTx.forEach(t=>TODAS_TX.push(t));
+      aprenderCategoria(dados.descricao, dados.categoria);
 
       // Tenta API em background (sem bloquear UI)
       fetch('/api/transacao/nova',{method:'POST',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
@@ -3426,6 +3508,7 @@ async function saveTx(){
       const pos=TODAS_TX.findIndex(t=>t.idx===idx);
       if(pos>=0) TODAS_TX[pos]={...TODAS_TX[pos],...dados,idx};
       else TODAS_TX.push({...dados,idx});
+      aprenderCategoria(dados.descricao, dados.categoria);
       toast('✅ Atualizado!','success');
       fetch(`/api/transacao/${idx}`,{method:'PUT',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
       salvarTxsLocal();
@@ -5710,6 +5793,8 @@ function entrarNoSistema(){
   init();
   // Verifica e gera recorrências automáticas (após carregar dados)
   setTimeout(verificarRecorrencias, 800);
+  // Treina modelo de categorização com histórico existente (se modelo vazio)
+  if(Object.keys(CAT_MODEL).length === 0) setTimeout(treinarCatModelComHistorico, 1200);
   // Mostra botão de notificações se não concedido; envia alertas se já concedido
   setTimeout(()=>{ checarBotaoNotificacoes(); verificarAlertasVencimento(); }, 1500);
 }
@@ -5730,7 +5815,9 @@ function carregarDadosUsuario(){
   if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
   CATS_OCULTAS  = lsUser('cats_ocultas', []);
   RECORRENCIAS  = lsUser('recorrencias', []);
-  PROJETOS       = lsUser('projetos', []);
+  PROJETOS        = lsUser('projetos', []);
+  FAMILIA_MEMBROS = lsUser('familia_membros', []);
+  carregarCatModel();
   // Carrega transações do localStorage (fallback imediato antes da API)
   const txsLocal = lsUser('txs', []);
   if(txsLocal.length > 0){
@@ -5744,7 +5831,8 @@ function salvarFixas()        { saveUser('fixas', FIXAS); }
 function salvarDividas()      { saveUser('dividas', DIVIDAS); }
 function salvarMetas()        { saveUser('metas', METAS); }
 function salvarRecorrencias() { saveUser('recorrencias', RECORRENCIAS); }
-function salvarProjetos()     { saveUser('projetos', PROJETOS); }
+function salvarProjetos()        { saveUser('projetos', PROJETOS); }
+function salvarFamiliaMembros()  { saveUser('familia_membros', FAMILIA_MEMBROS); }
 
 // ════════════════════════════════════════════════
 // RECORRÊNCIAS AUTOMÁTICAS
@@ -6097,6 +6185,197 @@ function popularSelectProjeto(){
   if(!sel) return;
   sel.innerHTML = `<option value="">— Sem projeto —</option>` +
     PROJETOS.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');
+}
+
+function popularSelectMembro(){
+  const sel = document.getElementById('txMembro');
+  if(!sel) return;
+  sel.innerHTML = `<option value="">— Eu mesmo —</option>` +
+    FAMILIA_MEMBROS.map(m=>`<option value="${esc(m.id)}">${m.avatar||'👤'} ${esc(m.nome)}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════
+// ORÇAMENTO FAMILIAR
+// ════════════════════════════════════════════════
+function renderFamilia(){
+  const mes = getMesChave();
+  // KPIs
+  const txsMes = TODAS_TX.filter(t=>t.mes_ano===mes);
+  const totalGasto = Math.abs(txsMes.filter(t=>parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
+  const totalReceita = txsMes.filter(t=>parseFloat(t.valor||0)>0).reduce((s,t)=>s+parseFloat(t.valor||0),0);
+  const numMembros = FAMILIA_MEMBROS.length;
+  const mediaMembro = numMembros>0 ? totalGasto/(numMembros+1) : totalGasto;
+
+  const kpisEl = document.getElementById('familiaKpis');
+  if(kpisEl) kpisEl.innerHTML = `
+    <div class="kpi g"><div class="kpi-top"><div class="kpi-ic">👥</div></div><div class="kpi-v">${numMembros+1}</div><div class="kpi-l">Membros</div></div>
+    <div class="kpi r"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v" style="color:var(--verm)">${fmt(totalGasto)}</div><div class="kpi-l">Gasto total</div></div>
+    <div class="kpi g"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v" style="color:var(--verde)">${fmt(totalReceita)}</div><div class="kpi-l">Receita total</div></div>
+    <div class="kpi b"><div class="kpi-top"><div class="kpi-ic">📊</div></div><div class="kpi-v">${fmt(mediaMembro)}</div><div class="kpi-l">Média/membro</div></div>
+  `;
+
+  // Membros cards
+  const membrosEl = document.getElementById('familiaMembros');
+  if(membrosEl){
+    const user = AUTH_USER;
+    const meuNome = user?.name || 'Eu';
+    const meuAvatar = user?.avatar || '🙂';
+    const meuGasto = Math.abs(txsMes.filter(t=>!t.membro&&parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
+
+    let html = `<div class="card" style="text-align:center;padding:16px 12px;cursor:pointer;border:2px solid var(--azul)" onclick="filtrarTxFamilia('')">
+      <div style="font-size:28px">${meuAvatar}</div>
+      <div style="font-size:13px;font-weight:800;margin-top:4px">${esc(meuNome)}</div>
+      <div style="font-size:12px;color:var(--verm);font-weight:700;margin-top:2px">${fmt(meuGasto)}</div>
+      <div style="font-size:10px;color:var(--muted)">Titular</div>
+    </div>`;
+
+    html += FAMILIA_MEMBROS.map((m,i)=>{
+      const gasto = Math.abs(txsMes.filter(t=>t.membro===m.id&&parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
+      const lim = parseFloat(m.limite||0);
+      const pct = lim>0?Math.min(gasto/lim*100,100):0;
+      const cor = pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
+      return `<div class="card" style="text-align:center;padding:16px 12px;cursor:pointer" onclick="filtrarTxFamilia('${m.id}')">
+        <div style="font-size:28px">${m.avatar||'👤'}</div>
+        <div style="font-size:13px;font-weight:800;margin-top:4px">${esc(m.nome)}</div>
+        <div style="font-size:12px;color:${cor};font-weight:700;margin-top:2px">${fmt(gasto)}${lim>0?` / ${fmt(lim)}`:''}</div>
+        ${lim>0?`<div class="prf-bar" style="margin-top:4px;background:var(--border)"><div style="height:8px;border-radius:4px;width:${pct.toFixed(0)}%;background:${cor}"></div></div>`:''}
+        <button class="btn bs btn-sm" style="margin-top:8px;font-size:10px" onclick="event.stopPropagation();abrirModalMembro(${i})">✏️</button>
+      </div>`;
+    }).join('');
+
+    membrosEl.innerHTML = html;
+  }
+
+  // Gastos por membro (barras horizontais)
+  const gastosEl = document.getElementById('familiaGastosMembros');
+  if(gastosEl){
+    const user = AUTH_USER;
+    const meuGasto = Math.abs(txsMes.filter(t=>!t.membro&&parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
+    const todos = [{id:'', nome:user?.name||'Eu', avatar:user?.avatar||'🙂', gasto:meuGasto}];
+    FAMILIA_MEMBROS.forEach(m=>{
+      const gasto = Math.abs(txsMes.filter(t=>t.membro===m.id&&parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
+      todos.push({...m, gasto});
+    });
+    const maxGasto = Math.max(...todos.map(t=>t.gasto), 1);
+    gastosEl.innerHTML = todos.map(t=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border)">
+        <div style="font-size:18px;flex-shrink:0">${t.avatar||'👤'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700">${esc(t.nome)}</div>
+          <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-top:3px">
+            <div style="height:100%;width:${(t.gasto/maxGasto*100).toFixed(0)}%;background:var(--azul);border-radius:100px"></div>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:var(--verm);white-space:nowrap">${fmt(t.gasto)}</div>
+      </div>`).join('');
+  }
+
+  // Últimas transações com membro tag
+  const txsEl = document.getElementById('familiaTxsRecentes');
+  if(txsEl){
+    const recentes = [...txsMes].sort((a,b)=>{
+      const da=a.data.split('/').reverse().join('-');
+      const db=b.data.split('/').reverse().join('-');
+      return db.localeCompare(da);
+    }).slice(0,10);
+    txsEl.innerHTML = recentes.map(t=>{
+      const v=parseFloat(t.valor||0);
+      const membro = t.membro ? FAMILIA_MEMBROS.find(m=>m.id===t.membro) : null;
+      const membroTag = membro ? `<span style="font-size:10px;background:var(--azul-l);color:var(--azul);border-radius:100px;padding:1px 7px;font-weight:700">${membro.avatar||'👤'} ${esc(membro.nome)}</span>` : '';
+      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border)">
+        <div style="font-size:16px">${t.emoji||'📦'}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.descricao||t.categoria)}</div>
+          <div style="font-size:10px;color:var(--muted);display:flex;gap:6px;align-items:center;margin-top:2px">${t.data} ${membroTag}</div>
+        </div>
+        <div style="font-size:13px;font-weight:800;color:${v>=0?'var(--verde)':'var(--verm)'};white-space:nowrap">${v>=0?'':'−'}${fmt(Math.abs(v))}</div>
+      </div>`;
+    }).join('') || '<div style="padding:20px;text-align:center;color:var(--muted)">Sem transações</div>';
+  }
+
+  const subEl = document.getElementById('familiaMesSub');
+  if(subEl) subEl.textContent = mes;
+}
+
+function filtrarTxFamilia(membroId){
+  go('transacoes');
+  // Filtra transações por membro — hack: simula busca
+  setTimeout(()=>{
+    const srch = document.getElementById('srch');
+    if(srch){
+      // Não há filtro de membro nativo na toolbar, então mostramos uma mensagem
+      if(membroId){
+        const membro = FAMILIA_MEMBROS.find(m=>m.id===membroId);
+        if(membro) toast(`Mostrando: ${membro.nome}. Filtre manualmente por membro.`,'info');
+      }
+    }
+  }, 300);
+}
+
+function abrirModalMembro(i=-1){
+  document.getElementById('membroIdx').value=i;
+  const delBtn=document.getElementById('membroDelBtn');
+  if(i>=0){
+    const m=FAMILIA_MEMBROS[i];
+    document.getElementById('membroNome').value=m.nome||'';
+    document.getElementById('membroAvatar').value=m.avatar||'👨';
+    document.getElementById('membroLimite').value=parseFloat(m.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    document.getElementById('membroModalTitle').textContent='✏️ Editar Membro';
+    if(delBtn) delBtn.style.display='';
+    document.querySelectorAll('#ovMembro span[onclick]').forEach(el=>{
+      el.style.border = el.textContent.trim()===m.avatar?'2px solid var(--azul)':'2px solid transparent';
+    });
+  } else {
+    document.getElementById('membroNome').value='';
+    document.getElementById('membroAvatar').value='👨';
+    document.getElementById('membroLimite').value='';
+    document.getElementById('membroModalTitle').textContent='👤 Novo Membro';
+    if(delBtn) delBtn.style.display='none';
+    document.querySelectorAll('#ovMembro span[onclick]').forEach((el,idx)=>{
+      el.style.border=idx===0?'2px solid var(--azul)':'2px solid transparent';
+    });
+  }
+  OM('ovMembro');
+}
+
+function selAvatarMembro(el, avatar){
+  document.querySelectorAll('#ovMembro span[onclick]').forEach(e=>e.style.border='2px solid transparent');
+  el.style.border='2px solid var(--azul)';
+  document.getElementById('membroAvatar').value=avatar;
+}
+
+function salvarMembro(){
+  const i=parseInt(document.getElementById('membroIdx').value);
+  const nome=document.getElementById('membroNome').value.trim();
+  if(!nome){toast('Nome é obrigatório','err');return;}
+  const avatar=document.getElementById('membroAvatar').value||'👨';
+  const limRaw=document.getElementById('membroLimite').value;
+  const limite=parseBRL?parseBRL(limRaw):parseFloat(limRaw.replace(/\./g,'').replace(',','.'))||0;
+  const membro={
+    id: i>=0?FAMILIA_MEMBROS[i].id:'mbr_'+Date.now(),
+    nome, avatar, limite:isNaN(limite)?0:limite
+  };
+  if(i>=0) FAMILIA_MEMBROS[i]=membro; else FAMILIA_MEMBROS.push(membro);
+  salvarFamiliaMembros();
+  CM('ovMembro');
+  renderFamilia();
+  popularSelectMembro();
+  toast(i>=0?'✅ Membro atualizado!':'✅ Membro adicionado!','ok');
+}
+
+function deletarMembro(){
+  const i=parseInt(document.getElementById('membroIdx').value);
+  if(i<0) return;
+  if(!confirm('Excluir este membro? As transações vinculadas perderão o vínculo.')) return;
+  const membroId=FAMILIA_MEMBROS[i].id;
+  FAMILIA_MEMBROS.splice(i,1);
+  salvarFamiliaMembros();
+  TODAS_TX.forEach(t=>{if(t.membro===membroId) delete t.membro;});
+  salvarTxsLocal();
+  CM('ovMembro');
+  renderFamilia();
+  popularSelectMembro();
+  toast('🗑️ Membro excluído','ok');
 }
 
 function openRecorr(i=-1){
@@ -7549,7 +7828,58 @@ function limparNomeOFX(nome){
   return nome.replace(/\*/g,' ').replace(/\s{2,}/g,' ').trim().substring(0,60);
 }
 
+// ── IA de Categorização: aprende com histórico ──────────────────
+// CAT_MODEL: { "token": {cat: "Alimentação", count: 5}, ... }
+
+function carregarCatModel(){
+  CAT_MODEL = lsUser('cat_model', {});
+}
+
+function salvarCatModel(){
+  saveUser('cat_model', CAT_MODEL);
+}
+
+function tokenizarDesc(desc){
+  // Extrai tokens relevantes: palavras com 4+ chars, em lowercase
+  return (desc||'').toLowerCase()
+    .replace(/[^a-záàâãéèêíìîóòôõúùûç0-9\s]/g,' ')
+    .split(/\s+/)
+    .filter(t=>t.length>=4);
+}
+
+function aprenderCategoria(desc, categoria){
+  if(!desc || !categoria || categoria === 'Outros') return;
+  const tokens = tokenizarDesc(desc);
+  let updated = false;
+  tokens.forEach(t=>{
+    if(!CAT_MODEL[t]){ CAT_MODEL[t] = {cat: categoria, count: 1}; updated=true; }
+    else if(CAT_MODEL[t].cat === categoria){ CAT_MODEL[t].count++; updated=true; }
+    else if(CAT_MODEL[t].count <= 1){ CAT_MODEL[t] = {cat: categoria, count: 1}; updated=true; } // override com baixa confiança
+    else { CAT_MODEL[t].count--; updated=true; } // reduz confiança da categoria anterior
+  });
+  if(updated) salvarCatModel();
+}
+
+function autoCategoriaPorModelo(desc){
+  const tokens = tokenizarDesc(desc);
+  if(!tokens.length) return null;
+  const scores = {};
+  tokens.forEach(t=>{
+    if(CAT_MODEL[t] && CAT_MODEL[t].count >= 2){
+      const cat = CAT_MODEL[t].cat;
+      scores[cat] = (scores[cat]||0) + CAT_MODEL[t].count;
+    }
+  });
+  const best = Object.entries(scores).sort((a,b)=>b[1]-a[1])[0];
+  return best && best[1] >= 2 ? best[0] : null;
+}
+
 function autoCategoria(desc){
+  // 1. Tenta o modelo aprendido primeiro
+  const aprendida = autoCategoriaPorModelo(desc);
+  if(aprendida) return aprendida;
+
+  // 2. Fallback para regras fixas
   const d = (desc || '').toLowerCase();
   if(/supermercado|mercado|padaria|hortifrut|atacad|açougue|carrefour|extra|pão de açúcar|assaí|zaffari|sams club|walmart|atacarejo/i.test(d)) return 'Alimentação';
   if(/restaurante|lanchonete|ifood|rappi|uber eats|james|churrasco|pizza|hamburguer|sushi|delivery|cafe|bar |bistr/i.test(d)) return 'Alimentação';
@@ -7563,6 +7893,14 @@ function autoCategoria(desc){
   if(/salário|pagamento|deposito em conta|ted recebido|pix recebido|receita/i.test(d)) return 'Salário';
   if(/freelance|renda extra|transferência recebida/i.test(d)) return 'Freelance';
   return 'Outros';
+}
+
+// Treina o modelo com todas as transações existentes
+function treinarCatModelComHistorico(){
+  if(!TODAS_TX.length) return;
+  TODAS_TX.filter(t=>t.categoria&&t.categoria!=='Outros'&&t.descricao).forEach(t=>{
+    aprenderCategoria(t.descricao, t.categoria);
+  });
 }
 
 function renderImportPreview(fileName, rows){
@@ -7660,6 +7998,7 @@ function importConfirm(){
       idx: Date.now() + importadas
     };
     TODAS_TX.push(newTx);
+    aprenderCategoria(r.descricao, r.categoria);
     importadas++;
   });
 
