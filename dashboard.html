@@ -1305,16 +1305,29 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <!-- ═══ DESPESAS FIXAS ═══ -->
 <div class="page" id="page-fixas">
   <div class="ph"><div><h1>📌 Despesas Fixas</h1><p>Compromissos recorrentes — cadastre uma vez, acompanhe todo mês</p></div>
-  <div class="pa"><button class="btn bp" onclick="openFx()">+ Nova despesa fixa</button></div></div>
+  <div class="pa">
+    <button class="btn bg btn-sm" onclick="openRecorr()">🔄 Regra recorrente</button>
+    <button class="btn bp" onclick="openFx()">+ Nova despesa fixa</button>
+  </div></div>
   <div class="g3 mb">
     <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📌</div></div><div class="kpi-v" id="fxTot">R$ 0,00</div><div class="kpi-l">Total de compromissos</div></div>
     <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v" id="fxPg">R$ 0,00</div><div class="kpi-l">Já pagos</div></div>
     <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⏰</div></div><div class="kpi-v" id="fxPd">R$ 0,00</div><div class="kpi-l">A pagar / Em atraso</div></div>
   </div>
-  <div class="tw">
+  <div class="tw mb">
     <table class="st"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Observação</th><th>Ações</th></tr></thead>
     <tbody id="fxBody"></tbody></table>
     <div class="tf"><span id="fxCnt">0 despesas fixas</span><div><button class="btn bv btn-sm" onclick="marcarTodasPagas()">✅ Marcar todas como pagas</button></div></div>
+  </div>
+  <!-- Regras Recorrentes -->
+  <div class="card">
+    <div class="ch">
+      <div><div class="ct">🔄 Regras de Lançamento Automático</div><div class="cs">Transações geradas automaticamente todo mês</div></div>
+      <button class="btn bp btn-sm" onclick="openRecorr()">+ Nova regra</button>
+    </div>
+    <div id="recorrGrid" style="padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+      <div style="text-align:center;color:var(--muted);padding:20px;grid-column:1/-1">Nenhuma regra cadastrada — crie sua primeira!</div>
+    </div>
   </div>
 </div>
 
@@ -1721,6 +1734,49 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
+<!-- ═══ MODAL REGRA RECORRENTE ═══ -->
+<div class="ov" id="ovRecorr2" style="z-index:600">
+<div class="modal" style="max-width:480px">
+  <div class="mh">
+    <div class="mt" id="recorrTitle">🔄 Nova Regra Recorrente</div>
+    <button class="mc" onclick="CM('ovRecorr2')">✕</button>
+  </div>
+  <div class="mb2">
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px">A transação será criada automaticamente todo mês no dia especificado.</p>
+    <div class="fr"><div class="fg"><label class="fl">Descrição *</label><input class="fi" id="rcNome" placeholder="Ex: Salário, Netflix, Aluguel..."></div></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Tipo *</label>
+        <select class="fs" id="rcTipo">
+          <option value="gasto">💸 Gasto</option>
+          <option value="receita">💰 Receita</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Categoria *</label>
+        <select class="fs" id="rcCat"></select>
+      </div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Valor (R$) *</label><input type="text" class="fi valor-input" id="rcValor" inputmode="decimal" placeholder="0,00"></div>
+      <div class="fg"><label class="fl">Dia do mês *</label><input type="number" class="fi" id="rcDia" min="1" max="31" placeholder="1-31"></div>
+    </div>
+    <div class="fr"><div class="fg"><label class="fl">Método de pagamento</label>
+      <select class="fs" id="rcMetodo">
+        <option>Pix</option><option>Débito</option><option>Crédito</option><option>Dinheiro</option><option>Boleto</option><option>TED/DOC</option>
+      </select>
+    </div></div>
+    <div style="background:var(--verde-l);border-radius:var(--r-sm);padding:10px 12px;margin-top:4px">
+      <div style="font-size:11px;font-weight:700;color:var(--verde-d)">✅ Como funciona:</div>
+      <div style="font-size:11px;color:var(--txt2);margin-top:3px">Todo mês, ao abrir o app, o sistema verifica se esta regra já foi lançada. Se não, cria automaticamente a transação no mês atual com a data e categoria definidas.</div>
+    </div>
+    <input type="hidden" id="rcIdx" value="-1">
+  </div>
+  <div class="mf">
+    <button class="btn bg" onclick="CM('ovRecorr2')">Cancelar</button>
+    <button class="btn bd btn-sm" id="rcDelBtn" style="display:none" onclick="delRecorr()">🗑️</button>
+    <button class="btn bp" onclick="saveRecorr()">💾 Salvar regra</button>
+  </div>
+</div></div>
+
 <!-- ═══ MODAL IMPORTAÇÃO OFX/CSV ═══ -->
 <div class="ov" id="ovImport" style="z-index:600">
 <div class="modal" style="max-width:680px;width:95vw">
@@ -1818,7 +1874,7 @@ const CATS_PADRAO_EXTRA = Object.keys(EMOJIS).filter(n=>n!=='Salário'&&n!=='Fre
 // ════════════════════════════════════════════════
 let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
-let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[];
+let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[], RECORRENCIAS=[];
 
 // ── Globals de estado das features ──
 let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
@@ -3561,6 +3617,8 @@ function renderFixas(){
       <button style="background:var(--verm-l);color:var(--verm);border:none;border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;cursor:pointer" onclick="delFx(${i})">🗑️</button>
     </div></td></tr>`;
   }).join('');
+  // Renderiza regras recorrentes
+  renderRecorr();
 }
 
 // ════════════════════════════════════════════════
@@ -5296,6 +5354,8 @@ function entrarNoSistema(){
   carregarDadosUsuario(); // Carrega dados deste usuário do localStorage
   atualizarUIUsuario();
   init();
+  // Verifica e gera recorrências automáticas (após carregar dados)
+  setTimeout(verificarRecorrencias, 800);
 }
 
 // ── Carrega dados financeiros do usuário ──────
@@ -5312,7 +5372,8 @@ function carregarDadosUsuario(){
   const seenNames = new Set();
   CATS_CUSTOM = rawCats.filter(c=>{ if(!c.nome||seenNames.has(c.nome)) return false; seenNames.add(c.nome); return true; });
   if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
-  CATS_OCULTAS = lsUser('cats_ocultas', []);
+  CATS_OCULTAS  = lsUser('cats_ocultas', []);
+  RECORRENCIAS  = lsUser('recorrencias', []);
   // Carrega transações do localStorage (fallback imediato antes da API)
   const txsLocal = lsUser('txs', []);
   if(txsLocal.length > 0){
@@ -5322,9 +5383,163 @@ function carregarDadosUsuario(){
 }
 
 // ── Salvar dados do usuário ──────────────────
-function salvarFixas()    { saveUser('fixas', FIXAS); }
-function salvarDividas()  { saveUser('dividas', DIVIDAS); }
-function salvarMetas()    { saveUser('metas', METAS); }
+function salvarFixas()        { saveUser('fixas', FIXAS); }
+function salvarDividas()      { saveUser('dividas', DIVIDAS); }
+function salvarMetas()        { saveUser('metas', METAS); }
+function salvarRecorrencias() { saveUser('recorrencias', RECORRENCIAS); }
+
+// ════════════════════════════════════════════════
+// RECORRÊNCIAS AUTOMÁTICAS
+// ════════════════════════════════════════════════
+function verificarRecorrencias(){
+  const mesAtual = getMesChave();
+  const ultimoMes = lsUser('recorr_ultimo_mes', '');
+
+  // Auto-reset fixas ao virar o mês
+  if(ultimoMes && ultimoMes !== mesAtual){
+    let resetou = 0;
+    FIXAS.forEach(f => { if(f.status === 'Pago'){ f.status = 'A pagar'; resetou++; } });
+    if(resetou > 0){ salvarFixas(); }
+  }
+
+  // Gera transações recorrentes que ainda não foram geradas este mês
+  const jaGeradas = lsUser('recorr_geradas', {});
+  const geradasMes = [...(jaGeradas[mesAtual] || [])];
+  const hoje = new Date();
+  let novas = 0;
+
+  RECORRENCIAS.filter(r => r.ativo !== false).forEach(r => {
+    if(geradasMes.includes(r.id)) return;
+    const diasMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+    const dia = Math.min(parseInt(r.dia) || 1, diasMes);
+    const mm = String(hoje.getMonth()+1).padStart(2,'0');
+    const dd = String(dia).padStart(2,'0');
+    const dataStr = `${dd}/${mm}/${hoje.getFullYear()}`;
+    const valor = r.tipo === 'receita' ? Math.abs(r.valor) : -Math.abs(r.valor);
+    const maxIdx = TODAS_TX.reduce((m,t)=>Math.max(m,t.idx||0),0);
+    TODAS_TX.push({
+      data: dataStr, hora: '00:00',
+      descricao: r.nome, categoria: r.categoria || 'Outros',
+      valor, metodo: r.metodo || 'Pix',
+      cartao: '', parcelas: 1, parcela_atual: 1,
+      tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
+      local: 'Automático', mes_ano: mesAtual,
+      idx: maxIdx + novas + 1,
+      recorrente: true
+    });
+    geradasMes.push(r.id);
+    novas++;
+  });
+
+  if(novas > 0){
+    salvarTxsLocal();
+    jaGeradas[mesAtual] = geradasMes;
+    saveUser('recorr_geradas', jaGeradas);
+    autoRefresh();
+    setTimeout(()=>toast(`🔄 ${novas} lançamento(s) recorrente(s) gerado(s) automaticamente!`,'info'), 1200);
+  }
+
+  // Salva que verificamos este mês
+  saveUser('recorr_ultimo_mes', mesAtual);
+  saveUser('recorr_geradas', {...lsUser('recorr_geradas',{}), [mesAtual]: geradasMes});
+}
+
+function openRecorr(i=-1){
+  // Preenche select de categorias
+  const catSel = document.getElementById('rcCat');
+  if(catSel){
+    const todas = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
+    catSel.innerHTML = todas.map(c=>`<option>${esc(c)}</option>`).join('');
+  }
+  document.getElementById('rcIdx').value = i;
+  const delBtn = document.getElementById('rcDelBtn');
+  if(i >= 0){
+    const r = RECORRENCIAS[i];
+    document.getElementById('rcNome').value = r.nome;
+    document.getElementById('rcTipo').value = r.tipo;
+    document.getElementById('rcValor').value = (r.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
+    document.getElementById('rcDia').value = r.dia;
+    document.getElementById('rcMetodo').value = r.metodo || 'Pix';
+    document.getElementById('rcCat').value = r.categoria;
+    document.getElementById('recorrTitle').textContent = '✏️ Editar Regra Recorrente';
+    if(delBtn) delBtn.style.display = '';
+  } else {
+    document.getElementById('rcNome').value = '';
+    document.getElementById('rcTipo').value = 'gasto';
+    document.getElementById('rcValor').value = '';
+    document.getElementById('rcDia').value = '';
+    document.getElementById('rcMetodo').value = 'Pix';
+    document.getElementById('recorrTitle').textContent = '🔄 Nova Regra Recorrente';
+    if(delBtn) delBtn.style.display = 'none';
+  }
+  OM('ovRecorr2');
+}
+
+function saveRecorr(){
+  const i = parseInt(document.getElementById('rcIdx').value);
+  const nome = document.getElementById('rcNome').value.trim();
+  const valor = parseBRL(document.getElementById('rcValor').value) || 0;
+  const dia = parseInt(document.getElementById('rcDia').value) || 0;
+  if(!nome || valor <= 0 || dia < 1 || dia > 31){ toast('Preencha todos os campos obrigatórios', 'warning'); return; }
+  const r = {
+    id: i >= 0 ? RECORRENCIAS[i].id : Date.now(),
+    nome, tipo: document.getElementById('rcTipo').value,
+    categoria: document.getElementById('rcCat').value,
+    valor, dia, metodo: document.getElementById('rcMetodo').value,
+    ativo: true
+  };
+  if(i >= 0) RECORRENCIAS[i] = r; else RECORRENCIAS.push(r);
+  salvarRecorrencias(); CM('ovRecorr2'); renderRecorr();
+  toast('✅ Regra salva!', 'success');
+}
+
+function delRecorr(){
+  const i = parseInt(document.getElementById('rcIdx').value);
+  if(i < 0) return;
+  showConfirm('Remover esta regra recorrente?', ()=>{
+    RECORRENCIAS.splice(i,1); salvarRecorrencias(); CM('ovRecorr2'); renderRecorr();
+    toast('🗑️ Regra removida','info');
+  },'🔄','Remover','bd');
+}
+
+function toggleRecorr(i){
+  RECORRENCIAS[i].ativo = !RECORRENCIAS[i].ativo;
+  salvarRecorrencias(); renderRecorr();
+}
+
+function renderRecorr(){
+  const el = document.getElementById('recorrGrid');
+  if(!el) return;
+  if(!RECORRENCIAS.length){
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:24px;grid-column:1/-1">Nenhuma regra cadastrada — clique em "+ Nova regra" para começar</div>';
+    return;
+  }
+  const EMOJIS={Alimentação:'🍽️',Transporte:'🚗',Moradia:'🏠',Saúde:'❤️',Educação:'📚',Assinaturas:'📺',Lazer:'🎮',Salário:'💰',Freelance:'💼',Outros:'📦',Contas:'⚡',Vestuário:'👗',Pet:'🐾',Investimento:'📈'};
+  el.innerHTML = RECORRENCIAS.map((r,i) => {
+    const emoji = EMOJIS[r.categoria] || '🔄';
+    const corTipo = r.tipo === 'receita' ? 'var(--verde)' : 'var(--verm)';
+    const bgTipo = r.tipo === 'receita' ? 'var(--verde-l)' : 'var(--verm-l)';
+    return `<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px;position:relative;opacity:${r.ativo!==false?1:.5};transition:opacity .2s">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <div style="width:36px;height:36px;border-radius:9px;background:${bgTipo};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${emoji}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(r.nome)}</div>
+          <div style="font-size:10px;color:var(--muted)">${esc(r.categoria)} · Dia ${r.dia}</div>
+        </div>
+        <div style="font-size:14px;font-weight:900;color:${corTipo}">${r.tipo==='receita'?'+':'−'} ${fmt(r.valor)}</div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:10px;font-weight:700;background:var(--bg);color:var(--muted2);padding:2px 7px;border-radius:100px">${esc(r.metodo||'Pix')}</span>
+        <div style="display:flex;gap:6px">
+          <label style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);cursor:pointer">
+            <input type="checkbox" ${r.ativo!==false?'checked':''} onchange="toggleRecorr(${i})" style="cursor:pointer"> Ativo
+          </label>
+          <button class="btn bg btn-xs" onclick="openRecorr(${i})">✏️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
 function salvarInv()      { saveUser('inv', INVESTIMENTOS); }
 function salvarCartoes()  { saveUser('cartoes', CARTOES); }
 function salvarCats()     { saveUser('cats', CATS_CUSTOM); }
@@ -5371,7 +5586,7 @@ function logout(){
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
   // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
@@ -5436,7 +5651,7 @@ function resetDadosUsuario(){
   keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
   // Limpa memória
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
