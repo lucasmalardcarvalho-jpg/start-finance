@@ -198,6 +198,18 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .pf2{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)}
 .pw-sm .pw{height:6px}.pw-xs .pw{height:4px}
 
+/* INVESTIMENTO CARD */
+.inv-card2{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);transition:all .2s;position:relative;overflow:hidden}
+.inv-card2:hover{transform:translateY(-2px);box-shadow:var(--sh-md);border-color:var(--azul)}
+.inv-card2 .inv-tipo-badge{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:2px 7px;border-radius:100px;display:inline-block;margin-bottom:8px}
+.inv-card2 .inv-stripe{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:var(--r) 0 0 var(--r)}
+.inv-card2 .inv-nome{font-size:14px;font-weight:800;color:var(--txt);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inv-card2 .inv-ticker{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:10px}
+.inv-card2 .inv-val{font-size:20px;font-weight:900;color:var(--txt)}
+.inv-card2 .inv-rend{font-size:12px;font-weight:700;margin-top:3px}
+.inv-risco-baixo{background:var(--verde-l);color:var(--verde-d)}
+.inv-risco-medio{background:var(--amar-l);color:#92400e}
+.inv-risco-alto{background:var(--verm-l);color:var(--verm)}
 /* DÍVIDA CARD */
 .dv-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);cursor:default;transition:all .2s}
 .dv-card:hover{box-shadow:var(--sh-md);border-color:var(--verm)}
@@ -812,11 +824,64 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- Modal Investimento -->
 <div class="ov" id="ovIv">
-<div class="modal">
+<div class="modal" style="max-width:560px">
   <div class="mh"><div class="mt" id="ivTitle">Novo Investimento</div><button class="mc" onclick="CM('ovIv')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="ivNome" placeholder="Ex: Tesouro Selic, PETR4..."></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="ivTipo"><option>Renda Fixa</option><option>Ações</option><option>FIIs</option><option>Cripto</option><option>Internacional</option><option>Poupança</option><option>Outros</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="text" class="fi valor-input" id="ivValor" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Valor Atual</label><input type="text" class="fi valor-input" id="ivAtual" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
+    <!-- Básico -->
+    <div class="fr"><div class="fg"><label class="fl">Nome / Descrição</label><input class="fi" id="ivNome" placeholder="Ex: Tesouro Selic 2027, PETR4..."></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="ivTipo" onchange="ivTipoChange()">
+      <option value="Renda Fixa">🏦 Renda Fixa</option>
+      <option value="Ações">📊 Ações</option>
+      <option value="FIIs">🏢 FIIs</option>
+      <option value="Cripto">₿ Criptomoedas</option>
+      <option value="Internacional">🌎 Internacional</option>
+      <option value="Previdência">🛡️ Previdência</option>
+      <option value="Poupança">🐷 Poupança</option>
+      <option value="Outros">📦 Outros</option>
+    </select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Subtipo / Produto</label><select class="fs" id="ivSubtipo">
+      <option value="">— Selecione —</option>
+    </select></div><div class="fg"><label class="fl">Ticker / Código</label><input class="fi" id="ivTicker" placeholder="Ex: PETR4, MXRF11, BTC..." style="text-transform:uppercase"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Corretora / Banco</label><input class="fi" id="ivCorretora" placeholder="Ex: XP, NuInvest, Rico, BTG..."></div><div class="fg"><label class="fl">Objetivo</label><select class="fs" id="ivObjetivo">
+      <option value="">— Selecione —</option>
+      <option>Reserva de emergência</option>
+      <option>Aposentadoria</option>
+      <option>Renda passiva</option>
+      <option>Viagem</option>
+      <option>Imóvel</option>
+      <option>Educação</option>
+      <option>Curto prazo</option>
+      <option>Longo prazo</option>
+      <option>Especulação</option>
+    </select></div></div>
+    <!-- Valores -->
+    <div class="fr three">
+      <div class="fg"><label class="fl">Valor Investido (R$)</label><input type="text" class="fi valor-input" id="ivValor" inputmode="decimal" placeholder="0,00" oninput="ivCalcRent()"></div>
+      <div class="fg"><label class="fl">Valor Atual (R$)</label><input type="text" class="fi valor-input" id="ivAtual" inputmode="decimal" placeholder="0,00" oninput="ivCalcRent()"></div>
+      <div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00" style="color:var(--verde)" readonly></div>
+    </div>
+    <!-- Avançado toggle -->
+    <div style="margin:8px 0 4px">
+      <button type="button" onclick="ivToggleAdv()" id="ivAdvBtn" style="background:none;border:none;color:var(--azul);font-size:12px;font-weight:700;cursor:pointer;padding:0">▶ Detalhes avançados (opcional)</button>
+    </div>
+    <div id="ivAdvFields" style="display:none">
+      <div class="fr"><div class="fg"><label class="fl">Data de Entrada</label><input type="date" class="fi" id="ivDataEntrada"></div><div class="fg"><label class="fl">Data de Vencimento</label><input type="date" class="fi" id="ivDataVenc"></div></div>
+      <div class="fr three">
+        <div class="fg"><label class="fl">Indexador</label><select class="fs" id="ivIndexador">
+          <option value="">— Nenhum —</option>
+          <option>CDI</option><option>IPCA+</option><option>Selic</option>
+          <option>Pré-fixado</option><option>IGP-M</option><option>INPC</option><option>Dólar</option>
+        </select></div>
+        <div class="fg"><label class="fl">Liquidez</label><select class="fs" id="ivLiquidez">
+          <option value="">— —</option>
+          <option>Diária (D+0)</option><option>D+1</option><option>D+30</option><option>No vencimento</option><option>Mercado secundário</option>
+        </select></div>
+        <div class="fg"><label class="fl">Risco</label><select class="fs" id="ivRisco">
+          <option value="">— —</option>
+          <option>Baixo</option><option>Médio</option><option>Alto</option><option>Muito Alto</option>
+        </select></div>
+      </div>
+      <div class="fr one"><div class="fg"><label class="fl">Notas</label><input class="fi" id="ivNotas" placeholder="Observações, estratégia..."></div></div>
+    </div>
     <input type="hidden" id="ivIdx" value="-1">
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovIv')">Cancelar</button><button class="btn bp" onclick="saveIv()">💾 Salvar</button></div>
@@ -1224,15 +1289,45 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- ═══ INVESTIMENTOS ═══ -->
 <div class="page" id="page-investimentos">
-  <div class="ph"><div><h1>📈 Investimentos</h1><p>Carteira completa com rentabilidade em tempo real</p></div>
-  <div class="pa"><button class="btn bp" onclick="openIv()">+ Novo investimento</button></div></div>
-  <div class="g3 mb">
+  <div class="ph"><div><h1>📈 Investimentos</h1><p>Sua carteira completa — do iniciante ao avançado</p></div>
+  <div class="pa" style="display:flex;gap:8px">
+    <button class="btn bs btn-sm" id="invViewBtn" onclick="invToggleView()" title="Alternar visualização">⊞ Cards</button>
+    <button class="btn bp" onclick="openIv()">+ Novo</button>
+  </div></div>
+
+  <!-- KPIs -->
+  <div class="g4 mb" id="invKpis">
     <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💼</div></div><div class="kpi-v" id="ivTotInv">R$ 0,00</div><div class="kpi-l">Total investido</div></div>
-    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📈</div></div><div class="kpi-v" id="ivTotAt">R$ 0,00</div><div class="kpi-l">Valor atual</div></div>
-    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💹</div></div><div class="kpi-v" id="ivRentTot">+0,00%</div><div class="kpi-l">Rentabilidade total</div></div>
+    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📈</div></div><div class="kpi-v" id="ivTotAt">R$ 0,00</div><div class="kpi-l">Patrimônio atual</div></div>
+    <div class="kpi" id="ivKpiRend" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v" id="ivRendR">R$ 0,00</div><div class="kpi-l">Rendimento (R$)</div></div>
+    <div class="kpi" id="ivKpiPct" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💹</div></div><div class="kpi-v" id="ivRentTot">0,00%</div><div class="kpi-l">Rentabilidade total</div></div>
   </div>
+
+  <!-- Visão geral: Donut + Alocação + Destaques -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px" id="invOverview">
+    <!-- Distribuição -->
+    <div class="card" style="padding:18px">
+      <div style="font-size:12px;font-weight:800;color:var(--txt);margin-bottom:12px">🍩 Distribuição por Tipo</div>
+      <div id="invDonut"></div>
+    </div>
+    <!-- Alocação por tipo barras -->
+    <div class="card" style="padding:18px">
+      <div style="font-size:12px;font-weight:800;color:var(--txt);margin-bottom:12px">📊 Alocação</div>
+      <div id="invAlocacao" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+    <!-- Destaques -->
+    <div class="card" style="padding:18px">
+      <div style="font-size:12px;font-weight:800;color:var(--txt);margin-bottom:12px">🏆 Destaques</div>
+      <div id="invDestaques"></div>
+    </div>
+  </div>
+
+  <!-- Cards / Tabela (toggle) -->
   <div id="invGrid" class="g4 mb"></div>
-  <div class="card mb"><div class="ch"><div><div class="ct">Distribuição da Carteira</div></div></div><div id="invDonut"></div></div>
+  <div id="invTabela" style="display:none" class="card mb">
+    <div class="ch"><div class="ct">📋 Carteira Detalhada</div></div>
+    <div style="overflow-x:auto;padding:0 0 16px"><table class="st" style="font-size:12px" id="invTabelaBody"></table></div>
+  </div>
 </div>
 
 <!-- ═══ PLANEJAMENTO ═══ -->
@@ -3630,55 +3725,268 @@ function renderMetas(){
 // ════════════════════════════════════════════════
 // INVESTIMENTOS
 // ════════════════════════════════════════════════
+// ── Subtipos por tipo de investimento ──
+const IV_SUBTIPOS = {
+  'Renda Fixa':['CDB','LCI','LCA','Tesouro Selic','Tesouro IPCA+','Tesouro Prefixado','LC','LCE','Debêntures','CRI','CRA','RDB','Poupança'],
+  'Ações':['Ação ON (Ordinária)','Ação PN (Preferencial)','ETF Nacional','Small Cap','Large Cap','BDR','Stock USA'],
+  'FIIs':['FII de Tijolo','FII de Papel','FII Misto','FoF (Fundo de Fundos)','ETF de FII'],
+  'Cripto':['Bitcoin (BTC)','Ethereum (ETH)','Stablecoin (USDT/USDC)','Altcoin','DeFi Token','NFT'],
+  'Internacional':['ETF Internacional','Stock USA','REIT','BDR','Fundo Cambial'],
+  'Previdência':['PGBL','VGBL','Previdência Privada'],
+  'Poupança':['Poupança'],
+  'Outros':['COE','Ouro/Commodities','Fundo Multimercado','Fundo Imobiliário','Criptoativo','Outro']
+};
+
+// ── Cores por tipo ──
+const TIPO_CORES2={'Renda Fixa':'#3B6FF0','Ações':'#10B981','FIIs':'#F59E0B','Cripto':'#F97316','Internacional':'#8B5CF6','Previdência':'#EC4899','Poupança':'#14B8A6','Outros':'#9CA3AF'};
+
+let INV_VIEW = 'cards'; // 'cards' | 'tabela'
+
+function ivTipoChange(){
+  const tipo = document.getElementById('ivTipo').value;
+  const subs = IV_SUBTIPOS[tipo] || ['Outro'];
+  const sel = document.getElementById('ivSubtipo');
+  sel.innerHTML = '<option value="">— Selecione —</option>' + subs.map(s=>`<option>${s}</option>`).join('');
+  // Mostrar/ocultar ticker
+  const tickerFg = document.getElementById('ivTicker').closest('.fg');
+  const showTicker = ['Ações','FIIs','Cripto','Internacional'].includes(tipo);
+  if(tickerFg) tickerFg.style.display = showTicker ? '' : 'none';
+}
+
+function ivCalcRent(){
+  const inv = parseBRL(document.getElementById('ivValor').value)||0;
+  const atual = parseBRL(document.getElementById('ivAtual').value)||0;
+  const r = inv>0 ? ((atual-inv)/inv*100) : 0;
+  const el = document.getElementById('ivRent');
+  if(el){ el.value = r.toFixed(2); el.style.color = r>=0?'var(--verde)':'var(--verm)'; }
+}
+
+function ivToggleAdv(){
+  const el = document.getElementById('ivAdvFields');
+  const btn = document.getElementById('ivAdvBtn');
+  const open = el.style.display==='none';
+  el.style.display = open?'':'none';
+  btn.textContent = (open?'▼':'▶') + ' Detalhes avançados (opcional)';
+}
+
+function invToggleView(){
+  INV_VIEW = INV_VIEW==='cards' ? 'tabela' : 'cards';
+  const btn = document.getElementById('invViewBtn');
+  if(btn) btn.textContent = INV_VIEW==='cards' ? '⊞ Cards' : '☰ Tabela';
+  renderInv();
+}
+
 function openIv(i=-1){
   document.getElementById('ivIdx').value=i;
-  if(i>=0){const v=INVESTIMENTOS[i];const brlIv=n=>(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ivNome').value=v.nome;document.getElementById('ivTipo').value=v.tipo;document.getElementById('ivValor').value=brlIv(v.valor);document.getElementById('ivAtual').value=brlIv(v.atual);document.getElementById('ivRent').value=v.rent||0;document.getElementById('ivTitle').textContent='✏️ Editar';}
-  else{['ivNome','ivValor','ivAtual','ivRent'].forEach(id=>document.getElementById(id).value='');document.getElementById('ivTitle').textContent='Novo Investimento';}
+  ivTipoChange(); // populate subtipos
+  document.getElementById('ivAdvFields').style.display='none';
+  document.getElementById('ivAdvBtn').textContent='▶ Detalhes avançados (opcional)';
+  if(i>=0){
+    const v=INVESTIMENTOS[i];
+    const brl=n=>(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    document.getElementById('ivNome').value=v.nome||'';
+    document.getElementById('ivTipo').value=v.tipo||'Renda Fixa';
+    ivTipoChange();
+    document.getElementById('ivSubtipo').value=v.subtipo||'';
+    document.getElementById('ivTicker').value=v.ticker||'';
+    document.getElementById('ivCorretora').value=v.corretora||'';
+    document.getElementById('ivObjetivo').value=v.objetivo||'';
+    document.getElementById('ivValor').value=brl(v.valor);
+    document.getElementById('ivAtual').value=brl(v.atual||v.valor);
+    document.getElementById('ivRent').value=v.rent||0;
+    document.getElementById('ivDataEntrada').value=v.dataEntrada||'';
+    document.getElementById('ivDataVenc').value=v.dataVenc||'';
+    document.getElementById('ivIndexador').value=v.indexador||'';
+    document.getElementById('ivLiquidez').value=v.liquidez||'';
+    document.getElementById('ivRisco').value=v.risco||'';
+    document.getElementById('ivNotas').value=v.notas||'';
+    // Mostra avançados se tiver dados
+    if(v.dataEntrada||v.dataVenc||v.indexador||v.liquidez||v.risco||v.notas){
+      document.getElementById('ivAdvFields').style.display='';
+      document.getElementById('ivAdvBtn').textContent='▼ Detalhes avançados (opcional)';
+    }
+    document.getElementById('ivTitle').textContent='✏️ Editar Investimento';
+  } else {
+    ['ivNome','ivTicker','ivCorretora','ivNotas'].forEach(id=>document.getElementById(id).value='');
+    ['ivSubtipo','ivObjetivo','ivIndexador','ivLiquidez','ivRisco'].forEach(id=>document.getElementById(id).value='');
+    ['ivValor','ivAtual','ivDataEntrada','ivDataVenc'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('ivRent').value='';
+    document.getElementById('ivTitle').textContent='Novo Investimento';
+  }
   OM('ovIv');
 }
+
 function saveIv(){
   const i=parseInt(document.getElementById('ivIdx').value);
-  const v={nome:document.getElementById('ivNome').value,tipo:document.getElementById('ivTipo').value,valor:parseBRL(document.getElementById('ivValor').value)||0,atual:parseBRL(document.getElementById('ivAtual').value)||0,rent:parseFloat(document.getElementById('ivRent').value)||0};
-  if(!v.nome||!v.valor)return toast('Preencha nome e valor','warning');
-  if(i>=0)INVESTIMENTOS[i]=v;else INVESTIMENTOS.push(v);
-  salvarInv();CM('ovIv');renderInv();renderDash();toast('✅ Salvo!','success');
+  const valInv = parseBRL(document.getElementById('ivValor').value)||0;
+  const valAt  = parseBRL(document.getElementById('ivAtual').value)||valInv;
+  const rent   = valInv>0?((valAt-valInv)/valInv*100):parseFloat(document.getElementById('ivRent').value)||0;
+  const v={
+    nome:document.getElementById('ivNome').value,
+    tipo:document.getElementById('ivTipo').value,
+    subtipo:document.getElementById('ivSubtipo').value||'',
+    ticker:document.getElementById('ivTicker').value.toUpperCase()||'',
+    corretora:document.getElementById('ivCorretora').value||'',
+    objetivo:document.getElementById('ivObjetivo').value||'',
+    valor:valInv, atual:valAt, rent,
+    dataEntrada:document.getElementById('ivDataEntrada').value||'',
+    dataVenc:document.getElementById('ivDataVenc').value||'',
+    indexador:document.getElementById('ivIndexador').value||'',
+    liquidez:document.getElementById('ivLiquidez').value||'',
+    risco:document.getElementById('ivRisco').value||'',
+    notas:document.getElementById('ivNotas').value||''
+  };
+  if(!v.nome||!v.valor) return toast('Preencha nome e valor investido','warning');
+  if(i>=0) INVESTIMENTOS[i]=v; else INVESTIMENTOS.push(v);
+  salvarInv(); CM('ovIv'); renderInv(); renderDash(); toast('✅ Investimento salvo!','success');
 }
-function delIv(i){INVESTIMENTOS.splice(i,1);salvarInv();renderInv();toast('🗑️ Removido','info')}
+
+function delIv(i){
+  showConfirm(`Remover <strong>${esc(INVESTIMENTOS[i]?.nome)}</strong> da carteira?`,()=>{
+    INVESTIMENTOS.splice(i,1); salvarInv(); renderInv(); toast('🗑️ Removido','info');
+  },'🗑️','🗑️ Remover','bd');
+}
 
 function renderInv(){
-  const totI=INVESTIMENTOS.reduce((s,i)=>s+i.valor,0);
-  const totA=INVESTIMENTOS.reduce((s,i)=>s+(i.atual||i.valor),0);
-  const rent=totI>0?(totA-totI)/totI*100:0;
-  document.getElementById('ivTotInv').textContent=fmt(totI);
-  document.getElementById('ivTotAt').textContent=fmt(totA);
-  document.getElementById('ivRentTot').textContent=(rent>=0?'+':'')+rent.toFixed(2)+'%';
-  document.getElementById('ivRentTot').style.color=rent>=0?'var(--verde)':'var(--verm)';
-  const el=document.getElementById('invGrid');if(!el)return;
-  if(!INVESTIMENTOS.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">📈</div><h3>Carteira vazia</h3><p>Adicione seus investimentos</p><button class="btn bp" style="margin-top:12px" onclick="openIv()">+ Adicionar</button></div></div>`;document.getElementById('invDonut').innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Sem dados</div>';return;}
-  el.innerHTML=INVESTIMENTOS.map((v,i)=>{
-    const diff=(v.atual||v.valor)-v.valor;const pct=v.valor>0?diff/v.valor*100:0;
-    return `<div class="inv-card"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">${esc(v.tipo)}</div>
-      <div style="font-size:14px;font-weight:800;margin-bottom:4px">${esc(v.nome)}</div>
-      <div style="font-size:20px;font-weight:900;color:var(--azul)">${fmt(v.atual||v.valor)}</div>
-      <div style="font-size:11px;font-weight:700;color:${pct>=0?'var(--verde)':'var(--verm)'};margin-top:4px">${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}% | R$${diff>=0?'+':''}${diff.toFixed(0)}</div>
-      <div style="display:flex;gap:5px;margin-top:10px">
-        <button class="btn bg btn-xs" onclick="openIv(${i})">✏️</button>
-        <button class="btn bd btn-xs" onclick="delIv(${i})">🗑️</button>
-      </div>
-    </div>`;
-  }).join('');
-  // Donut
-  const tipos={};INVESTIMENTOS.forEach(v=>{tipos[v.tipo]=(tipos[v.tipo]||0)+(v.atual||v.valor)});
+  const totI = INVESTIMENTOS.reduce((s,v)=>s+(v.valor||0),0);
+  const totA = INVESTIMENTOS.reduce((s,v)=>s+(v.atual||v.valor||0),0);
+  const rend  = totA - totI;
+  const rent  = totI>0 ? rend/totI*100 : 0;
+
+  // KPIs
+  const set=(id,txt,cor)=>{const el=document.getElementById(id);if(el){el.textContent=txt;if(cor)el.style.color=cor;}};
+  set('ivTotInv', fmt(totI));
+  set('ivTotAt',  fmt(totA));
+  set('ivRendR',  (rend>=0?'+':'')+fmt(rend), rend>=0?'var(--verde)':'var(--verm)');
+  set('ivRentTot',(rent>=0?'+':'')+rent.toFixed(2)+'%', rent>=0?'var(--verde)':'var(--verm)');
+  document.getElementById('ivKpiRend')?.classList.toggle('g', rend>=0);
+  document.getElementById('ivKpiRend')?.classList.toggle('r', rend<0);
+  document.getElementById('ivKpiPct')?.classList.toggle('g', rent>=0);
+  document.getElementById('ivKpiPct')?.classList.toggle('r', rent<0);
+
+  const el=document.getElementById('invGrid'); if(!el) return;
+
+  if(!INVESTIMENTOS.length){
+    el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">📈</div>
+      <h3>Carteira vazia</h3>
+      <p style="max-width:320px;margin:0 auto 16px">Comece adicionando seu primeiro investimento. Pode ser qualquer coisa: poupança, Tesouro Selic, ações ou cripto!</p>
+      <button class="btn bp" onclick="openIv()">+ Adicionar primeiro investimento</button></div></div>`;
+    ['invDonut','invAlocacao','invDestaques'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">Sem dados</div>';});
+    return;
+  }
+
+  // ── Donut ──
+  const tipos={};
+  INVESTIMENTOS.forEach(v=>{tipos[v.tipo]=(tipos[v.tipo]||0)+(v.atual||v.valor||0);});
   const topT=Object.entries(tipos).sort((a,b)=>b[1]-a[1]);
   const totD=topT.reduce((s,[,v])=>s+v,0)||1;
-  const circ=2*Math.PI*40;let off=0;
-  let svg=`<svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" stroke-width="14"/>`;
-  topT.forEach(([tp,val])=>{const p=val/totD;const d=p*circ;const cor=TIPO_CORES[tp.replace(/ /g,'_')]||'#9CA3AF';svg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${cor}" stroke-width="14" stroke-dasharray="${d.toFixed(1)} ${(circ-d).toFixed(1)}" stroke-dashoffset="${(-off*circ).toFixed(1)}" transform="rotate(-90 50 50)"/>`;off+=p;});
-  svg+=`<text x="50" y="46" text-anchor="middle" font-size="9" font-weight="800" fill="#111" font-family="Cabinet Grotesk">Carteira</text><text x="50" y="58" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Cabinet Grotesk">${fmtSm(totA)}</text></svg>`;
+  const circ=2*Math.PI*40; let off=0;
+  let svg=`<svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" stroke-width="14"/>`;
+  topT.forEach(([tp,val])=>{const p=val/totD;const d=p*circ;const cor=TIPO_CORES2[tp]||'#9CA3AF';svg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${cor}" stroke-width="14" stroke-dasharray="${d.toFixed(1)} ${(circ-d).toFixed(1)}" stroke-dashoffset="${(-off*circ).toFixed(1)}" transform="rotate(-90 50 50)"/>`;off+=p;});
+  svg+=`<text x="50" y="46" text-anchor="middle" font-size="9" font-weight="800" fill="currentColor" font-family="inherit">Carteira</text><text x="50" y="58" text-anchor="middle" font-size="8" fill="#6B7280" font-family="inherit">${fmtSm(totA)}</text></svg>`;
   let leg=`<div style="flex:1;display:flex;flex-direction:column;gap:6px">`;
-  topT.forEach(([tp,val])=>{const p=Math.round(val/totD*100);const cor=TIPO_CORES[tp.replace(/ /g,'_')]||'#9CA3AF';leg+=`<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600"><div style="width:7px;height:7px;border-radius:50%;background:${cor}"></div>${tp}<span style="margin-left:auto;color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800">${fmtSm(val)}</span></div>`;});
+  topT.forEach(([tp,val])=>{const p=Math.round(val/totD*100);const cor=TIPO_CORES2[tp]||'#9CA3AF';leg+=`<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer"><div style="width:8px;height:8px;border-radius:50%;background:${cor};flex-shrink:0"></div><span style="flex:1">${tp}</span><span style="color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800;min-width:50px;text-align:right">${fmtSm(val)}</span></div>`;});
   leg+=`</div>`;
-  document.getElementById('invDonut').innerHTML=`<div class="dw">${svg}${leg}</div>`;
+  const donutEl=document.getElementById('invDonut');
+  if(donutEl) donutEl.innerHTML=`<div class="dw">${svg}${leg}</div>`;
+
+  // ── Alocação barras ──
+  const alocEl=document.getElementById('invAlocacao');
+  if(alocEl) alocEl.innerHTML=topT.map(([tp,val])=>{
+    const p=(val/totD*100);const cor=TIPO_CORES2[tp]||'#9CA3AF';
+    return `<div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px"><span>${tp}</span><span style="color:var(--muted)">${p.toFixed(1)}%</span></div>
+      <div style="height:7px;background:var(--border);border-radius:100px;overflow:hidden">
+        <div style="height:100%;width:${p}%;background:${cor};border-radius:100px;transition:width .6s ease"></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:1px">${fmt(val)}</div>
+    </div>`;
+  }).join('');
+
+  // ── Destaques ──
+  const destEl=document.getElementById('invDestaques');
+  if(destEl && INVESTIMENTOS.length){
+    const withPct=INVESTIMENTOS.map(v=>({...v,pct:v.valor>0?((v.atual||v.valor)-v.valor)/v.valor*100:0,diff:(v.atual||v.valor)-v.valor}));
+    const melhor=withPct.reduce((a,b)=>b.pct>a.pct?b:a);
+    const pior  =withPct.reduce((a,b)=>b.pct<a.pct?b:a);
+    const maior =withPct.reduce((a,b)=>(b.atual||b.valor)>(a.atual||a.valor)?b:a);
+    const rendPositivo=withPct.filter(v=>v.diff>0).reduce((s,v)=>s+v.diff,0);
+    destEl.innerHTML=`
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:var(--verde-l);border-radius:var(--r-sm);padding:8px 10px">
+          <div style="font-size:10px;color:var(--verde-d);font-weight:700;margin-bottom:2px">🏆 Melhor desempenho</div>
+          <div style="font-size:12px;font-weight:800">${esc(melhor.nome)}</div>
+          <div style="font-size:11px;color:var(--verde-d);font-weight:700">+${melhor.pct.toFixed(2)}% · +${fmt(melhor.diff)}</div>
+        </div>
+        ${pior.pct<0?`<div style="background:var(--verm-l);border-radius:var(--r-sm);padding:8px 10px">
+          <div style="font-size:10px;color:var(--verm);font-weight:700;margin-bottom:2px">⚠️ Pior desempenho</div>
+          <div style="font-size:12px;font-weight:800">${esc(pior.nome)}</div>
+          <div style="font-size:11px;color:var(--verm);font-weight:700">${pior.pct.toFixed(2)}% · ${fmt(pior.diff)}</div>
+        </div>`:''}
+        <div style="background:var(--azul-l);border-radius:var(--r-sm);padding:8px 10px">
+          <div style="font-size:10px;color:var(--azul);font-weight:700;margin-bottom:2px">💰 Maior posição</div>
+          <div style="font-size:12px;font-weight:800">${esc(maior.nome)}</div>
+          <div style="font-size:11px;color:var(--azul);font-weight:700">${fmt(maior.atual||maior.valor)}</div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">💵 Lucro total: <strong style="color:${rendPositivo>=0?'var(--verde)':'var(--verm)'}">${rendPositivo>=0?'+':''}${fmt(rendPositivo)}</strong></div>
+      </div>`;
+  }
+
+  // ── Cards / Tabela ──
+  const tabEl=document.getElementById('invTabela');
+  const tblBd=document.getElementById('invTabelaBody');
+  const gridEl=document.getElementById('invGrid');
+
+  if(INV_VIEW==='tabela'){
+    gridEl.style.display='none'; if(tabEl) tabEl.style.display='';
+    if(tblBd) tblBd.innerHTML=`
+      <thead><tr><th>Ativo</th><th>Tipo</th><th>Subtipo</th><th>Corretora</th><th>Investido</th><th>Atual</th><th>Rendimento</th><th>Rent%</th><th>Risco</th><th>Objetivo</th><th></th></tr></thead>
+      <tbody>${INVESTIMENTOS.map((v,i)=>{
+        const diff=(v.atual||v.valor)-v.valor; const pct=v.valor>0?diff/v.valor*100:0;
+        const cor=TIPO_CORES2[v.tipo]||'#9CA3AF';
+        return `<tr>
+          <td><div style="font-weight:800">${esc(v.nome)}</div>${v.ticker?`<div style="font-size:10px;color:var(--muted)">${esc(v.ticker)}</div>`:''}</td>
+          <td><span style="background:${cor}20;color:${cor};padding:1px 6px;border-radius:100px;font-size:10px;font-weight:700">${esc(v.tipo)}</span></td>
+          <td style="color:var(--muted);font-size:11px">${esc(v.subtipo||'—')}</td>
+          <td style="color:var(--muted);font-size:11px">${esc(v.corretora||'—')}</td>
+          <td style="font-weight:700">${fmt(v.valor)}</td>
+          <td style="font-weight:800">${fmt(v.atual||v.valor)}</td>
+          <td style="font-weight:700;color:${diff>=0?'var(--verde)':'var(--verm)'}">${diff>=0?'+':''}${fmt(diff)}</td>
+          <td style="font-weight:700;color:${pct>=0?'var(--verde)':'var(--verm)'}">${pct>=0?'+':''}${pct.toFixed(2)}%</td>
+          <td>${v.risco?`<span class="inv-risco-${v.risco.toLowerCase().replace(' ','')}" style="font-size:10px;padding:2px 6px;border-radius:100px;font-weight:700">${esc(v.risco)}</span>`:'—'}</td>
+          <td style="font-size:11px;color:var(--muted)">${esc(v.objetivo||'—')}</td>
+          <td><div style="display:flex;gap:4px"><button class="btn bg btn-xs" onclick="openIv(${i})">✏️</button><button class="btn bd btn-xs" onclick="delIv(${i})">🗑️</button></div></td>
+        </tr>`;
+      }).join('')}</tbody>`;
+  } else {
+    if(tabEl) tabEl.style.display='none'; gridEl.style.display='';
+    gridEl.innerHTML=INVESTIMENTOS.map((v,i)=>{
+      const diff=(v.atual||v.valor)-v.valor; const pct=v.valor>0?diff/v.valor*100:0;
+      const cor=TIPO_CORES2[v.tipo]||'#9CA3AF';
+      const riscoClass=v.risco?`inv-risco-${v.risco.toLowerCase().replace(' ','').replace('ú','u').replace('é','e').replace('í','i')}`:null;
+      return `<div class="inv-card2">
+        <div class="inv-stripe" style="background:${cor}"></div>
+        <div style="padding-left:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <span class="inv-tipo-badge" style="background:${cor}20;color:${cor}">${esc(v.tipo)}</span>
+            ${v.risco&&riscoClass?`<span class="${riscoClass}" style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px">${esc(v.risco)}</span>`:''}
+          </div>
+          <div class="inv-nome">${esc(v.nome)}</div>
+          <div class="inv-ticker">${v.ticker?esc(v.ticker)+' · ':''} ${esc(v.subtipo||v.tipo)}${v.corretora?' · '+esc(v.corretora):''}</div>
+          <div class="inv-val">${fmt(v.atual||v.valor)}</div>
+          <div class="inv-rend" style="color:${pct>=0?'var(--verde)':'var(--verm)'}">
+            ${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}% &nbsp;·&nbsp; ${diff>=0?'+':''}${fmt(diff)}
+          </div>
+          ${v.objetivo?`<div style="font-size:10px;color:var(--muted);margin-top:4px">🎯 ${esc(v.objetivo)}</div>`:''}
+          ${v.dataVenc?`<div style="font-size:10px;color:var(--muted)">📅 Vence: ${new Date(v.dataVenc).toLocaleDateString('pt-BR')}</div>`:''}
+          <div style="display:flex;gap:5px;margin-top:10px">
+            <button class="btn bg btn-xs" style="flex:1" onclick="openIv(${i})">✏️ Editar</button>
+            <button class="btn bd btn-xs" onclick="delIv(${i})">🗑️</button>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
 }
 
 // ════════════════════════════════════════════════
