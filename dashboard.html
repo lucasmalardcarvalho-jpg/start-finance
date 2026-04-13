@@ -671,6 +671,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome do Cartão</label><input class="fi" id="ctNome" placeholder="Ex: Nubank Roxinho, Itaú..."></div><div class="fg"><label class="fl">Bandeira</label><select class="fs" id="ctBand"><option>Visa</option><option>Mastercard</option><option>Elo</option><option>American Express</option></select></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="text" class="fi valor-input" id="ctLim" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Final do Cartão (4 dígitos)</label><input type="text" class="fi" id="ctFinal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Ex: 1234" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)"></div><div class="fg"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor do Cartão</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="coresGrid">
         <div class="cor-opt sel" style="background:linear-gradient(135deg,#6B21A8,#A855F7)" onclick="selCor(this,'linear-gradient(135deg,#6B21A8,#A855F7)')"></div>
@@ -2920,14 +2921,14 @@ function selCor(el,cor){document.querySelectorAll('#coresGrid .cor-opt').forEach
 
 function openCt(idx=-1){
   document.getElementById('ctIdx').value=idx;
-  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
-  else{document.getElementById('ctNome').value='';document.getElementById('ctLim').value='';document.getElementById('ctTitle').textContent='Adicionar Cartão';}
+  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctFinal').value=c.final||'';document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
+  else{document.getElementById('ctNome').value='';document.getElementById('ctLim').value='';document.getElementById('ctFinal').value='';document.getElementById('ctTitle').textContent='Adicionar Cartão';}
   OM('ovCt');
 }
 
 function saveCt(){
   const idx=parseInt(document.getElementById('ctIdx').value);
-  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value};
+  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value,final:document.getElementById('ctFinal').value||''};
   if(!c.nome)return toast('Preencha o nome','warning');
   if(idx>=0)CARTOES[idx]=c;else CARTOES.push(c);
   salvarCartoes();CM('ovCt');renderCartoes();renderDash();toast('✅ Cartão salvo!','success');
@@ -2969,7 +2970,7 @@ function renderCartoes(){
     const txCartao=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0);
     return `<div>
       <div class="credit-card" style="background:${c.cor}">
-        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:10px">${esc(c.nome)} · ${esc(c.bandeira)}</div>
+        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:10px">${esc(c.nome)} · ${esc(c.bandeira)}${c.final?` · •••• ${esc(c.final)}`:''}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:4px">Fatura ${getMesNome()}</div>
         <div style="font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:6px">Total comprometido: ${fmt(comprometido)}</div>
