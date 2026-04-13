@@ -673,6 +673,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="fr"><div class="fg"><label class="fl">Banco Emissor</label><select class="fs" id="ctBanco"><option value="">— Selecione —</option><option>Agibank</option><option>Banco do Brasil</option><option>Banrisul</option><option>BMG</option><option>Bradesco</option><option>BRB</option><option>BTG</option><option>BV</option><option>C6</option><option>Caixa</option><option>Crefisa</option><option>HSBC</option><option>Inter</option><option>Itaú</option><option>Mercado Pago</option><option>Neon</option><option>Next</option><option>Nubank</option><option>Original</option><option>Pagbank</option><option>Pan</option><option>PicPay</option><option>Porto</option><option>Safra</option><option>Santander</option><option>Sicoob</option><option>Sicredi</option><option>Willbank</option><option>XP</option><option>Cora</option><option>Wise</option><option>Nomad</option><option>Digio</option><option>Outro</option></select></div><div class="fg"></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="text" class="fi valor-input" id="ctLim" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Final do Cartão (4 dígitos)</label><input type="text" class="fi" id="ctFinal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Ex: 1234" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)"></div><div class="fg"></div></div>
+    <div class="fr one"><div class="fg" style="padding:12px 0 4px">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
+        <label class="switch" style="flex-shrink:0"><input type="checkbox" id="ctDebitoAuto"><span class="slider"></span></label>
+        <span style="font-size:13px;font-weight:600;color:var(--txt)">Fatura paga em <strong>débito automático</strong></span>
+        <span style="font-size:11px;color:var(--muted)">(pago automaticamente no vencimento)</span>
+      </label>
+    </div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor do Cartão</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="coresGrid">
         <div class="cor-opt sel" style="background:linear-gradient(135deg,#6B21A8,#A855F7)" onclick="selCor(this,'linear-gradient(135deg,#6B21A8,#A855F7)')"></div>
@@ -2922,14 +2929,14 @@ function selCor(el,cor){document.querySelectorAll('#coresGrid .cor-opt').forEach
 
 function openCt(idx=-1){
   document.getElementById('ctIdx').value=idx;
-  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctBanco').value=c.banco||'';document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctFinal').value=c.final||'';document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
-  else{document.getElementById('ctNome').value='';document.getElementById('ctBanco').value='';document.getElementById('ctLim').value='';document.getElementById('ctFinal').value='';document.getElementById('ctTitle').textContent='Adicionar Cartão';}
+  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctBanco').value=c.banco||'';document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctFinal').value=c.final||'';document.getElementById('ctDebitoAuto').checked=!!c.debitoAuto;document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
+  else{document.getElementById('ctNome').value='';document.getElementById('ctBanco').value='';document.getElementById('ctLim').value='';document.getElementById('ctFinal').value='';document.getElementById('ctDebitoAuto').checked=false;document.getElementById('ctTitle').textContent='Adicionar Cartão';}
   OM('ovCt');
 }
 
 function saveCt(){
   const idx=parseInt(document.getElementById('ctIdx').value);
-  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,banco:document.getElementById('ctBanco').value||'',limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value,final:document.getElementById('ctFinal').value||''};
+  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,banco:document.getElementById('ctBanco').value||'',limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value,final:document.getElementById('ctFinal').value||'',debitoAuto:document.getElementById('ctDebitoAuto').checked};
   if(!c.nome)return toast('Preencha o nome','warning');
   if(idx>=0)CARTOES[idx]=c;else CARTOES.push(c);
   salvarCartoes();CM('ovCt');renderCartoes();renderDash();toast('✅ Cartão salvo!','success');
@@ -2971,7 +2978,10 @@ function renderCartoes(){
     const txCartao=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0);
     return `<div>
       <div class="credit-card" style="background:${c.cor}">
-        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:4px">${esc(c.nome)}${c.final?` · •••• ${esc(c.final)}`:''}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="font-size:11px;font-weight:700;opacity:.8">${esc(c.nome)}${c.final?` · •••• ${esc(c.final)}`:''}</div>
+          ${c.debitoAuto?`<span style="font-size:9px;font-weight:700;background:rgba(16,185,129,.25);color:#6ee7b7;padding:2px 6px;border-radius:100px">🔄 Déb. Auto</span>`:''}
+        </div>
         <div style="font-size:10px;opacity:.65;margin-bottom:8px">${c.banco?esc(c.banco)+' · ':''}${esc(c.bandeira)}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:4px">Fatura ${getMesNome()}</div>
         <div style="font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
@@ -4689,6 +4699,7 @@ function renderVencimentos(){
             </div>`:''}
             <!-- Info fechamento -->
             ${f.fechDia>0?`<div style="font-size:10px;color:var(--muted);margin-top:4px">🔒 Fecha dia ${f.fechDia}</div>`:''}
+            ${f.cartao.debitoAuto?`<div style="margin-top:8px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--verde-d);background:var(--verde-l);border-radius:6px;padding:5px 8px">🔄 Débito automático ativo — pago automaticamente no vencimento</div>`:''}
           </div>`;
         }).join('')}
       </div>
@@ -4716,7 +4727,7 @@ function coletarVencimentos(ano, mes){
     const mLabel=`${MESES_PT[mes]}/${ano}`;
     const fatura=TODAS_TX.filter(t=>t.cartao===ct.nome&&t.valor<0&&t.mes_ano===mLabel).reduce((s,t)=>s+Math.abs(t.valor),0);
     const diasAte=Math.ceil((dtVenc-hoje)/(86400000));
-    if(dtVenc>=new Date(ano,mes,1)) items.push({dia:venc,tipo:'cartao',nome:`💳 ${ct.nome}`,valor:fatura,desc:`Fatura ${MESES_NM[mes]}`,diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal'});
+    if(dtVenc>=new Date(ano,mes,1)) items.push({dia:venc,tipo:'cartao',nome:`💳 ${ct.nome}`,valor:fatura,desc:`Fatura ${MESES_NM[mes]}`,diasAte,debitoAuto:!!ct.debitoAuto,urgencia:ct.debitoAuto?'normal':(diasAte<=3?'critico':diasAte<=7?'atencao':'normal')});
   });
 
   // 2) Despesas fixas com vencimento neste mês
@@ -4795,7 +4806,7 @@ function renderVencimentosCal(){
       <div style="display:flex;align-items:center;gap:8px">
         <div style="width:32px;height:32px;border-radius:8px;background:${bgUrg};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">${esc(it.nome.split(' ')[0])}</div>
         <div>
-          <div style="font-size:12px;font-weight:700">${esc(it.nome.replace(/^[^ ]+ /,''))}</div>
+          <div style="font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">${esc(it.nome.replace(/^[^ ]+ /,''))}${it.debitoAuto?'<span style="font-size:9px;font-weight:700;background:var(--verde-l);color:var(--verde-d);padding:1px 5px;border-radius:100px">🔄 Déb. Auto</span>':''}</div>
           <div style="font-size:10px;color:var(--muted)">${esc(it.desc)} · Dia ${it.dia}</div>
         </div>
       </div>
