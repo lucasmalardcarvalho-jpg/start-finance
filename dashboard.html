@@ -1531,34 +1531,40 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
   <!-- KPIs urgência -->
   <div class="g4 mb" id="vcalKpis"></div>
-  <div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
     <!-- Calendário -->
     <div class="card">
-      <div class="ch">
-        <div><div class="ct" id="vcalTitle">—</div><div class="cs" id="vcalTitleSub" style="margin-top:2px"></div></div>
-        <div style="display:flex;gap:6px">
+      <div class="ch" style="padding:14px 16px 10px">
+        <div><div class="ct" id="vcalTitle">—</div><div class="cs" id="vcalTitleSub" style="margin-top:1px"></div></div>
+        <div style="display:flex;gap:5px">
           <button class="btn bg btn-sm" onclick="vcalNav(-1)">◀</button>
           <button class="btn bg btn-sm" onclick="vcalNav(1)">▶</button>
           <button class="btn bp btn-sm" onclick="vcalHoje()">Hoje</button>
         </div>
       </div>
-      <div style="padding:0 16px 16px">
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px">
-          ${['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'].map(d=>`<div style="font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:4px 0">${d}</div>`).join('')}
+      <div style="padding:0 12px 12px">
+        <div id="vcalDows" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:4px">
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Dom</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Seg</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Ter</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Qua</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Qui</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Sex</div>
+          <div style="font-size:9.5px;font-weight:700;color:var(--muted);text-align:center;padding:3px 0">Sáb</div>
         </div>
-        <div id="vcalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
+        <div id="vcalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px"></div>
         <!-- Legenda -->
-        <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:#EF444420;border:1.5px solid #EF4444"></div>Crítico (≤3 dias)</div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:#F59E0B20;border:1.5px solid #F59E0B"></div>Atenção (≤7 dias)</div>
-          <div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--muted)"><div style="width:10px;height:10px;border-radius:3px;background:#3B6FF018;border:1.5px solid #3B6FF0"></div>Normal</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:9px;height:9px;border-radius:2px;background:#EF444420;border:1.5px solid #EF4444"></div>Crítico (≤3d)</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:9px;height:9px;border-radius:2px;background:#F59E0B20;border:1.5px solid #F59E0B"></div>Atenção (≤7d)</div>
+          <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted)"><div style="width:9px;height:9px;border-radius:2px;background:#3B6FF018;border:1.5px solid #3B6FF0"></div>Normal</div>
         </div>
       </div>
     </div>
     <!-- Lista de vencimentos -->
     <div class="card">
       <div class="ch"><div><div class="ct">📋 Vencimentos do Mês</div><div class="cs" id="vcalListSub">—</div></div></div>
-      <div id="vcalList" style="padding:0 14px 14px;max-height:520px;overflow-y:auto"></div>
+      <div id="vcalList" style="padding:0 14px 14px;max-height:480px;overflow-y:auto"></div>
     </div>
   </div>
 </div>
@@ -5643,24 +5649,24 @@ function renderVencimentosCal(){
 
     if(isHoje){
       html+=`<div onclick="${vens.length?`vcalSelDia(${d},${ano},${mes})`:''}"
-        style="aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-          background:var(--azul);color:#fff;font-weight:900;font-size:13px;
-          border:2px solid var(--azul);cursor:${vens.length?'pointer':'default'};position:relative;box-shadow:0 2px 8px var(--azul)44">
+        style="aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+          background:var(--azul);color:#fff;font-weight:900;font-size:12px;
+          border:2px solid var(--azul);cursor:${vens.length?'pointer':'default'};box-shadow:0 2px 6px var(--azul)44">
         ${d}
-        ${vens.length?`<div style="font-size:7.5px;font-weight:700;margin-top:1px;opacity:.9">${vens.length}×</div>`:''}
+        ${vens.length?`<div style="font-size:7px;font-weight:700;margin-top:1px;opacity:.9">${vens.length}×</div>`:''}
       </div>`;
     } else if(urgMax){
       html+=`<div onclick="vcalSelDia(${d},${ano},${mes})"
-        style="aspect-ratio:1;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-          background:${cor}15;color:${cor};font-weight:700;font-size:12px;
-          border:1.5px solid ${cor}55;cursor:pointer;position:relative;transition:all .15s"
-        onmouseover="this.style.background='${cor}25'" onmouseout="this.style.background='${cor}15'">
+        style="aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+          background:${cor}15;color:${cor};font-weight:700;font-size:11px;
+          border:1.5px solid ${cor}44;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.background='${cor}28'" onmouseout="this.style.background='${cor}15'">
         ${d}
-        <div style="font-size:7px;margin-top:2px;font-weight:800">${vens.length>1?vens.length+'×':'●'}</div>
+        <div style="font-size:7px;margin-top:1px;font-weight:800">${vens.length>1?vens.length+'×':'●'}</div>
       </div>`;
     } else {
-      html+=`<div style="aspect-ratio:1;border-radius:10px;display:flex;align-items:center;justify-content:center;
-        font-size:12px;font-weight:500;color:var(--txt3);cursor:default">${d}</div>`;
+      html+=`<div style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;
+        font-size:11px;font-weight:500;color:var(--txt3)">${d}</div>`;
     }
   }
   document.getElementById('vcalGrid').innerHTML=html;
