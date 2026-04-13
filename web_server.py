@@ -288,6 +288,101 @@ def deletar_transacao(idx):
         return jsonify({"erro": str(e)}), 500
 
 
+# ── Open Finance — Pluggy API ────────────────────────────────────
+PLUGGY_CLIENT_ID     = os.environ.get("PLUGGY_CLIENT_ID", "")
+PLUGGY_CLIENT_SECRET = os.environ.get("PLUGGY_CLIENT_SECRET", "")
+PLUGGY_AUTH_URL      = "https://api.pluggy.ai/auth"
+PLUGGY_API_BASE      = "https://api.pluggy.ai"
+
+def pluggy_api_key():
+    """Obtém API key (Bearer token) do Pluggy."""
+    import urllib.request, json as _json
+    payload = _json.dumps({"clientId": PLUGGY_CLIENT_ID, "clientSecret": PLUGGY_CLIENT_SECRET}).encode()
+    req = urllib.request.Request(PLUGGY_AUTH_URL, data=payload,
+                                  headers={"Content-Type": "application/json"}, method="POST")
+    with urllib.request.urlopen(req, timeout=10) as res:
+        return _json.loads(res.read())["apiKey"]
+
+@app.route("/api/pluggy/status")
+def pluggy_status():
+    configured = bool(PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET)
+    return jsonify({"configured": configured})
+
+@app.route("/api/pluggy/token", methods=["POST"])
+def pluggy_connect_token():
+    """Cria um Connect Token para o widget Pluggy."""
+    if not (PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET):
+        return jsonify({"erro": "Pluggy não configurado. Defina PLUGGY_CLIENT_ID e PLUGGY_CLIENT_SECRET."}), 503
+    try:
+        import urllib.request, json as _json
+        api_key = pluggy_api_key()
+        payload = _json.dumps({}).encode()
+        req = urllib.request.Request(
+            f"{PLUGGY_API_BASE}/connect_token",
+            data=payload,
+            headers={"Content-Type": "application/json", "X-API-KEY": api_key},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as res:
+            data = _json.loads(res.read())
+        return jsonify({"accessToken": data.get("accessToken","")})
+    except Exception as e:
+        logger.error(f"❌ Pluggy token: {e}")
+        return jsonify({"erro": str(e)}), 500
+
+@app.route("/api/pluggy/sync/<item_id>", methods=["POST"])
+def pluggy_sync(item_id):
+    """Busca transações de um item Pluggy e retorna para importação."""
+    if not (PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET):
+        return jsonify({"erro": "Pluggy não configurado"}), 503
+    try:
+        import urllib.request, json as _json
+        api_key = pluggy_api_key()
+        # Busca contas do item
+        req = urllib.request.Request(
+            f"{PLUGGY_API_BASE}/accounts?itemId={item_id}",
+            headers={"X-API-KEY": api_key}
+        )
+        with urllib.request.urlopen(req, timeout=15) as res:
+            accounts = _json.loads(res.read()).get("results", [])
+
+        all_txs = []
+        for acc in accounts:
+            acc_id = acc["id"]
+            req2 = urllib.request.Request(
+                f"{PLUGGY_API_BASE}/transactions?accountId={acc_id}&pageSize=100",
+                headers={"X-API-KEY": api_key}
+            )
+            with urllib.request.urlopen(req2, timeout=15) as res2:
+                txs = _json.loads(res2.read()).get("results", [])
+            for t in txs:
+                # Normaliza para formato do sistema
+                from datetime import datetime as _dt
+                data_raw = t.get("date","")[:10]
+                try:
+                    dt = _dt.fromisoformat(data_raw)
+                    data_fmt = dt.strftime("%d/%m/%Y")
+                    mes_ano  = dt.strftime("%b./%Y").lower().capitalize()
+                except:
+                    data_fmt = data_raw
+                    mes_ano  = ""
+                valor = float(t.get("amount", 0))
+                desc  = t.get("description","") or t.get("descriptionRaw","")
+                all_txs.append({
+                    "data": data_fmt,
+                    "descricao": desc,
+                    "valor": -abs(valor) if t.get("type","DEBIT") == "DEBIT" else abs(valor),
+                    "tipo": "Receita" if t.get("type") == "CREDIT" else "Gasto",
+                    "mes_ano": mes_ano,
+                    "origem": "Pluggy",
+                })
+
+        return jsonify({"transacoes": all_txs, "contas": len(accounts)})
+    except Exception as e:
+        logger.error(f"❌ Pluggy sync {item_id}: {e}")
+        return jsonify({"erro": str(e)}), 500
+
+
 # ── Health ────────────────────────────────────────────────────────
 @app.route("/health")
 def health():

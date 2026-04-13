@@ -1366,7 +1366,32 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <!-- ═══ TRANSAÇÕES ═══ -->
 <div class="page" id="page-transacoes">
   <div class="ph"><div><h1>💸 Transações</h1><p id="txSubtitle">Todos os lançamentos — editáveis e pesquisáveis</p></div>
-  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bg btn-sm" onclick="abrirImportacao()">📥 Importar extrato</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
+  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bg btn-sm" onclick="abrirImportacao()">📥 Importar extrato</button><button class="btn bg btn-sm" id="btnOpenFinance" onclick="abrirOpenFinance()" style="background:linear-gradient(90deg,#ee206e,#7c3aed);color:#fff;border:none" title="Sincronizar com banco via Open Finance">🏦 Open Finance</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
+
+  <!-- Open Finance banner (oculto até expandir) -->
+  <div id="openFinanceBanner" style="display:none;margin-bottom:14px">
+    <div class="card" style="border:1.5px solid #7c3aed22;background:linear-gradient(135deg,var(--card),var(--roxo-l))">
+      <div style="padding:16px 20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ee206e,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏦</div>
+          <div>
+            <div style="font-size:14px;font-weight:800">Open Finance — Sincronização Bancária</div>
+            <div style="font-size:11px;color:var(--muted)">Conecte sua conta bancária e importe transações automaticamente via Pluggy</div>
+          </div>
+          <button class="btn bs btn-sm" style="margin-left:auto;flex-shrink:0" onclick="document.getElementById('openFinanceBanner').style.display='none'">✕</button>
+        </div>
+        <div id="openFinanceStatus" style="font-size:12px;color:var(--muted);margin-bottom:12px">Verificando configuração...</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn bp btn-sm" id="btnConectarBanco" onclick="iniciarPluggyConnect()" style="background:linear-gradient(90deg,#ee206e,#7c3aed);border:none">🔗 Conectar Banco</button>
+          <button class="btn bs btn-sm" id="btnSincBanco" onclick="sincronizarPluggy()" style="display:none">🔄 Sincronizar Transações</button>
+          <button class="btn bd btn-sm" id="btnDesconectarBanco" onclick="desconectarPluggy()" style="display:none">🗑️ Desconectar</button>
+          <a href="https://docs.pluggy.ai" target="_blank" rel="noopener" class="btn bs btn-sm">📖 Docs</a>
+        </div>
+        <div id="openFinanceSyncResult" style="margin-top:10px;font-size:12px;color:var(--verde);display:none"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="tb">
     <input type="text" class="sf-s" id="srch" placeholder="🔍 Buscar descrição, categoria, local..." oninput="filterTx()">
     <select class="sf-f" id="fTipo" onchange="filterTx()"><option value="">Todos os tipos</option><option>Gasto</option><option>Receita</option></select>
@@ -7775,6 +7800,137 @@ function gerarRelatorioPDF(){
     window.print();
     setTimeout(()=>{ printDiv.style.display='none'; printDiv.innerHTML=''; }, 1000);
   }, 200);
+}
+
+// ════════════════════════════════════════════════
+// OPEN FINANCE — Pluggy Connect
+// ════════════════════════════════════════════════
+let PLUGGY_ITEM_ID = null;
+
+function abrirOpenFinance(){
+  const banner = document.getElementById('openFinanceBanner');
+  if(!banner) return;
+  banner.style.display = banner.style.display === 'none' ? '' : 'none';
+  if(banner.style.display !== 'none') verificarStatusPluggy();
+}
+
+function verificarStatusPluggy(){
+  PLUGGY_ITEM_ID = lsUser('pluggy_item_id', null);
+  fetch('/api/pluggy/status')
+    .then(r=>r.json())
+    .then(d=>{
+      const statusEl = document.getElementById('openFinanceStatus');
+      const btnConectar = document.getElementById('btnConectarBanco');
+      const btnSinc = document.getElementById('btnSincBanco');
+      const btnDesc = document.getElementById('btnDesconectarBanco');
+      if(!d.configured){
+        if(statusEl) statusEl.innerHTML = '⚠️ Pluggy não configurado. Configure as variáveis <code>PLUGGY_CLIENT_ID</code> e <code>PLUGGY_CLIENT_SECRET</code> no servidor.';
+        if(btnConectar) btnConectar.disabled = true;
+        return;
+      }
+      if(PLUGGY_ITEM_ID){
+        if(statusEl) statusEl.textContent = `✅ Banco conectado (Item: ${PLUGGY_ITEM_ID.slice(0,8)}…). Sincronize para importar novas transações.`;
+        if(btnConectar) btnConectar.style.display='none';
+        if(btnSinc) btnSinc.style.display='';
+        if(btnDesc) btnDesc.style.display='';
+      } else {
+        if(statusEl) statusEl.textContent = '🔗 Nenhum banco conectado. Clique em "Conectar Banco" para sincronizar via Open Finance.';
+        if(btnConectar) btnConectar.disabled = false;
+        if(btnSinc) btnSinc.style.display='none';
+        if(btnDesc) btnDesc.style.display='none';
+      }
+    })
+    .catch(()=>{
+      const statusEl = document.getElementById('openFinanceStatus');
+      if(statusEl) statusEl.textContent = '⚠️ Servidor não respondeu. Verifique se o servidor está em execução.';
+    });
+}
+
+function iniciarPluggyConnect(){
+  const btnConectar = document.getElementById('btnConectarBanco');
+  if(btnConectar){ btnConectar.disabled=true; btnConectar.textContent='⏳ Aguarde...'; }
+
+  fetch('/api/pluggy/token', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.erro){ toast('❌ '+d.erro,'err'); if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';} return; }
+      // Carrega Pluggy Connect Widget
+      if(!window.PluggyConnect){
+        const script = document.createElement('script');
+        script.src = 'https://cdn.pluggy.ai/pluggy-connect/v2.3.1/pluggy-connect.js';
+        script.onload = ()=>_abrirPluggyWidget(d.accessToken);
+        script.onerror = ()=>{ toast('❌ Falha ao carregar Pluggy Connect Widget','err'); if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';} };
+        document.head.appendChild(script);
+      } else {
+        _abrirPluggyWidget(d.accessToken);
+      }
+    })
+    .catch(e=>{ toast('❌ Erro: '+e.message,'err'); if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';} });
+}
+
+function _abrirPluggyWidget(accessToken){
+  const btnConectar = document.getElementById('btnConectarBanco');
+  new window.PluggyConnect({
+    connectToken: accessToken,
+    onSuccess: ({itemId})=>{
+      PLUGGY_ITEM_ID = itemId;
+      saveUser('pluggy_item_id', itemId);
+      toast('✅ Banco conectado com sucesso!','ok');
+      verificarStatusPluggy();
+      sincronizarPluggy();
+    },
+    onError: (err)=>{
+      toast('❌ Erro na conexão: '+(err.message||'Tente novamente'),'err');
+      if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';}
+    },
+    onClose: ()=>{
+      if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';}
+    }
+  }).init();
+}
+
+function sincronizarPluggy(){
+  if(!PLUGGY_ITEM_ID){ toast('Nenhum banco conectado','warn'); return; }
+  const btnSinc = document.getElementById('btnSincBanco');
+  const resultEl = document.getElementById('openFinanceSyncResult');
+  if(btnSinc){ btnSinc.disabled=true; btnSinc.textContent='⏳ Sincronizando...'; }
+  if(resultEl){ resultEl.style.display=''; resultEl.textContent='Buscando transações...'; }
+
+  fetch(`/api/pluggy/sync/${PLUGGY_ITEM_ID}`, {method:'POST'})
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.erro){ toast('❌ '+d.erro,'err'); return; }
+      const txsNvas = d.transacoes||[];
+      let importadas = 0;
+      txsNvas.forEach(t=>{
+        // Evita duplicatas por descrição + data + valor
+        const existe = TODAS_TX.some(tx=>tx.data===t.data && tx.descricao===t.descricao && parseFloat(tx.valor||0)===t.valor);
+        if(existe) return;
+        const maxIdx = TODAS_TX.reduce((m,tx)=>Math.max(m,tx.idx||0),0);
+        TODAS_TX.push({
+          ...t,
+          idx: maxIdx+1+importadas,
+          hora:'00:00',
+          categoria: autoCategoria ? autoCategoria(t.descricao) : 'Outros',
+          subcategoria:'', localizacao:'', cartao:'', parcelas:0, parcela_atual:0,
+          emoji:'📦', cor:'#9CA3AF'
+        });
+        importadas++;
+      });
+      if(importadas>0){ salvarTxsLocal(); autoRefresh(); }
+      if(resultEl){ resultEl.textContent=`✅ ${importadas} transação(ões) importada(s) de ${d.contas} conta(s).`; }
+      toast(`✅ ${importadas} transação(ões) importadas do banco!`,'ok');
+    })
+    .catch(e=>{ toast('❌ Erro: '+e.message,'err'); })
+    .finally(()=>{ if(btnSinc){btnSinc.disabled=false;btnSinc.textContent='🔄 Sincronizar Transações';} });
+}
+
+function desconectarPluggy(){
+  if(!confirm('Desconectar banco? As transações já importadas serão mantidas.')) return;
+  PLUGGY_ITEM_ID = null;
+  saveUser('pluggy_item_id', null);
+  toast('🏦 Banco desconectado','ok');
+  verificarStatusPluggy();
 }
 </script>
 </body>
