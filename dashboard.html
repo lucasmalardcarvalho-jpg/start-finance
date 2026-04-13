@@ -670,6 +670,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="ctTitle">Adicionar Cartão</div><button class="mc" onclick="CM('ovCt')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome do Cartão</label><input class="fi" id="ctNome" placeholder="Ex: Nubank Roxinho, Itaú..."></div><div class="fg"><label class="fl">Bandeira</label><select class="fs" id="ctBand"><option>Visa</option><option>Mastercard</option><option>American Express (Amex)</option><option>Diners Club</option><option>Discover</option><option>Elo</option><option>Hipercard</option><option>Banescard</option><option>Cabal</option><option>Sodexo</option><option>Ticket</option><option>Alelo</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Banco Emissor</label><select class="fs" id="ctBanco"><option value="">— Selecione —</option><option>Agibank</option><option>Banco do Brasil</option><option>Banrisul</option><option>BMG</option><option>Bradesco</option><option>BRB</option><option>BTG</option><option>BV</option><option>C6</option><option>Caixa</option><option>Crefisa</option><option>HSBC</option><option>Inter</option><option>Itaú</option><option>Mercado Pago</option><option>Neon</option><option>Next</option><option>Nubank</option><option>Original</option><option>Pagbank</option><option>Pan</option><option>PicPay</option><option>Porto</option><option>Safra</option><option>Santander</option><option>Sicoob</option><option>Sicredi</option><option>Willbank</option><option>XP</option><option>Cora</option><option>Wise</option><option>Nomad</option><option>Digio</option><option>Outro</option></select></div><div class="fg"></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="text" class="fi valor-input" id="ctLim" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Final do Cartão (4 dígitos)</label><input type="text" class="fi" id="ctFinal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Ex: 1234" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)"></div><div class="fg"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor do Cartão</label>
@@ -2921,14 +2922,14 @@ function selCor(el,cor){document.querySelectorAll('#coresGrid .cor-opt').forEach
 
 function openCt(idx=-1){
   document.getElementById('ctIdx').value=idx;
-  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctFinal').value=c.final||'';document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
-  else{document.getElementById('ctNome').value='';document.getElementById('ctLim').value='';document.getElementById('ctFinal').value='';document.getElementById('ctTitle').textContent='Adicionar Cartão';}
+  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctBanco').value=c.banco||'';document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctFinal').value=c.final||'';document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
+  else{document.getElementById('ctNome').value='';document.getElementById('ctBanco').value='';document.getElementById('ctLim').value='';document.getElementById('ctFinal').value='';document.getElementById('ctTitle').textContent='Adicionar Cartão';}
   OM('ovCt');
 }
 
 function saveCt(){
   const idx=parseInt(document.getElementById('ctIdx').value);
-  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value,final:document.getElementById('ctFinal').value||''};
+  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,banco:document.getElementById('ctBanco').value||'',limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value,final:document.getElementById('ctFinal').value||''};
   if(!c.nome)return toast('Preencha o nome','warning');
   if(idx>=0)CARTOES[idx]=c;else CARTOES.push(c);
   salvarCartoes();CM('ovCt');renderCartoes();renderDash();toast('✅ Cartão salvo!','success');
@@ -2970,7 +2971,8 @@ function renderCartoes(){
     const txCartao=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0);
     return `<div>
       <div class="credit-card" style="background:${c.cor}">
-        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:10px">${esc(c.nome)} · ${esc(c.bandeira)}${c.final?` · •••• ${esc(c.final)}`:''}</div>
+        <div style="font-size:11px;font-weight:700;opacity:.8;margin-bottom:4px">${esc(c.nome)}${c.final?` · •••• ${esc(c.final)}`:''}</div>
+        <div style="font-size:10px;opacity:.65;margin-bottom:8px">${c.banco?esc(c.banco)+' · ':''}${esc(c.bandeira)}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:4px">Fatura ${getMesNome()}</div>
         <div style="font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
         <div style="font-size:10px;opacity:.7;margin-bottom:6px">Total comprometido: ${fmt(comprometido)}</div>
