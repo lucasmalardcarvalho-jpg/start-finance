@@ -479,6 +479,11 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   #catsGrid{grid-template-columns:1fr 1fr!important}
 }
 
+/* ── TABS INTERNAS (Relatórios) ───────────────── */
+.rel-tab{background:none;border:none;padding:9px 16px;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;border-radius:var(--r-sm) var(--r-sm) 0 0;transition:color .15s,border-color .15s}
+.rel-tab:hover{color:var(--txt)}
+.rel-tab.active{color:var(--azul);border-bottom-color:var(--azul);background:var(--azul-l)}
+
 /* ── PRINT / PDF ──────────────────────────────── */
 @media print{
   body{background:#fff!important;color:#111!important;font-family:Arial,sans-serif!important}
@@ -618,56 +623,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <div class="toast" id="toast"></div>
 
-<!-- Modal: Novo/Editar Projeto -->
-<div class="ov" id="ovProjeto">
-  <div class="modal" style="max-width:440px">
-    <div class="mh"><h3 id="projetoModalTitle">🗂️ Novo Projeto</h3><button class="cl" onclick="CM('ovProjeto')">✕</button></div>
-    <div class="mb2">
-      <input type="hidden" id="projIdx" value="-1">
-      <div class="fg">
-        <label class="fl">Nome do projeto *</label>
-        <input class="sf-f" id="projNome" placeholder="Ex: Viagem Europa, Reforma Cozinha…">
-      </div>
-      <div class="fg">
-        <label class="fl">Orçamento (R$)</label>
-        <input class="sf-f valor-input" id="projOrcamento" placeholder="0,00" inputmode="decimal">
-      </div>
-      <div class="fg">
-        <label class="fl">Cor</label>
-        <div style="display:flex;gap:8px;flex-wrap:wrap" id="projCores">
-          <span class="cor-proj-opt" data-cor="#3B6FF0" style="background:#3B6FF0;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#3B6FF0')"></span>
-          <span class="cor-proj-opt" data-cor="#10B981" style="background:#10B981;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#10B981')"></span>
-          <span class="cor-proj-opt" data-cor="#EF4444" style="background:#EF4444;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#EF4444')"></span>
-          <span class="cor-proj-opt" data-cor="#F59E0B" style="background:#F59E0B;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#F59E0B')"></span>
-          <span class="cor-proj-opt" data-cor="#8B5CF6" style="background:#8B5CF6;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#8B5CF6')"></span>
-          <span class="cor-proj-opt" data-cor="#EC4899" style="background:#EC4899;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#EC4899')"></span>
-          <span class="cor-proj-opt" data-cor="#F97316" style="background:#F97316;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#F97316')"></span>
-          <span class="cor-proj-opt" data-cor="#6366F1" style="background:#6366F1;width:28px;height:28px;border-radius:50%;cursor:pointer;border:3px solid transparent" onclick="selCorProjeto(this,'#6366F1')"></span>
-        </div>
-        <input type="hidden" id="projCor" value="#3B6FF0">
-      </div>
-      <div class="fg">
-        <label class="fl">Período (opcional)</label>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <input class="sf-f" id="projInicio" placeholder="Início DD/MM/AAAA" maxlength="10">
-          <input class="sf-f" id="projFim" placeholder="Fim DD/MM/AAAA" maxlength="10">
-        </div>
-      </div>
-      <div class="fg">
-        <label class="fl">Descrição</label>
-        <textarea class="sf-f" id="projDesc" rows="2" placeholder="Detalhe o projeto…" style="resize:vertical"></textarea>
-      </div>
-    </div>
-    <div class="mf" style="justify-content:space-between">
-      <button class="btn bd btn-sm" id="projDelBtn" onclick="deletarProjeto()" style="display:none">🗑️ Excluir</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn bs btn-sm" onclick="CM('ovProjeto')">Cancelar</button>
-        <button class="btn bp" onclick="salvarProjeto()">💾 Salvar</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- MODAIS -->
 <!-- Modal Transação -->
 <div class="ov" id="ovTx">
@@ -751,7 +706,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
     </div>
     <div class="fg" id="fgTxProjeto">
-      <label class="fl">🗂️ Projeto (opcional)</label>
+      <label class="fl">🗂️ Orçamento/Projeto (opcional)</label>
       <select class="sf-f" id="txProjeto">
         <option value="">— Sem projeto —</option>
       </select>
@@ -936,6 +891,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <div class="modal">
   <div class="mh"><div class="mt" id="mtTitle">Nova Meta</div><button class="mc" onclick="CM('ovMt')">✕</button></div>
   <div class="mb2">
+    <div class="fr one" style="margin-bottom:12px">
+      <div style="display:flex;gap:8px">
+        <button type="button" id="mtTipoBtnEco" class="btn bp btn-sm" style="flex:1;font-size:13px" onclick="setMtTipo('economia')">💰 Meta de Economia</button>
+        <button type="button" id="mtTipoBtnOrc" class="btn bs btn-sm" style="flex:1;font-size:13px" onclick="setMtTipo('orcamento')">🗂️ Orçamento/Projeto</button>
+      </div>
+      <input type="hidden" id="mtTipo" value="economia">
+    </div>
     <div class="fr"><div class="fg"><label class="fl">Nome da Meta</label><input class="fi" id="mtNome" placeholder="Ex: Viagem, iPhone..."></div><div class="fg"><label class="fl">Emoji</label>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px">
         <span class="epick" onclick="selMtEmoji(this,'🎯')">🎯</span>
@@ -961,7 +923,12 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <input type="hidden" id="mtEmoji" value="🎯">
     </div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="text" class="fi valor-input" id="mtTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="text" class="fi valor-input" id="mtAtual" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="text" class="fi valor-input" id="mtMensal" inputmode="decimal" placeholder="0,00"></div></div>
+    <div id="mtRowEconomia">
+      <div class="fr three"><div class="fg"><label class="fl">Objetivo (R$)</label><input type="text" class="fi valor-input" id="mtTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="text" class="fi valor-input" id="mtAtual" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="text" class="fi valor-input" id="mtMensal" inputmode="decimal" placeholder="0,00"></div></div>
+    </div>
+    <div id="mtRowOrcamento" style="display:none">
+      <div class="fr two"><div class="fg"><label class="fl">Orçamento máximo (R$)</label><input type="text" class="fi valor-input" id="mtOrcamento" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Início (opcional)</label><input class="fi" id="mtInicio" placeholder="DD/MM/AAAA" maxlength="10"></div></div>
+    </div>
     <div class="fr one"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="mtDesc" placeholder="Descreva seu objetivo"></div></div>
     <input type="hidden" id="mtIdx" value="-1">
   </div>
@@ -1079,8 +1046,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="nsec">Análises</div>
     <button class="ni" data-p="categorias"><span class="nic">📂</span> Categorias & Limites</button>
     <button class="ni" data-p="vencimentos"><span class="nic">📅</span> Vencimentos</button>
-    <button class="ni" data-p="fluxo"><span class="nic">🔮</span> Fluxo de Caixa</button>
-    <button class="ni" data-p="projetos"><span class="nic">🗂️</span> Projetos</button>
     <button class="ni" data-p="familia"><span class="nic">👨‍👩‍👧</span> Orçamento Familiar</button>
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
@@ -1373,31 +1338,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <!-- ═══ TRANSAÇÕES ═══ -->
 <div class="page" id="page-transacoes">
   <div class="ph"><div><h1>💸 Transações</h1><p id="txSubtitle">Todos os lançamentos — editáveis e pesquisáveis</p></div>
-  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bg btn-sm" onclick="abrirImportacao()">📥 Importar extrato</button><button class="btn bg btn-sm" id="btnOpenFinance" onclick="abrirOpenFinance()" style="background:linear-gradient(90deg,#ee206e,#7c3aed);color:#fff;border:none" title="Sincronizar com banco via Open Finance">🏦 Open Finance</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
-
-  <!-- Open Finance banner (oculto até expandir) -->
-  <div id="openFinanceBanner" style="display:none;margin-bottom:14px">
-    <div class="card" style="border:1.5px solid #7c3aed22;background:linear-gradient(135deg,var(--card),var(--roxo-l))">
-      <div style="padding:16px 20px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
-          <div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ee206e,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏦</div>
-          <div>
-            <div style="font-size:14px;font-weight:800">Open Finance — Sincronização Bancária</div>
-            <div style="font-size:11px;color:var(--muted)">Conecte sua conta bancária e importe transações automaticamente via Pluggy</div>
-          </div>
-          <button class="btn bs btn-sm" style="margin-left:auto;flex-shrink:0" onclick="document.getElementById('openFinanceBanner').style.display='none'">✕</button>
-        </div>
-        <div id="openFinanceStatus" style="font-size:12px;color:var(--muted);margin-bottom:12px">Verificando configuração...</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button class="btn bp btn-sm" id="btnConectarBanco" onclick="iniciarPluggyConnect()" style="background:linear-gradient(90deg,#ee206e,#7c3aed);border:none">🔗 Conectar Banco</button>
-          <button class="btn bs btn-sm" id="btnSincBanco" onclick="sincronizarPluggy()" style="display:none">🔄 Sincronizar Transações</button>
-          <button class="btn bd btn-sm" id="btnDesconectarBanco" onclick="desconectarPluggy()" style="display:none">🗑️ Desconectar</button>
-          <a href="https://docs.pluggy.ai" target="_blank" rel="noopener" class="btn bs btn-sm">📖 Docs</a>
-        </div>
-        <div id="openFinanceSyncResult" style="margin-top:10px;font-size:12px;color:var(--verde);display:none"></div>
-      </div>
-    </div>
-  </div>
+  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bg btn-sm" onclick="abrirImportacao()">📥 Importar extrato</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
 
   <div class="tb">
     <input type="text" class="sf-s" id="srch" placeholder="🔍 Buscar descrição, categoria, local..." oninput="filterTx()">
@@ -1536,8 +1477,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- ═══ METAS ═══ -->
 <div class="page" id="page-metas">
-  <div class="ph"><div><h1>🎯 Metas & Economias</h1><p>Transforme sonhos em planos com prazo e progresso</p></div>
-  <div class="pa"><button class="btn bs" onclick="go('investimentos')">📈 Investimentos</button><button class="btn bp" onclick="openMt()">+ Nova meta</button></div></div>
+  <div class="ph"><div><h1>🎯 Metas & Economias</h1><p>Metas de economia e orçamentos de projetos</p></div>
+  <div class="pa"><button class="btn bs" onclick="go('investimentos')">📈 Investimentos</button><button class="btn bp" onclick="openMt()">+ Nova</button></div></div>
   <div id="metasGrid" class="g4 mb"></div>
 </div>
 
@@ -1823,63 +1764,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
-<!-- ═══ FLUXO DE CAIXA FUTURO ═══ -->
-<div class="page" id="page-fluxo">
-  <div class="ph">
-    <div><h1>🔮 Fluxo de Caixa</h1><p>Projeção dos próximos 90 dias — saiba quando você vai ficar no vermelho</p></div>
-    <div class="pa">
-      <select class="sf-f" id="fluxoPeriodo" onchange="renderFluxo()">
-        <option value="30">Próximos 30 dias</option>
-        <option value="60">Próximos 60 dias</option>
-        <option value="90" selected>Próximos 90 dias</option>
-      </select>
-    </div>
-  </div>
-  <!-- KPIs -->
-  <div class="g4 mb" id="fluxoKpis"></div>
-  <!-- Gráfico + Alerta -->
-  <div style="display:grid;grid-template-columns:2fr 1fr;gap:15px;margin-bottom:15px">
-    <div class="card">
-      <div class="ch"><div><div class="ct">📈 Evolução do Saldo Projetado</div><div class="cs">Baseado em despesas fixas, parcelas, dívidas e receitas recorrentes</div></div></div>
-      <div id="fluxoChart" style="padding:0 16px 16px"></div>
-    </div>
-    <div class="card">
-      <div class="ch"><div><div class="ct">🚨 Alertas do Período</div></div></div>
-      <div id="fluxoAlertas" style="padding:0 14px 14px;max-height:360px;overflow-y:auto"></div>
-    </div>
-  </div>
-  <!-- Timeline de eventos -->
-  <div class="card">
-    <div class="ch"><div><div class="ct">📋 Linha do Tempo</div><div class="cs">Todos os eventos financeiros previstos</div></div></div>
-    <div id="fluxoTimeline" style="padding:0 18px 16px"></div>
-  </div>
-</div>
-
-<!-- ═══ PROJETOS / CENTROS DE CUSTO ═══ -->
-<div class="page" id="page-projetos">
-  <div class="ph">
-    <div><h1>🗂️ Projetos</h1><p>Centros de custo e orçamentos por projeto</p></div>
-    <div class="pa">
-      <button class="btn bp" onclick="abrirModalProjeto()">+ Novo Projeto</button>
-    </div>
-  </div>
-
-  <!-- KPI cards -->
-  <div class="g4 mb" id="projetosKpis"></div>
-
-  <!-- List of projects -->
-  <div id="projetosLista" style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:20px"></div>
-
-  <!-- Transactions linked to a project (shown when clicking a project) -->
-  <div id="projetoDetalheCard" class="card" style="display:none">
-    <div class="ch">
-      <div><div class="ct" id="projetoDetalheTitulo">Transações do Projeto</div><div class="cs" id="projetoDetalheTotal">—</div></div>
-      <button class="btn bs btn-sm" onclick="fecharDetalhesProjeto()">✕ Fechar</button>
-    </div>
-    <div id="projetoDetalheTxs" style="padding:0 4px 8px"></div>
-  </div>
-</div>
-
 <!-- ═══ ORÇAMENTO FAMILIAR ═══ -->
 <div class="page" id="page-familia">
   <div class="ph">
@@ -1954,45 +1838,84 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="ph"><div><h1>📑 Relatórios</h1><p id="relSubtitle">Análise completa do mês</p></div>
   <div class="pa"><button class="btn bs" onclick="reload(true)">🔄 Atualizar</button><button class="btn bs" onclick="exportRelCSV()">⬇️ Exportar CSV</button><button class="btn bp" onclick="gerarRelatorioPDF()">🖨️ Exportar PDF</button></div></div>
 
-  <!-- KPIs relatório -->
-  <div class="g4 mb" id="relKpis"></div>
+  <!-- Tabs internas -->
+  <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0">
+    <button id="relTabAnalise" class="rel-tab active" onclick="switchRelTab('analise')">📊 Análise Mensal</button>
+    <button id="relTabFluxo"   class="rel-tab"        onclick="switchRelTab('fluxo')">🔮 Fluxo de Caixa</button>
+  </div>
 
-  <!-- Análise financeira -->
-  <div class="g2e mb">
-    <div class="card">
-      <div class="ch"><div><div class="ct">💳 Gastos por Método de Pagamento</div></div></div>
-      <div id="relMetodos" style="padding:0 18px 16px"></div>
+  <!-- ── TAB: ANÁLISE MENSAL ── -->
+  <div id="relPanelAnalise">
+    <!-- KPIs relatório -->
+    <div class="g4 mb" id="relKpis"></div>
+
+    <!-- Análise financeira -->
+    <div class="g2e mb">
+      <div class="card">
+        <div class="ch"><div><div class="ct">💳 Gastos por Método de Pagamento</div></div></div>
+        <div id="relMetodos" style="padding:0 18px 16px"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">📊 Gastos por Dia da Semana</div></div></div>
+        <div id="relDias" style="padding:0 18px 16px"></div>
+      </div>
     </div>
+
+    <div class="g2e mb">
+      <div class="card">
+        <div class="ch"><div><div class="ct">🏆 Ranking de Gastos por Categoria</div></div></div>
+        <div id="relCatRank" style="padding:0 18px 16px"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">📈 Evolução do Saldo</div></div></div>
+        <div class="cw" id="relSaldoChart" style="height:90px"></div>
+        <div id="relSaldoLeg" style="padding:0 18px 14px;font-size:12px;color:var(--muted)"></div>
+      </div>
+    </div>
+
+    <div class="card mb">
+      <div class="ch"><div><div class="ct">💡 Insights Financeiros Personalizados</div><div class="cs">Análise automática dos seus dados</div></div></div>
+      <div id="relInsights" style="padding:0 18px 18px;display:grid;grid-template-columns:1fr 1fr;gap:11px"></div>
+    </div>
+
     <div class="card">
-      <div class="ch"><div><div class="ct">📊 Gastos por Dia da Semana</div></div></div>
-      <div id="relDias" style="padding:0 18px 16px"></div>
+      <div class="ch"><div><div class="ct">📋 Resumo das Transações do Mês</div></div></div>
+      <div style="overflow-x:auto;padding:0 18px 16px">
+        <table class="st" id="relTable" style="font-size:12px">
+          <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Método</th><th>Cartão</th><th>Valor</th></tr></thead>
+          <tbody id="relBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <div class="g2e mb">
-    <div class="card">
-      <div class="ch"><div><div class="ct">🏆 Ranking de Gastos por Categoria</div></div></div>
-      <div id="relCatRank" style="padding:0 18px 16px"></div>
+  <!-- ── TAB: FLUXO DE CAIXA ── -->
+  <div id="relPanelFluxo" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--muted);font-weight:600">Período:</span>
+      <select class="sf-f" id="fluxoPeriodo" onchange="renderFluxo()" style="width:auto">
+        <option value="30">Próximos 30 dias</option>
+        <option value="60">Próximos 60 dias</option>
+        <option value="90" selected>Próximos 90 dias</option>
+      </select>
     </div>
-    <div class="card">
-      <div class="ch"><div><div class="ct">📈 Evolução do Saldo</div></div></div>
-      <div class="cw" id="relSaldoChart" style="height:90px"></div>
-      <div id="relSaldoLeg" style="padding:0 18px 14px;font-size:12px;color:var(--muted)"></div>
+    <!-- KPIs fluxo -->
+    <div class="g4 mb" id="fluxoKpis"></div>
+    <!-- Gráfico + Alertas -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:15px;margin-bottom:15px">
+      <div class="card">
+        <div class="ch"><div><div class="ct">📈 Evolução do Saldo Projetado</div><div class="cs">Baseado em despesas fixas, parcelas, dívidas e receitas recorrentes</div></div></div>
+        <div id="fluxoChart" style="padding:0 16px 16px"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">🚨 Alertas do Período</div></div></div>
+        <div id="fluxoAlertas" style="padding:0 14px 14px;max-height:360px;overflow-y:auto"></div>
+      </div>
     </div>
-  </div>
-
-  <div class="card mb">
-    <div class="ch"><div><div class="ct">💡 Insights Financeiros Personalizados</div><div class="cs">Análise automática dos seus dados</div></div></div>
-    <div id="relInsights" style="padding:0 18px 18px;display:grid;grid-template-columns:1fr 1fr;gap:11px"></div>
-  </div>
-
-  <div class="card">
-    <div class="ch"><div><div class="ct">📋 Resumo das Transações do Mês</div></div></div>
-    <div style="overflow-x:auto;padding:0 18px 16px">
-      <table class="st" id="relTable" style="font-size:12px">
-        <thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Método</th><th>Cartão</th><th>Valor</th></tr></thead>
-        <tbody id="relBody"></tbody>
-      </table>
+    <!-- Timeline -->
+    <div class="card">
+      <div class="ch"><div><div class="ct">📋 Linha do Tempo</div><div class="cs">Todos os eventos financeiros previstos</div></div></div>
+      <div id="fluxoTimeline" style="padding:0 18px 16px"></div>
     </div>
   </div>
 </div>
@@ -2138,7 +2061,6 @@ const CATS_PADRAO_EXTRA = Object.keys(EMOJIS).filter(n=>n!=='Salário'&&n!=='Fre
 let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
 let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[], RECORRENCIAS=[];
-let PROJETOS = [];
 let FAMILIA_MEMBROS = []; // [{id, nome, avatar, cor}]
 let CAT_MODEL = {};
 
@@ -2207,7 +2129,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos,familia:renderFamilia};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2221,7 +2143,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos,familia:renderFamilia};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -2328,7 +2250,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,projetos:renderProjetos,familia:renderFamilia};
+    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -2352,7 +2274,7 @@ function go(page){
   window.scrollTo(0,0);
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},fluxo:renderFluxo,projetos:renderProjetos,familia:renderFamilia};
+  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
@@ -4413,21 +4335,71 @@ function renderDividas(){
 function openMt(i=-1){
   document.getElementById('mtIdx').value=i;
   const brl=n=>(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-  if(i>=0){const m=METAS[i];document.getElementById('mtNome').value=m.nome;document.getElementById('mtEmoji').value=m.emoji;document.getElementById('mtTotal').value=brl(m.total);document.getElementById('mtAtual').value=brl(m.atual||0);document.getElementById('mtMensal').value=brl(m.mensal||0);document.getElementById('mtDesc').value=m.desc||'';document.getElementById('mtTitle').textContent='✏️ Editar Meta';}
-  else{['mtNome','mtTotal','mtDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('mtEmoji').value='🎯';document.getElementById('mtAtual').value='0';document.getElementById('mtMensal').value='';document.getElementById('mtTitle').textContent='Nova Meta';}
+  if(i>=0){
+    const m=METAS[i];
+    document.getElementById('mtNome').value=m.nome;
+    document.getElementById('mtEmoji').value=m.emoji||'🎯';
+    document.getElementById('mtTotal').value=brl(m.total||m.orcamento||0);
+    document.getElementById('mtAtual').value=brl(m.atual||0);
+    document.getElementById('mtMensal').value=brl(m.mensal||0);
+    document.getElementById('mtDesc').value=m.desc||'';
+    document.getElementById('mtOrcamento').value=brl(m.orcamento||m.total||0);
+    document.getElementById('mtInicio').value=m.inicio||'';
+    document.getElementById('mtTitle').textContent='✏️ Editar';
+    setMtTipo(m.tipo||'economia');
+  } else {
+    ['mtNome','mtDesc'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('mtEmoji').value='🎯';
+    document.getElementById('mtTotal').value='';
+    document.getElementById('mtAtual').value='0';
+    document.getElementById('mtMensal').value='';
+    document.getElementById('mtOrcamento').value='';
+    document.getElementById('mtInicio').value='';
+    document.getElementById('mtTitle').textContent='Nova Meta de Economia';
+    setMtTipo('economia');
+  }
   OM('ovMt');
 }
 function saveMt(){
   const i=parseInt(document.getElementById('mtIdx').value);
-  const m={nome:document.getElementById('mtNome').value,emoji:document.getElementById('mtEmoji').value,total:parseBRL(document.getElementById('mtTotal').value)||0,atual:parseBRL(document.getElementById('mtAtual').value)||0,mensal:parseBRL(document.getElementById('mtMensal').value)||0,desc:document.getElementById('mtDesc').value};
-  if(!m.nome||!m.total)return toast('Preencha nome e valor','warning');
+  const tipo=document.getElementById('mtTipo').value||'economia';
+  const isOrc = tipo === 'orcamento';
+  const m={
+    id: i>=0 ? (METAS[i].id||'mt_'+Date.now()) : 'mt_'+Date.now(),
+    tipo,
+    nome:document.getElementById('mtNome').value,
+    emoji:document.getElementById('mtEmoji').value||'🎯',
+    total: isOrc ? parseBRL(document.getElementById('mtOrcamento').value)||0 : parseBRL(document.getElementById('mtTotal').value)||0,
+    orcamento: isOrc ? parseBRL(document.getElementById('mtOrcamento').value)||0 : 0,
+    atual: isOrc ? 0 : parseBRL(document.getElementById('mtAtual').value)||0,
+    mensal: isOrc ? 0 : parseBRL(document.getElementById('mtMensal').value)||0,
+    inicio: isOrc ? document.getElementById('mtInicio').value : '',
+    desc:document.getElementById('mtDesc').value,
+  };
+  if(!m.nome)return toast('Preencha o nome','warning');
   if(i>=0)METAS[i]=m;else METAS.push(m);
-  salvarMetas();CM('ovMt');renderMetas();renderDash();toast('✅ Meta salva!','success');
+  salvarMetas();CM('ovMt');renderMetas();renderDash();
+  popularSelectProjeto();
+  toast('✅ Salvo!','success');
 }
 function selMtEmoji(el, emoji){
   document.querySelectorAll('#ovMt .epick').forEach(e=>e.classList.remove('sel'));
   el.classList.add('sel');
   document.getElementById('mtEmoji').value=emoji;
+}
+
+function setMtTipo(tipo){
+  document.getElementById('mtTipo').value = tipo;
+  const isEco = tipo === 'economia';
+  document.getElementById('mtRowEconomia').style.display = isEco ? '' : 'none';
+  document.getElementById('mtRowOrcamento').style.display = isEco ? 'none' : '';
+  document.getElementById('mtTipoBtnEco').className = isEco ? 'btn bp btn-sm' : 'btn bs btn-sm';
+  document.getElementById('mtTipoBtnOrc').className = isEco ? 'btn bs btn-sm' : 'btn bp btn-sm';
+  // Update label
+  const titleEl = document.getElementById('mtTitle');
+  if(titleEl && titleEl.textContent.startsWith('Nova')){
+    titleEl.textContent = isEco ? 'Nova Meta de Economia' : 'Novo Orçamento/Projeto';
+  }
 }
 
 function depositarMeta(i){
@@ -4460,26 +4432,83 @@ function delMt(i){METAS.splice(i,1);salvarMetas();renderMetas();toast('🗑️ M
 
 function renderMetas(){
   const el=document.getElementById('metasGrid');if(!el)return;
-  if(!METAS.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">🎯</div><h3>Nenhuma meta ainda</h3><p>Crie sua primeira meta financeira!</p><button class="btn bp" style="margin-top:12px" onclick="openMt()">+ Criar meta</button></div></div>`;return;}
-  el.innerHTML=METAS.map((m,i)=>{
-    const pct=Math.min((m.atual/m.total)*100,100);
-    const rest=Math.max(m.total-m.atual,0);
-    const meses=m.mensal>0?Math.ceil(rest/m.mensal):0;
-    const cor=pct>=100?'var(--verde)':pct>=70?'var(--azul)':pct>=40?'var(--lara)':'var(--muted2)';
-    return `<div class="meta-card">
-      <div style="font-size:32px;margin-bottom:10px;text-align:center">${m.emoji}</div>
-      <div style="font-size:14px;font-weight:800;margin-bottom:3px">${esc(m.nome)}</div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${esc(m.desc)||'Meta financeira'}</div>
-      <div class="pw" style="margin-bottom:7px"><div class="pf2" style="width:${pct}%;background:${cor}"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:8px"><span style="color:var(--azul)">${fmt(m.atual)}</span><span style="color:var(--muted)">${fmt(m.total)}</span></div>
-      ${meses>0?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">⏳ ~${meses} meses a ${fmt(m.mensal)}/mês</div>`:''}
-      <div style="display:flex;gap:5px">
-        <button class="btn bv btn-sm" style="flex:1" onclick="depositarMeta(${i})">💰 Adicionar</button>
-        <button class="btn bg btn-sm" onclick="openMt(${i})">✏️</button>
-        <button class="btn bd btn-sm" onclick="delMt(${i})">🗑️</button>
-      </div>
-    </div>`;
-  }).join('');
+  const economias = METAS.filter(m=>(m.tipo||'economia')==='economia');
+  const orcamentos = METAS.filter(m=>m.tipo==='orcamento');
+  const mes = getMesChave();
+
+  if(!METAS.length){
+    el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">🎯</div><h3>Nenhuma meta ainda</h3><p>Crie metas de economia ou orçamentos de projetos!</p><button class="btn bp" style="margin-top:12px" onclick="openMt()">+ Nova meta</button></div></div>`;
+    return;
+  }
+
+  function corPct(pct){ return pct>=100?'var(--verde)':pct>=70?'var(--azul)':pct>=40?'var(--lara)':'var(--muted2)'; }
+
+  let html = '';
+
+  if(economias.length){
+    html += `<div style="grid-column:1/-1;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-bottom:4px;border-bottom:1px solid var(--border);margin-bottom:4px">💰 Metas de Economia</div>`;
+    html += economias.map((m,rawI)=>{
+      const i = METAS.indexOf(m);
+      const pct=Math.min(((m.atual||0)/(m.total||1))*100,100);
+      const rest=Math.max((m.total||0)-(m.atual||0),0);
+      const meses=m.mensal>0?Math.ceil(rest/m.mensal):0;
+      const cor=corPct(pct);
+      return `<div class="meta-card">
+        <div style="font-size:32px;margin-bottom:10px;text-align:center">${m.emoji||'🎯'}</div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:3px">${esc(m.nome)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${esc(m.desc)||'Meta de economia'}</div>
+        <div class="pw" style="margin-bottom:7px"><div class="pf2" style="width:${pct.toFixed(1)}%;background:${cor}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:8px"><span style="color:var(--azul)">${fmt(m.atual||0)}</span><span style="color:var(--muted)">${fmt(m.total||0)}</span></div>
+        ${meses>0?`<div style="font-size:11px;color:var(--muted);margin-bottom:8px">⏳ ~${meses} meses a ${fmt(m.mensal)}/mês</div>`:''}
+        <div style="display:flex;gap:5px">
+          <button class="btn bv btn-sm" style="flex:1" onclick="depositarMeta(${i})">💰 Adicionar</button>
+          <button class="btn bg btn-sm" onclick="openMt(${i})">✏️</button>
+          <button class="btn bd btn-sm" onclick="delMt(${i})">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  if(orcamentos.length){
+    html += `<div style="grid-column:1/-1;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:${economias.length?'16px':'0'};margin-bottom:4px">🗂️ Orçamentos & Projetos</div>`;
+    html += orcamentos.map((m)=>{
+      const i = METAS.indexOf(m);
+      const orc = parseFloat(m.orcamento||m.total||0);
+      const gasto = Math.abs(TODAS_TX.filter(t=>t.projeto===m.id && parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
+      const pct = orc>0 ? Math.min(gasto/orc*100,100) : 0;
+      const cor = pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
+      const txCount = TODAS_TX.filter(t=>t.projeto===m.id).length;
+      const status = pct>=100?'🔴 Estourado':pct>=80?'🟠 Atenção':'🟢 No prazo';
+      return `<div class="meta-card" style="cursor:pointer" onclick="verTransacoesMeta(${i})">
+        <div style="font-size:32px;margin-bottom:10px;text-align:center">${m.emoji||'🗂️'}</div>
+        <div style="font-size:14px;font-weight:800;margin-bottom:3px">${esc(m.nome)}</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px">${esc(m.desc)||'Orçamento/Projeto'}</div>
+        ${orc>0?`
+        <div class="pw" style="margin-bottom:5px"><div class="pf2" style="width:${pct.toFixed(1)}%;background:${cor}"></div></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px">
+          <span style="color:${cor}">${fmt(gasto)}</span><span style="color:var(--muted)">${fmt(orc)}</span>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${status} — ${pct.toFixed(0)}% do orçamento</div>
+        `:`<div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:8px">${fmt(gasto)} <span style="font-size:11px;color:var(--muted);font-weight:400">gasto</span></div>`}
+        <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${txCount} transação(ões) vinculada(s)</div>
+        <div style="display:flex;gap:5px">
+          <button class="btn bg btn-sm" style="flex:1" onclick="event.stopPropagation();openMt(${i})">✏️ Editar</button>
+          <button class="btn bd btn-sm" onclick="event.stopPropagation();delMt(${i})">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  el.innerHTML = html;
+}
+
+function verTransacoesMeta(i){
+  const m = METAS[i];
+  if(!m || m.tipo !== 'orcamento') return;
+  const txs = TODAS_TX.filter(t=>t.projeto===m.id);
+  if(!txs.length){ toast('Nenhuma transação vinculada a este orçamento','info'); return; }
+  toast(`${txs.length} transação(ões) em "${m.nome}". Veja em Transações.`,'info');
+  go('transacoes');
 }
 
 // ════════════════════════════════════════════════
@@ -5317,8 +5346,19 @@ function saveLimits(){salvarLimsLocal();renderLimits();renderCats();renderDash()
 // ════════════════════════════════════════════════
 // RELATÓRIOS — COMPLETO COM DADOS REAIS
 // ════════════════════════════════════════════════
+function switchRelTab(tab){
+  const isAnalise = tab === 'analise';
+  document.getElementById('relPanelAnalise').style.display = isAnalise ? '' : 'none';
+  document.getElementById('relPanelFluxo').style.display   = isAnalise ? 'none' : '';
+  document.getElementById('relTabAnalise').classList.toggle('active', isAnalise);
+  document.getElementById('relTabFluxo').classList.toggle('active', !isAnalise);
+  if(!isAnalise) renderFluxo();
+}
+
 function renderRel(){
   const d=MES_DATA;const mes=getMesNome();
+  // Garante que a tab de análise esteja ativa ao entrar na página
+  switchRelTab('analise');
   document.getElementById('relSubtitle').textContent=`Análise detalhada de ${mes}`;
   const txMes=d.txMes||[];
 
@@ -5815,7 +5855,26 @@ function carregarDadosUsuario(){
   if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
   CATS_OCULTAS  = lsUser('cats_ocultas', []);
   RECORRENCIAS  = lsUser('recorrencias', []);
-  PROJETOS        = lsUser('projetos', []);
+  // Migração: importa Projetos antigos como Metas tipo orcamento
+  const projOld = lsUser('projetos', []);
+  if(projOld.length){
+    projOld.forEach(p=>{
+      if(!METAS.find(m=>m.id===p.id)){
+        METAS.push({
+          id: p.id,
+          tipo: 'orcamento',
+          nome: p.nome,
+          emoji: '🗂️',
+          total: parseFloat(p.orcamento||0),
+          orcamento: parseFloat(p.orcamento||0),
+          atual: 0, mensal: 0,
+          inicio: p.inicio||'',
+          desc: p.desc||'',
+        });
+      }
+    });
+    if(projOld.length){ salvarMetas(); saveUser('projetos',[]); }
+  }
   FAMILIA_MEMBROS = lsUser('familia_membros', []);
   carregarCatModel();
   // Carrega transações do localStorage (fallback imediato antes da API)
@@ -5831,7 +5890,6 @@ function salvarFixas()        { saveUser('fixas', FIXAS); }
 function salvarDividas()      { saveUser('dividas', DIVIDAS); }
 function salvarMetas()        { saveUser('metas', METAS); }
 function salvarRecorrencias() { saveUser('recorrencias', RECORRENCIAS); }
-function salvarProjetos()        { saveUser('projetos', PROJETOS); }
 function salvarFamiliaMembros()  { saveUser('familia_membros', FAMILIA_MEMBROS); }
 
 // ════════════════════════════════════════════════
@@ -5993,198 +6051,12 @@ function calcFaturaCartao(nomeCartao){
     .reduce((s,t) => s + parseFloat(t.valor||0), 0));
 }
 
-// ════════════════════════════════════════════════
-// PROJETOS / CENTROS DE CUSTO
-// ════════════════════════════════════════════════
-function renderProjetos(){
-  // KPIs
-  const total = PROJETOS.length;
-  const gastosTotal = PROJETOS.reduce((s,p)=>s+calcGastoProjeto(p.id),0);
-  const orcTotal = PROJETOS.reduce((s,p)=>s+parseFloat(p.orcamento||0),0);
-  const ativos = PROJETOS.filter(p=>p.status!=='encerrado').length;
-  const kpisEl = document.getElementById('projetosKpis');
-  if(kpisEl) kpisEl.innerHTML = `
-    <div class="kpi g"><div class="kpi-top"><div class="kpi-ic">🗂️</div></div><div class="kpi-v">${total}</div><div class="kpi-l">Projetos</div></div>
-    <div class="kpi b"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v">${ativos}</div><div class="kpi-l">Ativos</div></div>
-    <div class="kpi r"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v" style="color:var(--verm)">${fmt(gastosTotal)}</div><div class="kpi-l">Total gasto</div></div>
-    <div class="kpi y"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v">${fmt(orcTotal)}</div><div class="kpi-l">Orçamento total</div></div>
-  `;
-
-  const lista = document.getElementById('projetosLista');
-  if(!lista) return;
-  if(!PROJETOS.length){
-    lista.innerHTML = `<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--muted)">
-      <div style="font-size:40px;margin-bottom:12px">🗂️</div>
-      <div style="font-size:16px;font-weight:700;margin-bottom:6px">Nenhum projeto ainda</div>
-      <div style="font-size:13px">Crie projetos para organizar seus gastos por objetivo</div>
-    </div>`;
-    return;
-  }
-
-  lista.innerHTML = PROJETOS.map((p,i)=>{
-    const gasto = calcGastoProjeto(p.id);
-    const orc = parseFloat(p.orcamento||0);
-    const pct = orc>0 ? Math.min(gasto/orc*100,100) : 0;
-    const cor = p.cor || '#3B6FF0';
-    const status = pct>=100?'🔴 Estourado':pct>=80?'🟠 Atenção':'🟢 No prazo';
-    return `<div class="card" style="border-top:3px solid ${cor};cursor:pointer" onclick="verDetalhesProjeto('${p.id}')">
-      <div style="padding:14px 16px">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px">
-          <div>
-            <div style="font-size:15px;font-weight:800">${esc(p.nome)}</div>
-            ${p.desc?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${esc(p.desc)}</div>`:''}
-          </div>
-          <button class="btn bs btn-sm" style="flex-shrink:0" onclick="event.stopPropagation();abrirModalProjeto(${i})">✏️</button>
-        </div>
-        ${orc>0?`
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px">
-          <span>Gasto: <b style="color:var(--txt)">${fmt(gasto)}</b></span>
-          <span>Orçamento: <b>${fmt(orc)}</b></span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:6px">
-          <div style="height:100%;width:${pct.toFixed(1)}%;background:${pct>=100?'var(--verm)':pct>=80?'var(--lara)':cor};border-radius:100px;transition:width .6s ease"></div>
-        </div>
-        <div style="font-size:11px;color:var(--muted);text-align:right">${status} — ${pct.toFixed(0)}%</div>
-        `:`<div style="font-size:13px;font-weight:700;color:var(--txt)">${fmt(gasto)} <span style="font-size:11px;color:var(--muted);font-weight:400">gasto</span></div>`}
-        ${(p.inicio||p.fim)?`<div style="font-size:10px;color:var(--muted);margin-top:6px">📅 ${p.inicio||'?'} → ${p.fim||'em aberto'}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function calcGastoProjeto(projId){
-  return Math.abs(TODAS_TX
-    .filter(t=>t.projeto===projId && parseFloat(t.valor||0)<0)
-    .reduce((s,t)=>s+parseFloat(t.valor||0),0));
-}
-
-function verDetalhesProjeto(projId){
-  const p = PROJETOS.find(pr=>pr.id===projId);
-  if(!p) return;
-  const txs = TODAS_TX.filter(t=>t.projeto===projId).sort((a,b)=>{
-    const da = a.data.split('/').reverse().join('-');
-    const db = b.data.split('/').reverse().join('-');
-    return db.localeCompare(da);
-  });
-  const total = txs.reduce((s,t)=>s+parseFloat(t.valor||0),0);
-  const card = document.getElementById('projetoDetalheCard');
-  const titulo = document.getElementById('projetoDetalheTitulo');
-  const totalEl = document.getElementById('projetoDetalheTotal');
-  const txsEl = document.getElementById('projetoDetalheTxs');
-  if(!card) return;
-  if(titulo) titulo.textContent = `🗂️ ${p.nome}`;
-  if(totalEl){
-    totalEl.textContent = `${txs.length} transações — Saldo: ${total>=0?'':'−'}${fmt(Math.abs(total))}`;
-    totalEl.style.color = total>=0?'var(--verde)':'var(--verm)';
-  }
-  if(txsEl){
-    if(!txs.length){ txsEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--muted)">Nenhuma transação vinculada</div>'; }
-    else txsEl.innerHTML = txs.map(t=>{
-      const v=parseFloat(t.valor||0);
-      return `<div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--border)">
-        <div style="font-size:18px">${t.emoji||'📦'}</div>
-        <div style="flex:1;min-width:0">
-          <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.descricao||t.categoria)}</div>
-          <div style="font-size:11px;color:var(--muted)">${t.data} · ${t.categoria}</div>
-        </div>
-        <div style="font-size:14px;font-weight:800;color:${v>=0?'var(--verde)':'var(--verm)'};white-space:nowrap">${v>=0?'':'−'}${fmt(Math.abs(v))}</div>
-      </div>`;
-    }).join('');
-  }
-  card.style.display='';
-  card.scrollIntoView({behavior:'smooth',block:'nearest'});
-}
-
-function fecharDetalhesProjeto(){
-  const card = document.getElementById('projetoDetalheCard');
-  if(card) card.style.display='none';
-}
-
-function abrirModalProjeto(i=-1){
-  document.getElementById('projIdx').value = i;
-  const delBtn = document.getElementById('projDelBtn');
-  if(i>=0){
-    const p = PROJETOS[i];
-    document.getElementById('projNome').value = p.nome||'';
-    document.getElementById('projOrcamento').value = parseFloat(p.orcamento||0).toLocaleString('pt-BR',{minimumFractionDigits:2});
-    document.getElementById('projCor').value = p.cor||'#3B6FF0';
-    document.getElementById('projInicio').value = p.inicio||'';
-    document.getElementById('projFim').value = p.fim||'';
-    document.getElementById('projDesc').value = p.desc||'';
-    document.getElementById('projetoModalTitle').textContent = '✏️ Editar Projeto';
-    if(delBtn) delBtn.style.display='';
-    // Seleciona cor visual
-    document.querySelectorAll('.cor-proj-opt').forEach(el=>{
-      el.style.border = el.dataset.cor===(p.cor||'#3B6FF0') ? '3px solid white' : '3px solid transparent';
-    });
-  } else {
-    document.getElementById('projNome').value='';
-    document.getElementById('projOrcamento').value='';
-    document.getElementById('projCor').value='#3B6FF0';
-    document.getElementById('projInicio').value='';
-    document.getElementById('projFim').value='';
-    document.getElementById('projDesc').value='';
-    document.getElementById('projetoModalTitle').textContent='🗂️ Novo Projeto';
-    if(delBtn) delBtn.style.display='none';
-    document.querySelectorAll('.cor-proj-opt').forEach((el,idx)=>{
-      el.style.border = idx===0 ? '3px solid white' : '3px solid transparent';
-    });
-  }
-  OM('ovProjeto');
-}
-
-function selCorProjeto(el, cor){
-  document.querySelectorAll('.cor-proj-opt').forEach(e=>e.style.border='3px solid transparent');
-  el.style.border='3px solid white';
-  document.getElementById('projCor').value=cor;
-}
-
-function salvarProjeto(){
-  const i = parseInt(document.getElementById('projIdx').value);
-  const nome = document.getElementById('projNome').value.trim();
-  if(!nome){ toast('Nome do projeto é obrigatório','err'); return; }
-  const orcRaw = document.getElementById('projOrcamento').value;
-  const orc = parseBRL ? parseBRL(orcRaw) : parseFloat(orcRaw.replace(/\./g,'').replace(',','.'));
-  const cor = document.getElementById('projCor').value || '#3B6FF0';
-  const inicio = document.getElementById('projInicio').value.trim();
-  const fim = document.getElementById('projFim').value.trim();
-  const desc = document.getElementById('projDesc').value.trim();
-
-  const proj = {
-    id: i>=0 ? PROJETOS[i].id : 'proj_'+Date.now(),
-    nome, orcamento: isNaN(orc)?0:orc, cor, inicio, fim, desc,
-    status: 'ativo', criado: i>=0 ? (PROJETOS[i].criado||new Date().toISOString()) : new Date().toISOString()
-  };
-
-  if(i>=0) PROJETOS[i]=proj; else PROJETOS.push(proj);
-  salvarProjetos();
-  CM('ovProjeto');
-  renderProjetos();
-  popularSelectProjeto();
-  toast(i>=0?'✅ Projeto atualizado!':'✅ Projeto criado!','ok');
-}
-
-function deletarProjeto(){
-  const i = parseInt(document.getElementById('projIdx').value);
-  if(i<0) return;
-  if(!confirm('Excluir este projeto? As transações vinculadas perderão o vínculo.')) return;
-  const projId = PROJETOS[i].id;
-  PROJETOS.splice(i,1);
-  salvarProjetos();
-  // Remove vínculo das transações
-  TODAS_TX.forEach(t=>{ if(t.projeto===projId) delete t.projeto; });
-  salvarTxsLocal();
-  CM('ovProjeto');
-  renderProjetos();
-  popularSelectProjeto();
-  toast('🗑️ Projeto excluído','ok');
-}
-
 function popularSelectProjeto(){
   const sel = document.getElementById('txProjeto');
   if(!sel) return;
-  sel.innerHTML = `<option value="">— Sem projeto —</option>` +
-    PROJETOS.map(p=>`<option value="${esc(p.id)}">${esc(p.nome)}</option>`).join('');
+  const orcamentos = METAS.filter(m=>m.tipo==='orcamento');
+  sel.innerHTML = `<option value="">— Sem orçamento —</option>` +
+    orcamentos.map(m=>`<option value="${esc(m.id)}">${m.emoji||'🗂️'} ${esc(m.nome)}</option>`).join('');
 }
 
 function popularSelectMembro(){
@@ -6520,7 +6392,7 @@ function logout(){
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
   // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[]; PROJETOS=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('loginEmail').value='';
@@ -6585,7 +6457,7 @@ function resetDadosUsuario(){
   keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
   // Limpa memória
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
-  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[]; PROJETOS=[];
+  LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
@@ -8141,136 +8013,6 @@ function gerarRelatorioPDF(){
   }, 200);
 }
 
-// ════════════════════════════════════════════════
-// OPEN FINANCE — Pluggy Connect
-// ════════════════════════════════════════════════
-let PLUGGY_ITEM_ID = null;
-
-function abrirOpenFinance(){
-  const banner = document.getElementById('openFinanceBanner');
-  if(!banner) return;
-  banner.style.display = banner.style.display === 'none' ? '' : 'none';
-  if(banner.style.display !== 'none') verificarStatusPluggy();
-}
-
-function verificarStatusPluggy(){
-  PLUGGY_ITEM_ID = lsUser('pluggy_item_id', null);
-  fetch('/api/pluggy/status')
-    .then(r=>r.json())
-    .then(d=>{
-      const statusEl = document.getElementById('openFinanceStatus');
-      const btnConectar = document.getElementById('btnConectarBanco');
-      const btnSinc = document.getElementById('btnSincBanco');
-      const btnDesc = document.getElementById('btnDesconectarBanco');
-      if(!d.configured){
-        if(statusEl) statusEl.innerHTML = '⚠️ Pluggy não configurado. Configure as variáveis <code>PLUGGY_CLIENT_ID</code> e <code>PLUGGY_CLIENT_SECRET</code> no servidor.';
-        if(btnConectar) btnConectar.disabled = true;
-        return;
-      }
-      if(PLUGGY_ITEM_ID){
-        if(statusEl) statusEl.textContent = `✅ Banco conectado (Item: ${PLUGGY_ITEM_ID.slice(0,8)}…). Sincronize para importar novas transações.`;
-        if(btnConectar) btnConectar.style.display='none';
-        if(btnSinc) btnSinc.style.display='';
-        if(btnDesc) btnDesc.style.display='';
-      } else {
-        if(statusEl) statusEl.textContent = '🔗 Nenhum banco conectado. Clique em "Conectar Banco" para sincronizar via Open Finance.';
-        if(btnConectar) btnConectar.disabled = false;
-        if(btnSinc) btnSinc.style.display='none';
-        if(btnDesc) btnDesc.style.display='none';
-      }
-    })
-    .catch(()=>{
-      const statusEl = document.getElementById('openFinanceStatus');
-      if(statusEl) statusEl.textContent = '⚠️ Servidor não respondeu. Verifique se o servidor está em execução.';
-    });
-}
-
-function iniciarPluggyConnect(){
-  const btnConectar = document.getElementById('btnConectarBanco');
-  if(btnConectar){ btnConectar.disabled=true; btnConectar.textContent='⏳ Aguarde...'; }
-
-  fetch('/api/pluggy/token', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.erro){ toast('❌ '+d.erro,'err'); if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';} return; }
-      // Carrega Pluggy Connect Widget
-      if(!window.PluggyConnect){
-        const script = document.createElement('script');
-        script.src = 'https://cdn.pluggy.ai/pluggy-connect/v2.3.1/pluggy-connect.js';
-        script.onload = ()=>_abrirPluggyWidget(d.accessToken);
-        script.onerror = ()=>{ toast('❌ Falha ao carregar Pluggy Connect Widget','err'); if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';} };
-        document.head.appendChild(script);
-      } else {
-        _abrirPluggyWidget(d.accessToken);
-      }
-    })
-    .catch(e=>{ toast('❌ Erro: '+e.message,'err'); if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';} });
-}
-
-function _abrirPluggyWidget(accessToken){
-  const btnConectar = document.getElementById('btnConectarBanco');
-  new window.PluggyConnect({
-    connectToken: accessToken,
-    onSuccess: ({itemId})=>{
-      PLUGGY_ITEM_ID = itemId;
-      saveUser('pluggy_item_id', itemId);
-      toast('✅ Banco conectado com sucesso!','ok');
-      verificarStatusPluggy();
-      sincronizarPluggy();
-    },
-    onError: (err)=>{
-      toast('❌ Erro na conexão: '+(err.message||'Tente novamente'),'err');
-      if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';}
-    },
-    onClose: ()=>{
-      if(btnConectar){btnConectar.disabled=false;btnConectar.textContent='🔗 Conectar Banco';}
-    }
-  }).init();
-}
-
-function sincronizarPluggy(){
-  if(!PLUGGY_ITEM_ID){ toast('Nenhum banco conectado','warn'); return; }
-  const btnSinc = document.getElementById('btnSincBanco');
-  const resultEl = document.getElementById('openFinanceSyncResult');
-  if(btnSinc){ btnSinc.disabled=true; btnSinc.textContent='⏳ Sincronizando...'; }
-  if(resultEl){ resultEl.style.display=''; resultEl.textContent='Buscando transações...'; }
-
-  fetch(`/api/pluggy/sync/${PLUGGY_ITEM_ID}`, {method:'POST'})
-    .then(r=>r.json())
-    .then(d=>{
-      if(d.erro){ toast('❌ '+d.erro,'err'); return; }
-      const txsNvas = d.transacoes||[];
-      let importadas = 0;
-      txsNvas.forEach(t=>{
-        // Evita duplicatas por descrição + data + valor
-        const existe = TODAS_TX.some(tx=>tx.data===t.data && tx.descricao===t.descricao && parseFloat(tx.valor||0)===t.valor);
-        if(existe) return;
-        const maxIdx = TODAS_TX.reduce((m,tx)=>Math.max(m,tx.idx||0),0);
-        TODAS_TX.push({
-          ...t,
-          idx: maxIdx+1+importadas,
-          hora:'00:00',
-          categoria: autoCategoria ? autoCategoria(t.descricao) : 'Outros',
-          subcategoria:'', localizacao:'', cartao:'', parcelas:0, parcela_atual:0,
-          emoji:'📦', cor:'#9CA3AF'
-        });
-        importadas++;
-      });
-      if(importadas>0){ salvarTxsLocal(); autoRefresh(); }
-      if(resultEl){ resultEl.textContent=`✅ ${importadas} transação(ões) importada(s) de ${d.contas} conta(s).`; }
-      toast(`✅ ${importadas} transação(ões) importadas do banco!`,'ok');
-    })
-    .catch(e=>{ toast('❌ Erro: '+e.message,'err'); })
-    .finally(()=>{ if(btnSinc){btnSinc.disabled=false;btnSinc.textContent='🔄 Sincronizar Transações';} });
-}
-
-function desconectarPluggy(){
-  if(!confirm('Desconectar banco? As transações já importadas serão mantidas.')) return;
-  PLUGGY_ITEM_ID = null;
-  saveUser('pluggy_item_id', null);
-  toast('🏦 Banco desconectado','ok');
-  verificarStatusPluggy();
-}
 </script>
 </body>
 </html>
