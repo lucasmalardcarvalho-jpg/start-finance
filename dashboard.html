@@ -3431,7 +3431,7 @@ function renderCats(){
   const nAtencao=padrao.filter(c=>c.status==='atencao').length;
   const nOk=padrao.filter(c=>c.status==='ok'&&c.gasto>0).length;
   document.getElementById('catsKpis').innerHTML=`
-    <div class="kpi r" style="cursor:pointer" onclick="go('categorias')" title="Ver categorias"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(totalGasto)}</div><div class="kpi-l">Total gasto em ${getMesNome()}</div></div>
+    <div class="kpi r" style="cursor:pointer" onclick="CAT_FILTRO='todas';renderCats();setTimeout(()=>{const g=document.getElementById('catsGrid');if(g)g.scrollIntoView({behavior:'smooth',block:'start'});},120)" title="Ver todas as categorias"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(totalGasto)}</div><div class="kpi-l">Total gasto em ${getMesNome()}</div></div>
     <div class="kpi r" style="cursor:pointer" onclick="setCatFiltro('estourou',document.querySelector('[data-f=estourou]'))"><div class="kpi-top"><div class="kpi-ic">🔴</div></div><div class="kpi-v">${nEstourou}</div><div class="kpi-l">Categorias estouradas</div></div>
     <div class="kpi y" style="cursor:pointer" onclick="setCatFiltro('atencao',document.querySelector('[data-f=atencao]'))"><div class="kpi-top"><div class="kpi-ic">🟡</div></div><div class="kpi-v">${nAtencao}</div><div class="kpi-l">Em atenção (>80%)</div></div>
     <div class="kpi g" style="cursor:pointer" onclick="setCatFiltro('ok',document.querySelector('[data-f=ok]'))"><div class="kpi-top"><div class="kpi-ic">🟢</div></div><div class="kpi-v">${nOk}</div><div class="kpi-l">Dentro do limite</div></div>`;
