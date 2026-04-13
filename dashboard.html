@@ -656,7 +656,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <div class="modal">
   <div class="mh"><div class="mt" id="fxTitle">Nova Despesa Fixa</div><button class="mc" onclick="CM('ovFx')">✕</button></div>
   <div class="mb2">
-    <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi valor-input" id="fxValor" inputmode="decimal" step="0.01"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="fxValor" inputmode="decimal" placeholder="0,00"></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"><option>Contas</option><option>Moradia</option><option>Saúde</option><option>Educação</option><option>Assinaturas</option><option>Transporte</option><option>Outros</option></select></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Observação</label><input class="fi" id="fxObs" placeholder="Opcional"></div></div>
     <input type="hidden" id="fxIdx" value="-1">
@@ -670,7 +670,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="ctTitle">Adicionar Cartão</div><button class="mc" onclick="CM('ovCt')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome do Cartão</label><input class="fi" id="ctNome" placeholder="Ex: Nubank Roxinho, Itaú..."></div><div class="fg"><label class="fl">Bandeira</label><select class="fs" id="ctBand"><option>Visa</option><option>Mastercard</option><option>Elo</option><option>American Express</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="number" class="fi valor-input" id="ctLim" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="text" class="fi valor-input" id="ctLim" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Cor do Cartão</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px" id="coresGrid">
         <div class="cor-opt sel" style="background:linear-gradient(135deg,#6B21A8,#A855F7)" onclick="selCor(this,'linear-gradient(135deg,#6B21A8,#A855F7)')"></div>
@@ -695,7 +695,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="dvTitle">Nova Dívida</div><button class="mc" onclick="CM('ovDv')">✕</button></div>
   <div class="mb2">
     <div class="fr one"><div class="fg"><label class="fl">Nome da Dívida</label><input class="fi" id="dvNome" placeholder="Ex: Financiamento do carro..."></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="number" class="fi valor-input" id="dvTotal" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="number" class="fi valor-input" id="dvMensal" inputmode="decimal" step="0.01"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="text" class="fi valor-input" id="dvTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="text" class="fi valor-input" id="dvMensal" inputmode="decimal" placeholder="0,00"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="dvPagas" min="0" value="0"></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="dvVenc" min="1" max="31" value="5"></div></div>
     <input type="hidden" id="dvIdx" value="-1">
   </div>
@@ -759,7 +759,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <input type="hidden" id="mtEmoji" value="🎯">
     </div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="number" class="fi valor-input" id="mtTotal" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="number" class="fi valor-input" id="mtAtual" inputmode="decimal" step="0.01" value="0"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="number" class="fi" id="mtMensal" step="0.01"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total (R$)</label><input type="text" class="fi valor-input" id="mtTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Já guardei (R$)</label><input type="text" class="fi valor-input" id="mtAtual" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Guardar por mês</label><input type="text" class="fi valor-input" id="mtMensal" inputmode="decimal" placeholder="0,00"></div></div>
     <div class="fr one"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="mtDesc" placeholder="Descreva seu objetivo"></div></div>
     <input type="hidden" id="mtIdx" value="-1">
   </div>
@@ -772,7 +772,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="ivTitle">Novo Investimento</div><button class="mc" onclick="CM('ovIv')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome</label><input class="fi" id="ivNome" placeholder="Ex: Tesouro Selic, PETR4..."></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="ivTipo"><option>Renda Fixa</option><option>Ações</option><option>FIIs</option><option>Cripto</option><option>Internacional</option><option>Poupança</option><option>Outros</option></select></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="number" class="fi valor-input" id="ivValor" inputmode="decimal" step="0.01"></div><div class="fg"><label class="fl">Valor Atual</label><input type="number" class="fi" id="ivAtual" step="0.01"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Investido</label><input type="text" class="fi valor-input" id="ivValor" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Valor Atual</label><input type="text" class="fi valor-input" id="ivAtual" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00"></div></div>
     <input type="hidden" id="ivIdx" value="-1">
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovIv')">Cancelar</button><button class="btn bp" onclick="saveIv()">💾 Salvar</button></div>
@@ -1234,9 +1234,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <label style="font-size:11px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:8px">💰 Limite Mensal</label>
       <div style="display:flex;align-items:center;gap:8px">
         <span style="font-size:15px;font-weight:700;color:var(--muted)">R$</span>
-        <input type="number" id="editCatLimite" step="50" min="0" placeholder="0"
+        <input type="text" inputmode="decimal" id="editCatLimite" placeholder="0,00"
           style="flex:1;font-size:22px;font-weight:900;color:var(--azul);border:none;border-bottom:2px solid var(--azul);background:none;outline:none;font-family:'Cabinet Grotesk',sans-serif;padding-bottom:2px"
-          oninput="atualizarPreviewLimite()">
+          oninput="mascaraValor(this);atualizarPreviewLimite()">
         <span style="font-size:11px;color:var(--muted);font-weight:600">/mês</span>
       </div>
       <div id="editCatLimiteInfo" style="font-size:11px;color:var(--azul);margin-top:6px;font-weight:600"></div>
@@ -1306,7 +1306,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div></div>
     <div class="fr one" style="margin-bottom:12px"><div class="fg">
       <label class="fl">Limite mensal (R$) — 0 = sem limite</label>
-      <input type="number" class="fi" id="catLimite" min="0" step="1" placeholder="Ex: 300">
+      <input type="text" class="fi valor-input" id="catLimite" inputmode="decimal" placeholder="Ex: 300,00">
     </div></div>
     <div class="fr one"><div class="fg"><label class="fl">Emoji</label>
       <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:4px" id="emojiPicker">
@@ -2920,14 +2920,14 @@ function selCor(el,cor){document.querySelectorAll('#coresGrid .cor-opt').forEach
 
 function openCt(idx=-1){
   document.getElementById('ctIdx').value=idx;
-  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctLim').value=c.limite;document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
+  if(idx>=0){const c=CARTOES[idx];document.getElementById('ctNome').value=c.nome;document.getElementById('ctBand').value=c.bandeira;document.getElementById('ctLim').value=(c.limite||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ctFech').value=c.fech;document.getElementById('ctVenc').value=c.venc;document.getElementById('ctCor').value=c.cor;document.getElementById('ctTitle').textContent='✏️ Editar Cartão';}
   else{document.getElementById('ctNome').value='';document.getElementById('ctLim').value='';document.getElementById('ctTitle').textContent='Adicionar Cartão';}
   OM('ovCt');
 }
 
 function saveCt(){
   const idx=parseInt(document.getElementById('ctIdx').value);
-  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseFloat(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value};
+  const c={nome:document.getElementById('ctNome').value,bandeira:document.getElementById('ctBand').value,limite:parseBRL(document.getElementById('ctLim').value)||0,fech:document.getElementById('ctFech').value,venc:document.getElementById('ctVenc').value,cor:document.getElementById('ctCor').value};
   if(!c.nome)return toast('Preencha o nome','warning');
   if(idx>=0)CARTOES[idx]=c;else CARTOES.push(c);
   salvarCartoes();CM('ovCt');renderCartoes();renderDash();toast('✅ Cartão salvo!','success');
@@ -3019,13 +3019,13 @@ function delCt(i){CARTOES.splice(i,1);salvarCartoes();renderCartoes();toast('�
 // ════════════════════════════════════════════════
 function openFx(i=-1){
   document.getElementById('fxIdx').value=i;
-  if(i>=0){const f=FIXAS[i];document.getElementById('fxDesc').value=f.desc;document.getElementById('fxValor').value=f.valor;document.getElementById('fxCat').value=f.cat;document.getElementById('fxVenc').value=f.venc;document.getElementById('fxStatus').value=f.status;document.getElementById('fxObs').value=f.obs||'';document.getElementById('fxTitle').textContent='✏️ Editar Despesa Fixa';}
+  if(i>=0){const f=FIXAS[i];document.getElementById('fxDesc').value=f.desc;document.getElementById('fxValor').value=(f.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('fxCat').value=f.cat;document.getElementById('fxVenc').value=f.venc;document.getElementById('fxStatus').value=f.status;document.getElementById('fxObs').value=f.obs||'';document.getElementById('fxTitle').textContent='✏️ Editar Despesa Fixa';}
   else{['fxDesc','fxValor','fxObs'].forEach(id=>document.getElementById(id).value='');document.getElementById('fxStatus').value='A pagar';document.getElementById('fxTitle').textContent='Nova Despesa Fixa';}
   OM('ovFx');
 }
 function saveFx(){
   const i=parseInt(document.getElementById('fxIdx').value);
-  const f={desc:document.getElementById('fxDesc').value,valor:parseFloat(document.getElementById('fxValor').value)||0,cat:document.getElementById('fxCat').value,venc:document.getElementById('fxVenc').value,status:document.getElementById('fxStatus').value,obs:document.getElementById('fxObs').value};
+  const f={desc:document.getElementById('fxDesc').value,valor:parseBRL(document.getElementById('fxValor').value)||0,cat:document.getElementById('fxCat').value,venc:document.getElementById('fxVenc').value,status:document.getElementById('fxStatus').value,obs:document.getElementById('fxObs').value};
   if(!f.desc||!f.valor)return toast('Preencha descrição e valor','warning');
   if(i>=0)FIXAS[i]=f;else FIXAS.push(f);
   salvarFixas();CM('ovFx');renderFixas();renderDash();toast('✅ Salva!','success');
@@ -3064,13 +3064,13 @@ function renderFixas(){
 // ════════════════════════════════════════════════
 function openDv(i=-1){
   document.getElementById('dvIdx').value=i;
-  if(i>=0){const d=DIVIDAS[i];document.getElementById('dvNome').value=d.nome;document.getElementById('dvTotal').value=d.total;document.getElementById('dvParc').value=d.parcelas;document.getElementById('dvMensal').value=d.mensal;document.getElementById('dvPagas').value=d.pagas||0;document.getElementById('dvVenc').value=d.venc||5;document.getElementById('dvTitle').textContent='✏️ Editar Dívida';}
+  if(i>=0){const d=DIVIDAS[i];document.getElementById('dvNome').value=d.nome;document.getElementById('dvTotal').value=(d.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('dvParc').value=d.parcelas;document.getElementById('dvMensal').value=(d.mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('dvPagas').value=d.pagas||0;document.getElementById('dvVenc').value=d.venc||5;document.getElementById('dvTitle').textContent='✏️ Editar Dívida';}
   else{['dvNome','dvTotal','dvParc','dvMensal'].forEach(id=>document.getElementById(id).value='');document.getElementById('dvPagas').value='0';document.getElementById('dvVenc').value='5';document.getElementById('dvTitle').textContent='Nova Dívida';}
   OM('ovDv');
 }
 function saveDv(){
   const i=parseInt(document.getElementById('dvIdx').value);
-  const d={nome:document.getElementById('dvNome').value,total:parseFloat(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseFloat(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value};
+  const d={nome:document.getElementById('dvNome').value,total:parseBRL(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseBRL(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value};
   if(!d.nome||!d.total)return toast('Preencha nome e valor','warning');
   if(i>=0)DIVIDAS[i]=d;else DIVIDAS.push(d);
   salvarDividas();CM('ovDv');renderDividas();renderDash();toast('✅ Salva!','success');
@@ -3119,13 +3119,14 @@ function renderDividas(){
 // ════════════════════════════════════════════════
 function openMt(i=-1){
   document.getElementById('mtIdx').value=i;
-  if(i>=0){const m=METAS[i];document.getElementById('mtNome').value=m.nome;document.getElementById('mtEmoji').value=m.emoji;document.getElementById('mtTotal').value=m.total;document.getElementById('mtAtual').value=m.atual||0;document.getElementById('mtMensal').value=m.mensal||0;document.getElementById('mtDesc').value=m.desc||'';document.getElementById('mtTitle').textContent='✏️ Editar Meta';}
+  const brl=n=>(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(i>=0){const m=METAS[i];document.getElementById('mtNome').value=m.nome;document.getElementById('mtEmoji').value=m.emoji;document.getElementById('mtTotal').value=brl(m.total);document.getElementById('mtAtual').value=brl(m.atual||0);document.getElementById('mtMensal').value=brl(m.mensal||0);document.getElementById('mtDesc').value=m.desc||'';document.getElementById('mtTitle').textContent='✏️ Editar Meta';}
   else{['mtNome','mtTotal','mtDesc'].forEach(id=>document.getElementById(id).value='');document.getElementById('mtEmoji').value='🎯';document.getElementById('mtAtual').value='0';document.getElementById('mtMensal').value='';document.getElementById('mtTitle').textContent='Nova Meta';}
   OM('ovMt');
 }
 function saveMt(){
   const i=parseInt(document.getElementById('mtIdx').value);
-  const m={nome:document.getElementById('mtNome').value,emoji:document.getElementById('mtEmoji').value,total:parseFloat(document.getElementById('mtTotal').value)||0,atual:parseFloat(document.getElementById('mtAtual').value)||0,mensal:parseFloat(document.getElementById('mtMensal').value)||0,desc:document.getElementById('mtDesc').value};
+  const m={nome:document.getElementById('mtNome').value,emoji:document.getElementById('mtEmoji').value,total:parseBRL(document.getElementById('mtTotal').value)||0,atual:parseBRL(document.getElementById('mtAtual').value)||0,mensal:parseBRL(document.getElementById('mtMensal').value)||0,desc:document.getElementById('mtDesc').value};
   if(!m.nome||!m.total)return toast('Preencha nome e valor','warning');
   if(i>=0)METAS[i]=m;else METAS.push(m);
   salvarMetas();CM('ovMt');renderMetas();renderDash();toast('✅ Meta salva!','success');
@@ -3193,13 +3194,13 @@ function renderMetas(){
 // ════════════════════════════════════════════════
 function openIv(i=-1){
   document.getElementById('ivIdx').value=i;
-  if(i>=0){const v=INVESTIMENTOS[i];document.getElementById('ivNome').value=v.nome;document.getElementById('ivTipo').value=v.tipo;document.getElementById('ivValor').value=v.valor;document.getElementById('ivAtual').value=v.atual;document.getElementById('ivRent').value=v.rent||0;document.getElementById('ivTitle').textContent='✏️ Editar';}
+  if(i>=0){const v=INVESTIMENTOS[i];const brlIv=n=>(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('ivNome').value=v.nome;document.getElementById('ivTipo').value=v.tipo;document.getElementById('ivValor').value=brlIv(v.valor);document.getElementById('ivAtual').value=brlIv(v.atual);document.getElementById('ivRent').value=v.rent||0;document.getElementById('ivTitle').textContent='✏️ Editar';}
   else{['ivNome','ivValor','ivAtual','ivRent'].forEach(id=>document.getElementById(id).value='');document.getElementById('ivTitle').textContent='Novo Investimento';}
   OM('ovIv');
 }
 function saveIv(){
   const i=parseInt(document.getElementById('ivIdx').value);
-  const v={nome:document.getElementById('ivNome').value,tipo:document.getElementById('ivTipo').value,valor:parseFloat(document.getElementById('ivValor').value)||0,atual:parseFloat(document.getElementById('ivAtual').value)||0,rent:parseFloat(document.getElementById('ivRent').value)||0};
+  const v={nome:document.getElementById('ivNome').value,tipo:document.getElementById('ivTipo').value,valor:parseBRL(document.getElementById('ivValor').value)||0,atual:parseBRL(document.getElementById('ivAtual').value)||0,rent:parseFloat(document.getElementById('ivRent').value)||0};
   if(!v.nome||!v.valor)return toast('Preencha nome e valor','warning');
   if(i>=0)INVESTIMENTOS[i]=v;else INVESTIMENTOS.push(v);
   salvarInv();CM('ovIv');renderInv();renderDash();toast('✅ Salvo!','success');
@@ -4898,7 +4899,7 @@ function abrirModalCat(idx=-1){
     const c = CATS_CUSTOM[idx];
     document.getElementById('catModalTitle').textContent = '✏️ Editar Categoria';
     document.getElementById('catNome').value = c.nome;
-    document.getElementById('catLimite').value = LIMS_LOCAL[c.nome] || 0;
+    document.getElementById('catLimite').value = LIMS_LOCAL[c.nome] ? (LIMS_LOCAL[c.nome]).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
     document.getElementById('catEmoji').value = c.emoji || '📦';
     document.getElementById('catCor').value = c.cor || '#EF4444';
     document.querySelectorAll('#emojiPicker .epick').forEach(e=>{ e.classList.toggle('sel', e.textContent.trim()===c.emoji); });
@@ -4963,7 +4964,7 @@ function abrirEditarCategoria(nome, isCustom, custIdx){
   document.getElementById('editCatPreviewEmoji').textContent = (isCustom && custIdx>=0) ? CATS_CUSTOM[custIdx]?.emoji || EMOJIS[nome] || '📦' : EMOJIS[nome] || '📦';
   document.getElementById('editCatPreviewNome').textContent = nome;
   document.getElementById('editCatPreviewGasto').textContent = gasto > 0 ? fmt(gasto) + ' gastos este mês' : 'Sem gastos este mês';
-  document.getElementById('editCatLimite').value = lim || '';
+  document.getElementById('editCatLimite').value = lim > 0 ? lim.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
   document.getElementById('editCatKey').value = nome;
   document.getElementById('editCatIsCustom').value = isCustom ? '1' : '0';
   document.getElementById('editCatCustomIdx').value = custIdx;
@@ -4990,7 +4991,7 @@ function abrirEditarCategoria(nome, isCustom, custIdx){
 }
 
 function atualizarPreviewLimite(){
-  const lim = parseFloat(document.getElementById('editCatLimite').value) || 0;
+  const lim = parseBRL(document.getElementById('editCatLimite').value) || 0;
   const nome = document.getElementById('editCatKey').value;
   const txMes = MES_DATA.txMes || [];
   const gasto = txMes.filter(t=>t.valor<0&&t.categoria===nome).reduce((s,t)=>s+Math.abs(t.valor),0);
@@ -5020,7 +5021,7 @@ function selColorEdit(el, cor){
 
 function salvarEdicaoCategoria(){
   const nome = document.getElementById('editCatKey').value;
-  const lim = parseFloat(document.getElementById('editCatLimite').value) || 0;
+  const lim = parseBRL(document.getElementById('editCatLimite').value) || 0;
   const isCustom = document.getElementById('editCatIsCustom').value === '1';
   const custIdx = parseInt(document.getElementById('editCatCustomIdx').value);
 
