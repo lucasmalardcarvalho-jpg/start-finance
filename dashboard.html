@@ -1411,19 +1411,63 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- ═══ CARTÕES ═══ -->
 <div class="page" id="page-cartoes">
-  <div class="ph"><div><h1>💳 Cartões de Crédito</h1><p>Acompanhe faturas em tempo real — integrado com suas transações</p></div>
-  <div class="pa"><button class="btn bp" onclick="openCt()">+ Adicionar cartão</button></div></div>
-  <!-- KPIs cartões -->
-  <div class="g3 mb">
-    <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💳</div></div><div class="kpi-v" id="ctFatTotal">R$ 0,00</div><div class="kpi-l">Fatura total (todos os cartões)</div></div>
-    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⚠️</div></div><div class="kpi-v" id="ctUsoMedio">0%</div><div class="kpi-l">Uso médio do limite</div></div>
-    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v" id="ctDispTotal">R$ 0,00</div><div class="kpi-l">Limite disponível total</div></div>
+  <div class="ph">
+    <div><h1 id="ctPageTitle">💳 Cartões de Crédito</h1><p id="ctPageSub">Acompanhe faturas em tempo real</p></div>
+    <div class="pa" id="ctPageActions">
+      <button class="btn bp" onclick="openCt()">+ Adicionar</button>
+    </div>
   </div>
-  <div id="cartoesGrid" class="g3 mb"></div>
-  <!-- Transações por cartão -->
-  <div class="card mb">
-    <div class="ch"><div><div class="ct">Transações por Cartão — <span id="ctMesLabel">Mês atual</span></div><div class="cs">Calculado automaticamente das suas transações</div></div></div>
-    <div id="ctTxTable" style="padding:0 18px 16px"></div>
+
+  <!-- KPI bar — sempre visível -->
+  <div class="g3 mb" id="ctKpis">
+    <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💳</div></div><div class="kpi-v" id="ctFatTotal">R$ 0,00</div><div class="kpi-l">Fatura total</div></div>
+    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📊</div></div><div class="kpi-v" id="ctUsoMedio">0%</div><div class="kpi-l">Uso médio do limite</div></div>
+    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v" id="ctDispTotal">R$ 0,00</div><div class="kpi-l">Disponível total</div></div>
+  </div>
+
+  <!-- LIST VIEW: grid de cartões -->
+  <div id="ctListView">
+    <div id="cartoesGrid" class="g3 mb"></div>
+  </div>
+
+  <!-- DETAIL VIEW: painel master-detail (oculto por padrão) -->
+  <div id="ctDetailView" style="display:none">
+    <!-- Back bar -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)">
+      <button class="btn bs btn-sm" onclick="voltarListaCartoes()">← Cartões</button>
+      <span id="ctDetailBreadcrumb" style="font-size:14px;font-weight:700;color:var(--txt2)">—</span>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn bg btn-sm" id="ctDetailEditBtn" onclick="">✏️ Editar</button>
+        <button class="btn bd btn-sm" id="ctDetailDelBtn" onclick="">🗑️ Excluir</button>
+      </div>
+    </div>
+    <!-- Master/Detail grid -->
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start">
+      <!-- LEFT: card visual + info -->
+      <div>
+        <!-- Card visual -->
+        <div id="ctDetailCardVisual" class="credit-card" style="margin-bottom:14px;border-radius:16px"></div>
+        <!-- Info card -->
+        <div class="card" style="padding:16px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px">Detalhes do Cartão</div>
+          <div id="ctDetailInfo" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+        <!-- Summary card -->
+        <div class="card" style="padding:16px">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:12px">Resumo</div>
+          <div id="ctDetailSummary" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+      </div>
+      <!-- RIGHT: extrato -->
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:15px;font-weight:800">Extrato</div>
+          <select class="sf-f" id="ctDetailMes" onchange="renderExtratoCartao()" style="width:auto;font-size:12px"></select>
+        </div>
+        <div id="ctDetailExtrato" style="max-height:600px;overflow-y:auto"></div>
+        <div id="ctDetailExtratoFooter" style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;font-weight:700"></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1534,6 +1578,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="card"><div class="ch"><div><div class="ct">🏆 Maiores Gastos por Categoria</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
   </div>
   <div id="planTable" style="margin-top:16px"></div>
+  <div id="planTabela"></div>
 </div>
 
 <!-- ═══ CATEGORIAS & LIMITES (UNIFICADO) ═══ -->
@@ -3849,89 +3894,224 @@ function saveCt(){
   // Atualiza selector de cartões no modal de tx
 }
 
+let CT_DETAIL_IDX = -1; // índice do cartão em detalhe
+
 function renderCartoes(){
-  document.getElementById('ctMesLabel').textContent=getMesNome();
-  // Fatura do mês = parcelas deste mês por cartão
-  const rawG=MES_DATA.gastosPorCartao||{};
-  const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
-  // Limite comprometido = valor TOTAL das compras parceladas em aberto
-  const limUso=MES_DATA.cartoesLimiteUso||{};
+  const rawG = MES_DATA.gastosPorCartao||{};
+  const gastos = Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
+  const limUso = MES_DATA.cartoesLimiteUso||{};
 
-  const fatTotal=Object.values(gastos).reduce((s,v)=>s+v,0);
-  const limTotal=CARTOES.reduce((s,c)=>s+c.limite,0);
-  const limComprometido=CARTOES.reduce((s,c)=>s+(limUso[c.nome]||0),0);
-  const dispTotal=Math.max(limTotal-limComprometido,0);
-  const usoMedio=CARTOES.length?CARTOES.reduce((s,c)=>{
-    const comprometido=limUso[c.nome]||0;
-    return s+(c.limite>0?comprometido/c.limite*100:0);
-  },0)/CARTOES.length:0;
-  document.getElementById('ctFatTotal').textContent=fmt(fatTotal);
-  document.getElementById('ctUsoMedio').textContent=usoMedio.toFixed(1)+'%';
-  document.getElementById('ctDispTotal').textContent=fmt(Math.max(dispTotal,0));
+  const fatTotal = Object.values(gastos).reduce((s,v)=>s+v,0);
+  const limTotal = CARTOES.reduce((s,c)=>s+parseFloat(c.limite||0),0);
+  const limComprometido = CARTOES.reduce((s,c)=>s+(limUso[c.nome]||0),0);
+  const dispTotal = Math.max(limTotal-limComprometido,0);
+  const usoMedio = CARTOES.length ? CARTOES.reduce((s,c)=>{
+    const comp = limUso[c.nome]||0;
+    return s+(parseFloat(c.limite||0)>0 ? comp/parseFloat(c.limite||0)*100 : 0);
+  },0)/CARTOES.length : 0;
 
-  // Grid de cartões
-  const el=document.getElementById('cartoesGrid');if(!el)return;
-  if(!CARTOES.length){el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">💳</div><h3>Nenhum cartão ainda</h3><p>Adicione seus cartões para acompanhar a fatura automaticamente</p></div></div>`;return;}
+  const ctFat = document.getElementById('ctFatTotal');
+  const ctUso = document.getElementById('ctUsoMedio');
+  const ctDisp = document.getElementById('ctDispTotal');
+  if(ctFat) ctFat.textContent = fmt(fatTotal);
+  if(ctUso) ctUso.textContent = usoMedio.toFixed(1)+'%';
+  if(ctDisp) ctDisp.textContent = fmt(Math.max(dispTotal,0));
 
-  el.innerHTML=CARTOES.map((c,i)=>{
-    const fatMes=gastos[c.nome]||0;       // fatura deste mês (parcelas)
-    const comprometido=limUso[c.nome]||fatMes; // total comprometido no limite
-    const usado=comprometido;             // usa comprometido para barra do limite
-    const disponivel=Math.max(c.limite-comprometido,0);
-    const pct=c.limite>0?Math.min(comprometido/c.limite*100,100):0;
-    const corBar=pct>85?'rgba(255,60,60,.8)':pct>60?'rgba(255,165,0,.8)':'rgba(255,255,255,.5)';
-    // Txs deste cartão
-    const txCartao=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0);
-    return `<div>
-      <div class="credit-card" style="background:${c.cor}">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div style="font-size:11px;font-weight:700;opacity:.8">${esc(c.nome)}${c.final?` · •••• ${esc(c.final)}`:''}</div>
-          ${c.debitoAuto?`<span style="font-size:9px;font-weight:700;background:rgba(16,185,129,.25);color:#6ee7b7;padding:2px 6px;border-radius:100px">🔄 Déb. Auto</span>`:''}
+  const el = document.getElementById('cartoesGrid');
+  if(!el) return;
+  if(!CARTOES.length){
+    el.innerHTML=`<div style="grid-column:1/-1"><div class="empty"><div class="empty-ic">💳</div><h3>Nenhum cartão ainda</h3><p>Adicione seus cartões para acompanhar a fatura automaticamente</p><button class="btn bp" style="margin-top:12px" onclick="openCt()">+ Adicionar cartão</button></div></div>`;
+    return;
+  }
+
+  el.innerHTML = CARTOES.map((c,i)=>{
+    const fatMes = gastos[c.nome.trim()]||0;
+    const comprometido = limUso[c.nome]||fatMes;
+    const disponivel = Math.max(parseFloat(c.limite||0)-comprometido,0);
+    const pct = parseFloat(c.limite||0)>0 ? Math.min(comprometido/parseFloat(c.limite||0)*100,100) : 0;
+    const corBar = pct>85?'rgba(239,68,68,.9)':pct>60?'rgba(249,115,22,.8)':'rgba(255,255,255,.55)';
+    const statusBadge = pct>85
+      ? `<span style="font-size:9px;font-weight:800;background:rgba(239,68,68,.25);color:#FCA5A5;padding:2px 7px;border-radius:100px">⚠️ Limite alto</span>`
+      : pct>60
+      ? `<span style="font-size:9px;font-weight:800;background:rgba(249,115,22,.2);color:#FED7AA;padding:2px 7px;border-radius:100px">Atenção</span>`
+      : '';
+    const txCount = (MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0).length;
+    return `<div class="credit-card" style="background:${c.cor||'#3B6FF0'};cursor:pointer;transition:transform .15s,box-shadow .15s"
+        onclick="abrirDetalheCartao(${i})"
+        onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.25)'"
+        onmouseleave="this.style.transform='';this.style.boxShadow=''">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px">
+        <div>
+          <div style="font-size:12px;font-weight:800;opacity:.95;letter-spacing:.01em">${esc(c.nome)}</div>
+          <div style="font-size:10px;opacity:.65;margin-top:2px">${c.banco?esc(c.banco)+' · ':''}${esc(c.bandeira||'')}</div>
         </div>
-        <div style="font-size:10px;opacity:.65;margin-bottom:8px">${c.banco?esc(c.banco)+' · ':''}${esc(c.bandeira)}</div>
-        <div style="font-size:10px;opacity:.7;margin-bottom:4px">Fatura ${getMesNome()}</div>
-        <div style="font-size:20px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
-        <div style="font-size:10px;opacity:.7;margin-bottom:6px">Total comprometido: ${fmt(comprometido)}</div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.85;margin-bottom:8px">
-          <span>Disponível: ${fmt(disponivel)}</span><span>Limite: ${fmt(c.limite)}</span>
-        </div>
-        <div style="height:4px;background:rgba(255,255,255,.2);border-radius:100px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:${pct}%;background:${corBar};border-radius:100px"></div></div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.75">
-          <span>Fecha dia ${c.fech||'—'}</span><span>Vence dia ${c.venc||'—'}</span>
-          <span>${pct.toFixed(0)}% usado</span>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:10px">
-          <button style="background:rgba(255,255,255,.2);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="openCt(${i})">✏️ Editar</button>
-          <button style="background:rgba(255,0,0,.3);color:#fff;border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer" onclick="delCt(${i})">🗑️</button>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+          ${c.final?`<span style="font-size:10px;opacity:.6;font-family:monospace">•••• ${esc(c.final)}</span>`:''}
+          ${statusBadge}
         </div>
       </div>
-      <!-- Lançamentos deste cartão -->
-      ${txCartao.length?`<div style="margin-top:10px;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
-        <div style="padding:8px 12px;background:var(--bg);font-size:11px;font-weight:700;color:var(--txt2)">📋 ${txCartao.length} lançamento(s) este mês</div>
-        ${txCartao.slice(0,4).map(t=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-top:1px solid var(--border);font-size:12px"><span style="color:var(--txt2)">${esc(t.descricao||t.categoria)}</span><span style="font-weight:700;color:var(--verm)">−${fmt(t.valor)}</span></div>`).join('')}
-        ${txCartao.length>4?`<div style="padding:6px 12px;font-size:11px;color:var(--muted);text-align:center;border-top:1px solid var(--border)">+${txCartao.length-4} mais</div>`:''}
-      </div>`:'<div style="margin-top:8px;font-size:12px;color:var(--muted);text-align:center">Nenhum lançamento neste cartão este mês</div>'}
+      <div style="font-size:10px;opacity:.6;margin-bottom:3px">Fatura ${getMesNome()}</div>
+      <div style="font-size:24px;font-weight:900;letter-spacing:-1px;margin-bottom:2px">${fmt(fatMes)}</div>
+      <div style="font-size:10px;opacity:.7;margin-bottom:10px">Comprometido: ${fmt(comprometido)}</div>
+      <div style="height:4px;background:rgba(255,255,255,.2);border-radius:100px;overflow:hidden;margin-bottom:8px">
+        <div style="height:100%;width:${pct.toFixed(1)}%;background:${corBar};border-radius:100px;transition:width .6s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.75;margin-bottom:10px">
+        <span>Fecha dia ${c.fech||'—'}</span>
+        <span>Vence dia ${c.venc||'—'}</span>
+        <span>${pct.toFixed(0)}% usado</span>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.15)">
+        <span style="font-size:10px;opacity:.7">${txCount} transação(ões) este mês</span>
+        <span style="font-size:11px;font-weight:700;opacity:.9">Ver extrato →</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirDetalheCartao(i){
+  CT_DETAIL_IDX = i;
+  const c = CARTOES[i];
+  if(!c) return;
+
+  // Oculta lista, mostra detalhe
+  document.getElementById('ctListView').style.display = 'none';
+  document.getElementById('ctDetailView').style.display = '';
+
+  // Breadcrumb
+  const bread = document.getElementById('ctDetailBreadcrumb');
+  if(bread) bread.textContent = `${c.nome}${c.banco?' · '+c.banco:''}`;
+
+  // Botões de ação
+  const editBtn = document.getElementById('ctDetailEditBtn');
+  const delBtn  = document.getElementById('ctDetailDelBtn');
+  if(editBtn) editBtn.setAttribute('onclick', `openCt(${i})`);
+  if(delBtn)  delBtn.setAttribute('onclick',  `delCt(${i})`);
+
+  // Card visual
+  const visual = document.getElementById('ctDetailCardVisual');
+  if(visual){
+    visual.style.background = c.cor||'#3B6FF0';
+    visual.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+        <div style="font-size:15px;font-weight:900">${esc(c.nome)}</div>
+        ${c.bandeira?`<div style="font-size:11px;opacity:.7;font-weight:700">${esc(c.bandeira)}</div>`:''}
+      </div>
+      ${c.final?`<div style="font-size:16px;font-family:monospace;letter-spacing:3px;opacity:.8;margin-bottom:12px">•••• •••• •••• ${esc(c.final)}</div>`:'<div style="margin-bottom:12px"></div>'}
+      <div style="font-size:13px;font-weight:700;opacity:.9">${c.banco?esc(c.banco):''}</div>
+    `;
+  }
+
+  // Info items
+  const info = document.getElementById('ctDetailInfo');
+  const infoRows = [
+    {label:'Limite total', value: fmt(parseFloat(c.limite||0)), icon:'💰'},
+    {label:'Fecha dia',    value: c.fech||'—', icon:'📅'},
+    {label:'Vence dia',    value: c.venc||'—', icon:'⚡'},
+    c.banco ? {label:'Banco', value: c.banco, icon:'🏦'} : null,
+    c.bandeira ? {label:'Bandeira', value: c.bandeira, icon:'💳'} : null,
+    c.debitoAuto ? {label:'Débito automático', value:'Ativo', icon:'🔄'} : null,
+  ].filter(Boolean);
+  if(info) info.innerHTML = infoRows.map(r=>`
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px">${r.icon} ${r.label}</span>
+      <span style="font-size:13px;font-weight:700;color:var(--txt)">${esc(String(r.value))}</span>
+    </div>`).join('');
+
+  // Popula selector de meses
+  const mesSel = document.getElementById('ctDetailMes');
+  if(mesSel){
+    const mesesDisp = [...new Set(TODAS_TX.filter(t=>t.cartao===c.nome).map(t=>t.mes_ano))].filter(Boolean);
+    // Garante que o mês atual aparece
+    const mesAtual = getMesChave();
+    if(!mesesDisp.includes(mesAtual)) mesesDisp.unshift(mesAtual);
+    // Ordena do mais recente para o mais antigo
+    const MESES_PT_LOCAL=['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.'];
+    mesesDisp.sort((a,b)=>{
+      const parseM = m => { const parts=m.split('/'); return parseInt(parts[1]||0)*12+MESES_PT_LOCAL.findIndex(x=>m.toLowerCase().startsWith(x)); };
+      return parseM(b)-parseM(a);
+    });
+    mesSel.innerHTML = mesesDisp.map(m=>`<option value="${esc(m)}" ${m===mesAtual?'selected':''}>${esc(m)}</option>`).join('');
+  }
+
+  // Renderiza extrato
+  renderExtratoCartao();
+}
+
+function renderExtratoCartao(){
+  const i = CT_DETAIL_IDX;
+  if(i<0) return;
+  const c = CARTOES[i];
+  if(!c) return;
+
+  const mes = document.getElementById('ctDetailMes')?.value || getMesChave();
+  const txs = TODAS_TX
+    .filter(t=>t.cartao===c.nome && t.mes_ano===mes)
+    .sort((a,b)=>{ const da=a.data.split('/').reverse().join('-'); const db=b.data.split('/').reverse().join('-'); return db.localeCompare(da); });
+
+  // Summary
+  const rawG = MES_DATA.gastosPorCartao||{};
+  const gastos = Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
+  const fatMes = txs.filter(t=>parseFloat(t.valor||0)<0).reduce((s,t)=>s+Math.abs(parseFloat(t.valor||0)),0);
+  const disponivel = Math.max(parseFloat(c.limite||0)-fatMes,0);
+
+  const sumEl = document.getElementById('ctDetailSummary');
+  if(sumEl) sumEl.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;color:var(--muted)">💸 Valor mensal</span>
+      <span style="font-size:15px;font-weight:900;color:var(--verm)">${fmt(fatMes)}</span>
+    </div>
+    <div style="height:5px;background:var(--border);border-radius:100px;overflow:hidden">
+      <div style="height:100%;width:${parseFloat(c.limite||0)>0?Math.min(fatMes/parseFloat(c.limite||0)*100,100).toFixed(1):0}%;background:${fatMes/Math.max(parseFloat(c.limite||0),1)>0.8?'var(--verm)':'var(--azul)'};border-radius:100px"></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font-size:12px;color:var(--muted)">✅ Limite restante</span>
+      <span style="font-size:15px;font-weight:900;color:var(--verde)">${fmt(disponivel)}</span>
+    </div>`;
+
+  const el = document.getElementById('ctDetailExtrato');
+  const footer = document.getElementById('ctDetailExtratoFooter');
+
+  if(!txs.length){
+    if(el) el.innerHTML=`<div style="padding:40px;text-align:center;color:var(--muted)"><div style="font-size:32px;margin-bottom:8px">📭</div><div>Nenhuma transação em ${mes}</div></div>`;
+    if(footer) footer.innerHTML='';
+    return;
+  }
+
+  if(el) el.innerHTML = txs.map(t=>{
+    const v = parseFloat(t.valor||0);
+    const isParc = parseInt(t.parcelas||0)>1;
+    const parcLabel = isParc ? `<span style="font-size:10px;background:var(--azul-l);color:var(--azul);border-radius:100px;padding:1px 6px;font-weight:700">${t.parcela_atual||1} de ${t.parcelas}</span>` : '';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--border);transition:background .1s"
+        onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
+      <div style="width:36px;height:36px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${t.emoji||'📦'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.descricao||t.categoria||'—')}</div>
+        <div style="font-size:11px;color:var(--muted);display:flex;gap:6px;align-items:center;margin-top:2px">
+          <span>${t.data}</span>
+          <span>·</span>
+          <span>${esc(t.categoria||'')}</span>
+          ${parcLabel}
+        </div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:14px;font-weight:800;color:${v>=0?'var(--verde)':'var(--verm)'}">${v>=0?'+':'-'}${fmt(Math.abs(v))}</div>
+      </div>
     </div>`;
   }).join('');
 
-  // Tabela resumo por cartão
-  renderCtTxTable(gastos);
+  if(footer) footer.innerHTML = `
+    <span style="color:var(--muted)">${txs.length} transação(ões)</span>
+    <span style="color:var(--verm)">Total: -${fmt(fatMes)}</span>`;
 }
 
-function renderCtTxTable(gastos){
-  const el=document.getElementById('ctTxTable');if(!el)return;
-  if(!CARTOES.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:16px 0">Adicione cartões para ver o resumo</div>';return;}
-  el.innerHTML=`<table class="st" style="font-size:12px"><thead><tr><th>Cartão</th><th>Bandeira</th><th>Gasto este mês</th><th>Limite disponível</th><th>Uso %</th><th>Qtd transações</th></tr></thead><tbody>`+
-  CARTOES.map(c=>{
-    const g=gastos[c.nome]||0;
-    const disp=Math.max(c.limite-g,0);
-    const pct=c.limite>0?g/c.limite*100:0;
-    const nTx=(MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome).length;
-    return `<tr><td style="font-weight:700">💳 ${esc(c.nome)}</td><td>${esc(c.bandeira)}</td><td class="vn">${fmt(g)}</td><td class="vp">${fmt(disp)}</td><td><div style="display:flex;align-items:center;gap:8px"><div style="width:60px;height:5px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${Math.min(pct,100)}%;background:${pct>80?'var(--verm)':pct>60?'var(--lara)':'var(--verde)'}"></div></div><span style="font-size:11px">${pct.toFixed(1)}%</span></div></td><td style="font-weight:700;color:var(--azul)">${nTx}</td></tr>`;
-  }).join('')+`</tbody></table>`;
+function voltarListaCartoes(){
+  CT_DETAIL_IDX = -1;
+  document.getElementById('ctListView').style.display = '';
+  document.getElementById('ctDetailView').style.display = 'none';
 }
 
-function delCt(i){CARTOES.splice(i,1);salvarCartoes();renderCartoes();toast('🗑️ Cartão removido','info')}
+function delCt(i){CARTOES.splice(i,1);salvarCartoes();voltarListaCartoes();renderCartoes();toast('🗑️ Cartão removido','info')}
 
 // ════════════════════════════════════════════════
 // DESPESAS FIXAS
@@ -4298,29 +4478,58 @@ function renderDividas(){
     const pago=mensal*pagas;
     const vRest=Math.max(total-pago,0);  // correto: total - já pago
     const pct=parcelas>0?Math.min(pagas/parcelas*100,100):0;
-    return `<div class="dv-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+    const statusCor = pct>=100?'var(--verde)':pct>=75?'var(--azul)':pct>=50?'var(--lara)':'var(--verm)';
+    const statusLabel = pct>=100?'✅ Quitada':pct>=75?'📈 Quase lá':pct>=50?'🔄 Em andamento':'🔴 Início';
+    return `<div class="card" style="padding:20px;border-left:4px solid ${statusCor}">
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
         <div>
           <div style="font-size:15px;font-weight:800">${esc(d.nome)}</div>
-          ${d.credor?`<div style="font-size:11px;color:var(--muted);margin-top:2px">🏦 ${esc(d.credor)}</div>`:''}
+          ${d.credor?`<div style="font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:4px">🏦 ${esc(d.credor)}</div>`:''}
         </div>
-        <button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px" onclick="openDv(${i})">✏️</button>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:10px;font-weight:800;background:${statusCor}22;color:${statusCor};padding:3px 9px;border-radius:100px">${statusLabel}</span>
+          <button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px" onclick="openDv(${i})">✏️</button>
+        </div>
       </div>
-      ${(d.tabela||d.taxa||d.indexador)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        ${d.tabela?`<span style="font-size:10px;font-weight:700;background:var(--azul-l);color:var(--azul);padding:2px 7px;border-radius:100px">${esc(d.tabela)}</span>`:''}
-        ${d.taxa?`<span style="font-size:10px;font-weight:700;background:var(--amar-l);color:var(--amar);padding:2px 7px;border-radius:100px">${d.taxa}% a.m.</span>`:''}
-        ${d.indexador?`<span style="font-size:10px;font-weight:700;background:var(--bg);color:var(--muted2);border:1px solid var(--border);padding:2px 7px;border-radius:100px">${esc(d.indexador)}</span>`:''}
+      ${(d.tabela||d.taxa||d.indexador)?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">
+        ${d.tabela?`<span style="font-size:10px;font-weight:700;background:var(--azul-l);color:var(--azul);padding:2px 8px;border-radius:100px">${esc(d.tabela)}</span>`:''}
+        ${d.taxa?`<span style="font-size:10px;font-weight:700;background:var(--amar-l);color:var(--amar);padding:2px 8px;border-radius:100px">${d.taxa}% a.m.</span>`:''}
+        ${d.indexador?`<span style="font-size:10px;font-weight:700;background:var(--bg);color:var(--muted);border:1px solid var(--border);padding:2px 8px;border-radius:100px">${esc(d.indexador)}</span>`:''}
       </div>`:''}
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <div><div style="font-size:10px;color:var(--muted)">Progresso</div><div style="font-size:14px;font-weight:800">${pagas}/${parcelas} parcelas</div></div>
-        <div><div style="font-size:10px;color:var(--muted)">Mensal</div><div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(d.mensal)}</div></div>
-        <div><div style="font-size:10px;color:var(--muted)">Restante</div><div style="font-size:14px;font-weight:800;color:var(--lara)">${fmt(vRest)}</div></div>
-        <div><div style="font-size:10px;color:var(--muted)">Vencimento</div><div style="font-size:14px;font-weight:700">Dia ${d.venc||'—'}</div></div>
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">
+        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Mensal</div>
+          <div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(d.mensal)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Restante</div>
+          <div style="font-size:14px;font-weight:800;color:var(--lara)">${fmt(vRest)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Parcelas</div>
+          <div style="font-size:14px;font-weight:800">${pagas}<span style="font-size:11px;color:var(--muted);font-weight:400">/${parcelas}</span></div>
+        </div>
+        <div style="background:var(--bg);border-radius:var(--r-sm);padding:10px">
+          <div style="font-size:10px;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em">Vence dia</div>
+          <div style="font-size:14px;font-weight:800">${d.venc||'—'}</div>
+        </div>
       </div>
-      <div class="pw" style="margin-bottom:6px"><div class="pf2" style="width:${pct}%;background:linear-gradient(90deg,var(--verde),#34D399)"></div></div>
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:10px"><span>${pct.toFixed(0)}% quitado</span><span>${rest} parcelas restantes</span></div>
-      <div style="display:flex;gap:6px">
-        <button class="btn bv btn-sm" style="flex:1" onclick="pagarParc(${i})">✅ Parcela paga</button>
+      <!-- Progress -->
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:5px">
+          <span>Progresso de quitação</span>
+          <span style="font-weight:700;color:${statusCor}">${pct.toFixed(0)}%</span>
+        </div>
+        <div style="height:8px;background:var(--border);border-radius:100px;overflow:hidden">
+          <div style="height:100%;width:${pct.toFixed(1)}%;background:linear-gradient(90deg,${statusCor},${statusCor}88);border-radius:100px;transition:width .8s ease"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">${rest} parcelas restantes · ${fmt(mensal*pagas)} já pago</div>
+      </div>
+      <!-- Actions -->
+      <div style="display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border)">
+        <button class="btn bv btn-sm" style="flex:1" onclick="pagarParc(${i})">✅ Registrar parcela paga</button>
         <button class="btn bd btn-sm" onclick="delDv(${i})">🗑️</button>
       </div>
     </div>`;
@@ -4991,6 +5200,35 @@ function renderPlan(){
       }).join('')}
     </tbody>
   </table></div></div>`;
+
+  // ── Tabela mensal ──
+  const tblEl = document.getElementById('planTabela');
+  if(tblEl && hist.length){
+    const mesesComDados2 = hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0));
+    if(!mesesComDados2.length){ tblEl.innerHTML=''; return; }
+    tblEl.innerHTML = `<div class="card" style="margin-top:16px;overflow:hidden">
+      <div style="padding:14px 20px;border-bottom:1px solid var(--border);font-size:13px;font-weight:800">📊 Detalhamento por Mês</div>
+      <div style="overflow-x:auto">
+        <table class="st" style="font-size:12px">
+          <thead><tr><th>Mês</th><th style="text-align:right">Receitas</th><th style="text-align:right">Gastos</th><th style="text-align:right">Saldo</th><th style="text-align:right">Taxa de Poupança</th></tr></thead>
+          <tbody>
+            ${mesesComDados2.map(h=>{
+              const taxa = h.entradas>0 ? (h.saldo/h.entradas*100) : 0;
+              const corSaldo = h.saldo>=0?'var(--verde)':'var(--verm)';
+              const corTaxa = taxa>=20?'var(--verde)':taxa>=10?'var(--amar)':'var(--verm)';
+              return `<tr style="${h.atual?'background:var(--azul-l)':''}">
+                <td style="font-weight:${h.atual?'800':'600'}">${h.label}${h.atual?' ◀':''}</td>
+                <td style="text-align:right;color:var(--verde);font-weight:700">${fmt(h.entradas)}</td>
+                <td style="text-align:right;color:var(--verm);font-weight:700">-${fmt(h.saidas)}</td>
+                <td style="text-align:right;color:${corSaldo};font-weight:800">${h.saldo>=0?'+':'-'}${fmt(Math.abs(h.saldo))}</td>
+                <td style="text-align:right"><span style="font-size:11px;font-weight:800;color:${corTaxa}">${taxa.toFixed(1)}%</span></td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
 }
 
 
@@ -5372,7 +5610,15 @@ function renderRel(){
     <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📋</div></div><div class="kpi-v">${txCount}</div><div class="kpi-l">Transações em ${mes}</div></div>
     <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💹</div></div><div class="kpi-v">${taxaP.toFixed(1)}%</div><div class="kpi-l">Taxa de poupança</div></div>
     <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v">${fmt(mediaTx)}</div><div class="kpi-l">Gasto médio por transação</div></div>
-    <div class="kpi p" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🛒</div></div><div class="kpi-v">${txG.length}</div><div class="kpi-l">Transações de gasto</div></div>`;
+    <div class="kpi p" style="cursor:default;cursor:pointer" onclick="go('categorias')"><div class="kpi-top"><div class="kpi-ic">🏆</div></div><div class="kpi-v" style="font-size:16px" id="relTopCat">—</div><div class="kpi-l">Maior categoria de gasto</div></div>`;
+
+  const topCatEl = document.getElementById('relTopCat');
+  if(topCatEl){
+    const catGastos = {};
+    txG.forEach(t=>{ const c=t.categoria||'Outros'; catGastos[c]=(catGastos[c]||0)+Math.abs(t.valor); });
+    const topCat = Object.entries(catGastos).sort((a,b)=>b[1]-a[1])[0];
+    topCatEl.textContent = topCat ? topCat[0] : '—';
+  }
 
   // ── Métodos ──
   const el_met=document.getElementById('relMetodos');
@@ -6678,140 +6924,62 @@ function renderResumoMes(d, mes){
 }
 
 function renderVencimentos(){
-  const el=document.getElementById('dashVencimentos');
+  const el = document.getElementById('dashVencimentos');
   if(!el) return;
 
-  if(!CARTOES.length){
-    el.innerHTML='';
-    return;
-  }
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const items = [];
 
-  const hoje=new Date();
-  const mesAtual=hoje.getMonth();
-  const anoAtual=hoje.getFullYear();
-  const diaHoje=hoje.getDate();
-
-  // Monta lista de faturas: mês atual + próximo mês por cartão
-  const faturas=[];
-
-  CARTOES.forEach(ct=>{
-    const venc=parseInt(ct.venc)||0;
-    const fech=parseInt(ct.fech)||0;
-    if(!venc) return;
-
-    // Fatura do mês atual
-    [0,1].forEach(offset=>{
-      const d=new Date(anoAtual,mesAtual+offset,1);
-      const mLabel=`${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
-      const mNome =`${MESES_NM[d.getMonth()]} ${d.getFullYear()}`;
-
-      // Data de vencimento desta fatura
-      const dtVenc=new Date(d.getFullYear(), d.getMonth(), venc);
-      // Se vencimento < hoje no mês atual, não mostra (já venceu)
-      if(offset===0 && dtVenc < hoje) return;
-
-      // Calcula total gasto nesta fatura com base nas transações
-      const gastosParc=TODAS_TX.filter(tx=>{
-        if(!tx.cartao||tx.cartao.trim()!==ct.nome.trim()) return false;
-        if(tx.valor>=0) return false;
-        return tx.mes_ano===mLabel;
-      }).reduce((s,tx)=>s+Math.abs(parseFloat(tx.valor)||0),0);
-
-      const diasAteVenc=Math.ceil((dtVenc-hoje)/(1000*60*60*24));
-      const urgencia=diasAteVenc<=3?'critico':diasAteVenc<=7?'atencao':'normal';
-
-      faturas.push({
-        cartao:ct,
-        mesLabel:mLabel,
-        mesNome:mNome,
-        vencDia:venc,
-        fechDia:fech,
-        dtVenc,
-        diasAteVenc,
-        gasto:gastosParc,
-        urgencia,
-        offset
-      });
-    });
+  // Fixas a pagar
+  FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
+    const dia = parseInt(f.venc||f.dia||0);
+    if(!dia) return;
+    let venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+    if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, dia);
+    const diff = Math.round((venc-hoje)/(1000*60*60*24));
+    if(diff<=14) items.push({tipo:'fixa', nome:f.desc||f.nome||'—', valor:parseFloat(f.valor||0), venc, diff, emoji:'📌'});
   });
 
-  // Ordena por data de vencimento
-  faturas.sort((a,b)=>a.dtVenc-b.dtVenc);
+  // Cartões
+  CARTOES.forEach(c=>{
+    const diaV = parseInt(c.venc||0);
+    if(!diaV) return;
+    let venc = new Date(hoje.getFullYear(), hoje.getMonth(), diaV);
+    if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, diaV);
+    const diff = Math.round((venc-hoje)/(1000*60*60*24));
+    const rawG = MES_DATA.gastosPorCartao||{};
+    const fat = rawG[c.nome]||0;
+    if(diff<=14 && fat>0) items.push({tipo:'cartao', nome:`Fatura ${c.nome}`, valor:fat, venc, diff, emoji:'💳'});
+  });
 
-  if(!faturas.length){
+  items.sort((a,b)=>a.diff-b.diff);
+
+  if(!items.length){
     el.innerHTML='';
     return;
   }
 
-  const cores={
-    critico:{bg:'var(--verm-l)',border:'var(--verm)',badge:'🔴',badgeBg:'var(--verm)',badgeColor:'#fff'},
-    atencao:{bg:'var(--amar-l)',border:'var(--amar)',badge:'🟡',badgeBg:'var(--amar)',badgeColor:'#fff'},
-    normal: {bg:'var(--card)',border:'var(--border)',badge:'📅',badgeBg:'var(--azul-l)',badgeColor:'var(--azul)'}
-  };
-
-  el.innerHTML=`
-    <div class="card">
-      <div class="ch">
-        <div>
-          <div class="ct">📅 Próximos Vencimentos</div>
-          <div class="cs">Faturas abertas e valores lançados</div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn bg btn-sm" onclick="go('vencimentos')">📅 Ver calendário</button>
-          <button class="btn bg btn-sm" onclick="go('cartoes')">💳 Cartões →</button>
-        </div>
-      </div>
-      <div style="padding:0 18px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px">
-        ${faturas.map(f=>{
-          const c=cores[f.urgencia];
-          const pct=f.cartao.limite>0?Math.min(f.gasto/f.cartao.limite*100,100):0;
-          const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
-          const diasTxt=f.diasAteVenc===0?'Vence hoje!':
-                        f.diasAteVenc===1?'Vence amanhã!':
-                        `Vence em ${f.diasAteVenc} dias`;
-          return `<div style="background:${c.bg};border:1px solid ${c.border};border-radius:var(--r-sm);padding:14px;cursor:pointer" onclick="go('cartoes')">
-            <!-- Header: nome do cartão + badge urgência -->
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <div style="display:flex;align-items:center;gap:8px">
-                <div style="width:10px;height:28px;border-radius:4px;background:${f.cartao.cor||'var(--azul)'};flex-shrink:0"></div>
-                <div>
-                  <div style="font-size:13px;font-weight:800;color:var(--txt)">${esc(f.cartao.nome)}</div>
-                  <div style="font-size:10px;color:var(--muted)">${esc(f.cartao.bandeira)} · ${esc(f.mesNome)}</div>
-                </div>
-              </div>
-              <span style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:100px;background:${c.badgeBg};color:${c.badgeColor}">${diasTxt}</span>
-            </div>
-            <!-- Valor da fatura -->
-            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:8px">
-              <div>
-                <div style="font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;margin-bottom:1px">Fatura</div>
-                <div style="font-size:20px;font-weight:900;color:var(--verm)${f.gasto===0?';opacity:.4':''}">
-                  ${f.gasto>0?fmt(f.gasto):'Sem lançamentos'}
-                </div>
-              </div>
-              <div style="text-align:right">
-                <div style="font-size:10px;color:var(--muted)">Vencimento</div>
-                <div style="font-size:14px;font-weight:800;color:var(--txt)">Dia ${f.vencDia}</div>
-              </div>
-            </div>
-            <!-- Barra de uso do limite -->
-            ${f.gasto>0?`
-            <div style="margin-bottom:6px">
-              <div style="height:6px;background:rgba(0,0,0,.08);border-radius:100px;overflow:hidden">
-                <div style="height:100%;width:${pct}%;background:${barCor};border-radius:100px;transition:width 1s"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:3px">
-                <span style="color:var(--muted)">${pct.toFixed(0)}% do limite</span>
-                <span style="color:var(--verde);font-weight:600">${fmt(f.cartao.limite-f.gasto)} disponível</span>
-              </div>
-            </div>`:''}
-            <!-- Info fechamento -->
-            ${f.fechDia>0?`<div style="font-size:10px;color:var(--muted);margin-top:4px">🔒 Fecha dia ${f.fechDia}</div>`:''}
-            ${f.cartao.debitoAuto?`<div style="margin-top:8px;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:var(--verde-d);background:var(--verde-l);border-radius:6px;padding:5px 8px">🔄 Débito automático ativo — pago automaticamente no vencimento</div>`:''}
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`;
+  el.innerHTML=`<div class="card mb">
+    <div class="ch"><div><div class="ct">📅 Próximos Vencimentos</div><div class="cs">Próximos 14 dias</div></div><button class="btn bs btn-sm" onclick="go('vencimentos')">Ver tudo →</button></div>
+    <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:0">
+      ${items.map(item=>{
+        const urgency = item.diff===0?'var(--verm)':item.diff<=3?'var(--lara)':item.diff<=7?'var(--amar)':'var(--muted)';
+        const bgUrgency = item.diff===0?'var(--verm-l)':item.diff<=3?'var(--lara-l)':item.diff<=7?'var(--amar-l)':'var(--bg)';
+        const label = item.diff===0?'HOJE':item.diff===1?'Amanhã':`Em ${item.diff} dias`;
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:36px;height:36px;border-radius:10px;background:${bgUrgency};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${item.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:13px;font-weight:700">${esc(item.nome)}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:1px">${item.venc.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(item.valor)}</div>
+            <div style="font-size:10px;font-weight:800;color:${urgency};text-transform:uppercase;letter-spacing:.04em">${label}</div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
 }
 
 // ════════════════════════════════════════════════
