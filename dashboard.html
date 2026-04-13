@@ -1177,9 +1177,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <!-- KPIs -->
   <div id="catsKpis" class="g4 mb"></div>
   <!-- Barra orçamento -->
-  <div class="card mb">
+  <div class="card mb" onclick="editarOrcamentoTotal()" style="cursor:pointer" title="Clique para editar orçamento total">
     <div style="padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-      <div onclick="editarOrcamentoTotal()" style="font-size:12px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:8px;cursor:pointer" title="Clique para editar orçamento total">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span><span style="font-size:11px;color:var(--muted2)">✏️</span></div>
+      <div style="font-size:12px;font-weight:800;color:var(--txt);display:flex;align-items:center;gap:8px">📊 Orçamento Total do Mês <span id="limBudgetSub" style="font-weight:400;color:var(--muted)"></span><span style="font-size:11px;color:var(--muted2)">✏️</span></div>
       <div style="display:flex;gap:14px;font-size:12px;font-weight:700">
         <span id="limBudgetGasto" style="color:var(--verm)">—</span>
         <span id="limBudgetPct" style="color:var(--muted)">—</span>
