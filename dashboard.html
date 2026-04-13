@@ -703,9 +703,16 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <div class="modal">
   <div class="mh"><div class="mt" id="dvTitle">Nova Dívida</div><button class="mc" onclick="CM('ovDv')">✕</button></div>
   <div class="mb2">
-    <div class="fr one"><div class="fg"><label class="fl">Nome da Dívida</label><input class="fi" id="dvNome" placeholder="Ex: Financiamento do carro..."></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Nome da Dívida</label><input class="fi" id="dvNome" placeholder="Ex: Financiamento do carro..."></div><div class="fg"><label class="fl">Para Quem Devo?</label><input class="fi" id="dvCredor" placeholder="Ex: Banco Itaú, Amigo João..."></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="text" class="fi valor-input" id="dvTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="text" class="fi valor-input" id="dvMensal" inputmode="decimal" placeholder="0,00"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="dvPagas" min="0" value="0"></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="dvVenc" min="1" max="31" value="5"></div></div>
+    <!-- Campos adicionais opcionais -->
+    <div style="margin:8px 0 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Informações Adicionais <span style="font-weight:400;font-style:italic">(opcional)</span></div>
+    <div class="fr three">
+      <div class="fg"><label class="fl">Tabela da Dívida</label><select class="fs" id="dvTabela"><option value="">— Nenhuma —</option><option value="Price">Price (parcelas fixas)</option><option value="SAC">SAC (parcelas decrescentes)</option></select></div>
+      <div class="fg"><label class="fl">Taxa Mensal (%)</label><input type="number" class="fi" id="dvTaxa" min="0" step="0.01" placeholder="Ex: 1,99"></div>
+      <div class="fg"><label class="fl">Indexador</label><select class="fs" id="dvIndexador"><option value="">— Nenhum —</option><option>IPCA</option><option>CDI</option><option>Selic</option><option>IGP-M</option><option>INPC</option><option>TR</option><option>TJLP</option><option>Pré-fixado</option></select></div>
+    </div>
     <input type="hidden" id="dvIdx" value="-1">
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovDv')">Cancelar</button><button class="btn bp" onclick="saveDv()">💾 Salvar</button></div>
@@ -3077,13 +3084,13 @@ function renderFixas(){
 // ════════════════════════════════════════════════
 function openDv(i=-1){
   document.getElementById('dvIdx').value=i;
-  if(i>=0){const d=DIVIDAS[i];document.getElementById('dvNome').value=d.nome;document.getElementById('dvTotal').value=(d.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('dvParc').value=d.parcelas;document.getElementById('dvMensal').value=(d.mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('dvPagas').value=d.pagas||0;document.getElementById('dvVenc').value=d.venc||5;document.getElementById('dvTitle').textContent='✏️ Editar Dívida';}
-  else{['dvNome','dvTotal','dvParc','dvMensal'].forEach(id=>document.getElementById(id).value='');document.getElementById('dvPagas').value='0';document.getElementById('dvVenc').value='5';document.getElementById('dvTitle').textContent='Nova Dívida';}
+  if(i>=0){const d=DIVIDAS[i];document.getElementById('dvNome').value=d.nome;document.getElementById('dvCredor').value=d.credor||'';document.getElementById('dvTotal').value=(d.total||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('dvParc').value=d.parcelas;document.getElementById('dvMensal').value=(d.mensal||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('dvPagas').value=d.pagas||0;document.getElementById('dvVenc').value=d.venc||5;document.getElementById('dvTabela').value=d.tabela||'';document.getElementById('dvTaxa').value=d.taxa||'';document.getElementById('dvIndexador').value=d.indexador||'';document.getElementById('dvTitle').textContent='✏️ Editar Dívida';}
+  else{['dvNome','dvCredor','dvTotal','dvParc','dvMensal'].forEach(id=>document.getElementById(id).value='');document.getElementById('dvPagas').value='0';document.getElementById('dvVenc').value='5';document.getElementById('dvTabela').value='';document.getElementById('dvTaxa').value='';document.getElementById('dvIndexador').value='';document.getElementById('dvTitle').textContent='Nova Dívida';}
   OM('ovDv');
 }
 function saveDv(){
   const i=parseInt(document.getElementById('dvIdx').value);
-  const d={nome:document.getElementById('dvNome').value,total:parseBRL(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseBRL(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value};
+  const d={nome:document.getElementById('dvNome').value,credor:document.getElementById('dvCredor').value||'',total:parseBRL(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseBRL(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value,tabela:document.getElementById('dvTabela').value||'',taxa:parseFloat(document.getElementById('dvTaxa').value)||0,indexador:document.getElementById('dvIndexador').value||''};
   if(!d.nome||!d.total)return toast('Preencha nome e valor','warning');
   if(i>=0)DIVIDAS[i]=d;else DIVIDAS.push(d);
   salvarDividas();CM('ovDv');renderDividas();renderDash();toast('✅ Salva!','success');
@@ -3110,7 +3117,18 @@ function renderDividas(){
     const vRest=Math.max(total-pago,0);  // correto: total - já pago
     const pct=parcelas>0?Math.min(pagas/parcelas*100,100):0;
     return `<div class="dv-card">
-      <div style="display:flex;justify-content:space-between;margin-bottom:10px"><div style="font-size:15px;font-weight:800">${esc(d.nome)}</div><button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px" onclick="openDv(${i})">✏️</button></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div>
+          <div style="font-size:15px;font-weight:800">${esc(d.nome)}</div>
+          ${d.credor?`<div style="font-size:11px;color:var(--muted);margin-top:2px">🏦 ${esc(d.credor)}</div>`:''}
+        </div>
+        <button style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:12px" onclick="openDv(${i})">✏️</button>
+      </div>
+      ${(d.tabela||d.taxa||d.indexador)?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${d.tabela?`<span style="font-size:10px;font-weight:700;background:var(--azul-l);color:var(--azul);padding:2px 7px;border-radius:100px">${esc(d.tabela)}</span>`:''}
+        ${d.taxa?`<span style="font-size:10px;font-weight:700;background:var(--amar-l);color:var(--amar);padding:2px 7px;border-radius:100px">${d.taxa}% a.m.</span>`:''}
+        ${d.indexador?`<span style="font-size:10px;font-weight:700;background:var(--bg);color:var(--muted2);border:1px solid var(--border);padding:2px 7px;border-radius:100px">${esc(d.indexador)}</span>`:''}
+      </div>`:''}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
         <div><div style="font-size:10px;color:var(--muted)">Progresso</div><div style="font-size:14px;font-weight:800">${pagas}/${parcelas} parcelas</div></div>
         <div><div style="font-size:10px;color:var(--muted)">Mensal</div><div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(d.mensal)}</div></div>
