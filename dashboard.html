@@ -539,7 +539,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </div>
       </div>
     </div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi valor-input" id="txValor" inputmode="decimal" step="0.01" placeholder="0,00" oninput="atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="txValor" inputmode="decimal" placeholder="0,00" oninput="mascaraValor(this);atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
     <!-- txParc hidden — gerenciado pelo sistema de parcelamento -->
     <input type="hidden" id="txParc" value="0">
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="txCat"><option>Alimentação</option><option>Transporte</option><option>Contas</option><option>Lazer</option><option>Saúde</option><option>Educação</option><option>Moradia</option><option>Beleza</option><option>Vestuário</option><option>Pet</option><option>Tecnologia</option><option>Filhos</option><option>Presentes</option><option>Veículo</option><option>Impostos</option><option>Assinaturas</option><option>Salário</option><option>Freelance</option><option>Investimento</option><option>Outros</option></select></div><div class="fg"><label class="fl">Subcategoria</label><input class="fi" id="txSub" placeholder="Ex: Almoço, Uber..."></div></div>
@@ -2367,7 +2367,7 @@ function editTx(idx){
   }
   document.getElementById('txData').value=t.data;
   document.getElementById('txHora').value=t.hora;
-  document.getElementById('txValor').value=Math.abs(t.valor);
+  document.getElementById('txValor').value=Math.abs(t.valor).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('txTipo').value=t.tipo;
   document.getElementById('txCat').value=t.categoria;
   document.getElementById('txSub').value=t.subcategoria||'';
@@ -2512,7 +2512,7 @@ async function saveTx(){
   const btn=document.getElementById('btnSvTx');btn.disabled=true;btn.textContent='⏳...';
   const idx=parseInt(document.getElementById('txIdx').value);
   const tipo=document.getElementById('txTipo').value;
-  const valor=parseFloat(document.getElementById('txValor').value)||0;
+  const valor=parseBRL(document.getElementById('txValor').value)||parseFloat(document.getElementById('txValor').value)||0;
   const cartao=document.getElementById('txMetodo').value==='Cartão crédito'?document.getElementById('txCartaoSel').value:'';
   const totalParc=parseInt(document.getElementById('txParc').value)||0;
   const mesAno=document.getElementById('txMesAno').value||getMesChave();
