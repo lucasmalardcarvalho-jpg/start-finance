@@ -996,6 +996,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="nsec">Análises</div>
     <button class="ni" data-p="categorias"><span class="nic">📂</span> Categorias & Limites</button>
     <button class="ni" data-p="vencimentos"><span class="nic">📅</span> Vencimentos</button>
+    <button class="ni" data-p="fluxo"><span class="nic">🔮</span> Fluxo de Caixa</button>
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
   <div class="sb-bot">
@@ -1686,6 +1687,38 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
+<!-- ═══ FLUXO DE CAIXA FUTURO ═══ -->
+<div class="page" id="page-fluxo">
+  <div class="ph">
+    <div><h1>🔮 Fluxo de Caixa</h1><p>Projeção dos próximos 90 dias — saiba quando você vai ficar no vermelho</p></div>
+    <div class="pa">
+      <select class="sf-f" id="fluxoPeriodo" onchange="renderFluxo()">
+        <option value="30">Próximos 30 dias</option>
+        <option value="60">Próximos 60 dias</option>
+        <option value="90" selected>Próximos 90 dias</option>
+      </select>
+    </div>
+  </div>
+  <!-- KPIs -->
+  <div class="g4 mb" id="fluxoKpis"></div>
+  <!-- Gráfico + Alerta -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:15px;margin-bottom:15px">
+    <div class="card">
+      <div class="ch"><div><div class="ct">📈 Evolução do Saldo Projetado</div><div class="cs">Baseado em despesas fixas, parcelas, dívidas e receitas recorrentes</div></div></div>
+      <div id="fluxoChart" style="padding:0 16px 16px"></div>
+    </div>
+    <div class="card">
+      <div class="ch"><div><div class="ct">🚨 Alertas do Período</div></div></div>
+      <div id="fluxoAlertas" style="padding:0 14px 14px;max-height:360px;overflow-y:auto"></div>
+    </div>
+  </div>
+  <!-- Timeline de eventos -->
+  <div class="card">
+    <div class="ch"><div><div class="ct">📋 Linha do Tempo</div><div class="cs">Todos os eventos financeiros previstos</div></div></div>
+    <div id="fluxoTimeline" style="padding:0 18px 16px"></div>
+  </div>
+</div>
+
 <!-- ═══ RELATÓRIOS ═══ -->
 <div class="page" id="page-relatorios">
   <div class="ph"><div><h1>📑 Relatórios</h1><p id="relSubtitle">Análise completa do mês</p></div>
@@ -2086,7 +2119,7 @@ function go(page){
   window.scrollTo(0,0);
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();}};
+  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},fluxo:renderFluxo};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
@@ -6553,6 +6586,207 @@ setTimeout(()=>{
   }
 },4000);
 iniciar();
+
+// ════════════════════════════════════════════════
+// FLUXO DE CAIXA FUTURO
+// ════════════════════════════════════════════════
+function renderFluxo(){
+  const dias = parseInt(document.getElementById('fluxoPeriodo')?.value || 90);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const fim = new Date(hoje); fim.setDate(fim.getDate()+dias);
+
+  // Calcula saldo atual (soma de todos os históricos reais)
+  const saldoBase = HISTORICO.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0))
+                              .reduce((s,h)=>s+h.saldo, 0);
+
+  // Constrói lista de eventos futuros
+  const eventos = [];
+
+  // 1) Despesas fixas — todo mês no dia de vencimento
+  FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
+    const vDia = parseInt(f.venc) || 1;
+    for(let m=0; m<=3; m++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+m, vDia);
+      if(d >= hoje && d <= fim){
+        eventos.push({data:d, nome:f.desc, valor:-Math.abs(f.valor||0), tipo:'fixa', categoria:f.cat||'Outros', cor:'var(--lara)'});
+      }
+    }
+  });
+
+  // 2) Parcelas de cartão — faturas futuras
+  CARTOES.forEach(ct=>{
+    const vDia = parseInt(ct.venc) || 10;
+    for(let m=0; m<=3; m++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+m, vDia);
+      if(d >= hoje && d <= fim){
+        const mLabel = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+        const fat = TODAS_TX.filter(t=>t.cartao===ct.nome&&t.valor<0&&t.mes_ano===mLabel).reduce((s,t)=>s+Math.abs(t.valor),0);
+        if(fat > 0) eventos.push({data:d, nome:`Fatura ${ct.nome}`, valor:-fat, tipo:'cartao', categoria:'Cartão', cor:'var(--azul)'});
+      }
+    }
+  });
+
+  // 3) Dívidas ativas — próximas parcelas
+  DIVIDAS.filter(d=>parseInt(d.pagas||0)<parseInt(d.parcelas||1)).forEach(dv=>{
+    const vDia = parseInt(dv.venc) || 10;
+    for(let m=0; m<=3; m++){
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+m, vDia);
+      if(d >= hoje && d <= fim){
+        eventos.push({data:d, nome:dv.nome, valor:-Math.abs(dv.mensal||0), tipo:'divida', categoria:'Dívida', cor:'var(--verm)'});
+      }
+    }
+  });
+
+  // 4) Recorrências ativas — geradas no dia correspondente
+  RECORRENCIAS.filter(r=>r.ativo!==false).forEach(r=>{
+    const rDia = parseInt(r.dia)||1;
+    for(let m=0; m<=3; m++){
+      const diasMes = new Date(hoje.getFullYear(), hoje.getMonth()+m+1, 0).getDate();
+      const d = new Date(hoje.getFullYear(), hoje.getMonth()+m, Math.min(rDia,diasMes));
+      if(d >= hoje && d <= fim){
+        const v = r.tipo === 'receita' ? Math.abs(r.valor) : -Math.abs(r.valor);
+        eventos.push({data:d, nome:r.nome, valor:v, tipo:'recorrente', categoria:r.categoria||'Outros', cor:r.tipo==='receita'?'var(--verde)':'var(--azul)'});
+      }
+    }
+  });
+
+  // Ordena por data
+  eventos.sort((a,b)=>a.data-b.data);
+
+  // Calcula saldo acumulado por dia
+  const pontosChart = [];
+  let saldoAcc = saldoBase;
+  let saldoMinimo = saldoBase, dataSaldoMin = hoje;
+  let totalEntradas = 0, totalSaidas = 0;
+
+  // Gera array de datas
+  const mapaEventos = {};
+  eventos.forEach(ev => {
+    const key = ev.data.toISOString().split('T')[0];
+    if(!mapaEventos[key]) mapaEventos[key] = [];
+    mapaEventos[key].push(ev);
+  });
+
+  // Caminha dia a dia
+  const diaStep = dias <= 30 ? 1 : dias <= 60 ? 2 : 3;
+  for(let d = new Date(hoje); d <= fim; d.setDate(d.getDate()+diaStep)){
+    const key = d.toISOString().split('T')[0];
+    const evs = mapaEventos[key] || [];
+    evs.forEach(ev => {
+      saldoAcc += ev.valor;
+      if(ev.valor > 0) totalEntradas += ev.valor;
+      else totalSaidas += Math.abs(ev.valor);
+    });
+    pontosChart.push({data:new Date(d), saldo:saldoAcc, evs});
+    if(saldoAcc < saldoMinimo){ saldoMinimo = saldoAcc; dataSaldoMin = new Date(d); }
+  }
+
+  // KPIs
+  const kpis = document.getElementById('fluxoKpis');
+  if(kpis){
+    const fmtData = d => `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    const saldoFinal = pontosChart.length ? pontosChart[pontosChart.length-1].saldo : saldoBase;
+    kpis.innerHTML=`
+      <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🏦</div></div><div class="kpi-v" style="color:var(--azul)">${fmt(saldoBase)}</div><div class="kpi-l">Saldo atual</div></div>
+      <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v" style="color:var(--verde)">+ ${fmt(totalEntradas)}</div><div class="kpi-l">Entradas previstas (${dias}d)</div></div>
+      <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v" style="color:var(--verm)">− ${fmt(totalSaidas)}</div><div class="kpi-l">Saídas previstas (${dias}d)</div></div>
+      <div class="kpi ${saldoMinimo<0?'r':'y'}" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">${saldoMinimo<0?'🔴':'⚠️'}</div></div><div class="kpi-v" style="color:${saldoMinimo<0?'var(--verm)':'var(--amar)'}">${fmt(saldoMinimo)}</div><div class="kpi-l">Saldo mínimo · ${fmtData(dataSaldoMin)}</div></div>`;
+  }
+
+  // Gráfico de linha SVG
+  const chartEl = document.getElementById('fluxoChart');
+  if(chartEl && pontosChart.length){
+    const W=700, H=200, PT=20, PB=32, PL=56, PR=12;
+    const CW=W-PL-PR, CH=H-PT-PB;
+    const n = pontosChart.length;
+    const colW = CW/(n-1||1);
+    const saldos = pontosChart.map(p=>p.saldo);
+    const minS = Math.min(...saldos, 0);
+    const maxS = Math.max(...saldos, 0);
+    const range = Math.max(maxS - minS, 1);
+    const toY = s => PT + CH - ((s - minS)/range)*CH;
+    const baseline = toY(0);
+
+    // Grid
+    let grids = '';
+    [-2,-1,0,1,2].forEach(mult => {
+      const val = mult * (range/4) + (minS+maxS)/2;
+      const y = toY(val).toFixed(1);
+      if(parseFloat(y) >= PT && parseFloat(y) <= PT+CH){
+        grids += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#E5E9EF" stroke-width="1" stroke-dasharray="4,3"/>`;
+        grids += `<text x="${(PL-5).toFixed(0)}" y="${(parseFloat(y)+3).toFixed(0)}" text-anchor="end" font-size="9" fill="#9CA3AF" font-family="Cabinet Grotesk">${fmtSm(val)}</text>`;
+      }
+    });
+
+    // Área preenchida
+    const pts = pontosChart.map((p,i)=>`${(PL+i*colW).toFixed(1)},${toY(p.saldo).toFixed(1)}`);
+    const areaPath = `M${PL},${baseline} ${pts.join(' ')} L${(PL+(n-1)*colW).toFixed(1)},${baseline} Z`;
+    const linePath = `M${pts.join(' L')}`;
+
+    // Ticks data
+    let ticks='';
+    const tickStep = Math.max(1, Math.floor(n/6));
+    pontosChart.forEach((p,i)=>{
+      if(i%tickStep===0){
+        const x=(PL+i*colW).toFixed(1);
+        const dd=String(p.data.getDate()).padStart(2,'0');
+        const mm=String(p.data.getMonth()+1).padStart(2,'0');
+        ticks+=`<text x="${x}" y="${H-8}" text-anchor="middle" font-size="9" fill="#9CA3AF" font-family="Cabinet Grotesk">${dd}/${mm}</text>`;
+      }
+    });
+
+    // Linha de zero
+    const hasNeg = minS < 0;
+    const baselineY = toY(0).toFixed(1);
+
+    chartEl.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block">
+      ${grids}
+      ${hasNeg?`<line x1="${PL}" y1="${baselineY}" x2="${W-PR}" y2="${baselineY}" stroke="#EF4444" stroke-width="1.5" stroke-dasharray="6,3" opacity=".6"/>`:'' }
+      <path d="${areaPath}" fill="#10B981" opacity="0.08"/>
+      <path d="${linePath}" fill="none" stroke="${minS<0?'#F59E0B':'#10B981'}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+      <line x1="${PL}" y1="${baseline}" x2="${W-PR}" y2="${baseline}" stroke="#D1D5DB" stroke-width="1"/>
+      ${ticks}
+    </svg>`;
+  }
+
+  // Alertas
+  const alertEl = document.getElementById('fluxoAlertas');
+  if(alertEl){
+    const alertas = [];
+    if(saldoMinimo < 0) alertas.push({tipo:'critico', msg:`Saldo previsto negativo em ${new Date(dataSaldoMin).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}: ${fmt(saldoMinimo)}`});
+    const gastosGrandes = eventos.filter(e=>e.valor<-500).sort((a,b)=>a.valor-b.valor).slice(0,3);
+    gastosGrandes.forEach(e=>alertas.push({tipo:'atencao', msg:`${e.nome}: ${fmt(Math.abs(e.valor))} em ${e.data.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`}));
+    if(totalSaidas > totalEntradas*1.2) alertas.push({tipo:'atencao', msg:'Saídas previstas são mais de 20% acima das entradas'});
+    if(!alertas.length) alertas.push({tipo:'ok', msg:'Nenhum alerta para o período!'});
+
+    const corAlerta={critico:'var(--verm)',atencao:'var(--amar)',ok:'var(--verde)'};
+    const icAlerta={critico:'🔴',atencao:'⚠️',ok:'✅'};
+    alertEl.innerHTML = alertas.map(a=>`
+      <div style="display:flex;gap:8px;padding:9px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:15px;flex-shrink:0">${icAlerta[a.tipo]}</span>
+        <span style="font-size:12px;color:${corAlerta[a.tipo]};font-weight:600;line-height:1.4">${a.msg}</span>
+      </div>`).join('');
+  }
+
+  // Timeline
+  const tl = document.getElementById('fluxoTimeline');
+  if(tl){
+    if(!eventos.length){tl.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Nenhum evento previsto — adicione despesas fixas ou recorrências</div>';return;}
+    const ICONS={fixa:'📌',cartao:'💳',divida:'⛓️',recorrente:'🔄'};
+    tl.innerHTML=`<table class="st" style="font-size:12px">
+      <thead><tr><th>Data</th><th>Evento</th><th>Tipo</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
+      <tbody>
+        ${eventos.map(ev=>`<tr>
+          <td style="white-space:nowrap;font-weight:600">${ev.data.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</td>
+          <td style="font-weight:600">${esc(ev.nome)}</td>
+          <td><span style="font-size:11px;background:var(--bg);padding:2px 7px;border-radius:100px">${ICONS[ev.tipo]||'📋'} ${ev.tipo}</span></td>
+          <td style="color:var(--muted)">${esc(ev.categoria)}</td>
+          <td style="text-align:right;font-weight:800;color:${ev.valor>=0?'var(--verde)':'var(--verm)'}">${ev.valor>=0?'+':'−'} ${fmt(Math.abs(ev.valor))}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+  }
+}
 
 // ════════════════════════════════════════════════
 // IMPORTAÇÃO OFX / CSV
