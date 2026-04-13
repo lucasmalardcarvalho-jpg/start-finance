@@ -7,6 +7,15 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>PenseFinances</title>
+<!-- PWA -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#ee206e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PenseFinances">
+<link rel="apple-touch-icon" href="/logo-icon.svg">
+<meta name="description" content="Seu dashboard financeiro pessoal completo — transações, metas, investimentos e muito mais">
 <link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=Lora:ital@1&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -17,12 +26,66 @@
   --lara:#F97316;--lara-l:#FFF7ED;
   --roxo:#8B5CF6;--roxo-l:#F5F3FF;
   --amar:#F59E0B;--amar-l:#FFFBEB;
-  --txt:#111827;--txt2:#374151;--muted:#6B7280;--muted2:#9CA3AF;
+  --txt:#111827;--txt2:#374151;--txt3:#6B7280;--muted:#6B7280;--muted2:#9CA3AF;
   --sh:0 1px 3px rgba(0,0,0,.06),0 4px 16px rgba(0,0,0,.04);
   --sh-md:0 4px 12px rgba(0,0,0,.08),0 8px 24px rgba(0,0,0,.06);
   --sh-lg:0 8px 32px rgba(0,0,0,.12);
   --r:14px;--r-sm:10px;--r-xs:7px;--sw:232px;
 }
+
+/* ══════════════════════════════════
+   DARK MODE
+══════════════════════════════════ */
+body.dark{
+  --bg:#0F1117;--card:#1A1D2E;--card2:#141624;--border:#2A2D3E;
+  --azul-l:#2d0a1a;
+  --verde-l:#0a2419;--verde-d:#34D399;
+  --verm-l:#240a0a;
+  --lara-l:#241408;
+  --roxo-l:#1a0f2d;
+  --amar-l:#1e1704;
+  --txt:#F1F5F9;--txt2:#CBD5E1;--txt3:#8899a6;--muted:#8899a6;--muted2:#4B5563;
+  --sh:0 1px 3px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.25);
+  --sh-md:0 4px 12px rgba(0,0,0,.5),0 8px 24px rgba(0,0,0,.35);
+  --sh-lg:0 8px 32px rgba(0,0,0,.6);
+}
+body.dark input,body.dark select,body.dark textarea{background:var(--card2);color:var(--txt);border-color:var(--border)}
+body.dark input::placeholder,body.dark textarea::placeholder{color:var(--muted2)}
+body.dark .sf-s,body.dark .sf-f{background:var(--card);color:var(--txt);border-color:var(--border)}
+body.dark .sf-s:focus,body.dark .sf-f:focus{border-color:var(--azul)}
+body.dark .st tbody tr:hover{background:#202336}
+body.dark .tf{background:var(--card2)}
+body.dark .bs{background:var(--card2);color:var(--txt2);border-color:var(--border)}
+body.dark .bs:hover{background:var(--card)}
+body.dark .bg{background:transparent;border-color:var(--border);color:var(--muted)}
+body.dark .bg:hover{background:var(--card2);color:var(--txt)}
+body.dark .modal{background:var(--card)}
+body.dark .mh{border-color:var(--border)}
+body.dark .mf{border-color:var(--border)}
+body.dark .fi{background:var(--card2);border-color:var(--border);color:var(--txt)}
+body.dark .fi:focus{border-color:var(--azul)}
+body.dark .fs{background:var(--card2);border-color:var(--border);color:var(--txt)}
+body.dark .user-menu{background:var(--card);border-color:var(--border)}
+body.dark .user-menu-item{color:var(--txt2)}
+body.dark .user-menu-item:hover{background:var(--card2)}
+body.dark .user-pill{background:var(--card2);border-color:var(--border)}
+body.dark .dp-pop{background:var(--card);border-color:var(--border)}
+body.dark .dp-day:hover{background:var(--card2)}
+body.dark .dp-day.today{background:var(--azul)}
+body.dark .mes-ctrl{background:rgba(255,255,255,.05)}
+body.dark .kpi.g .kpi-ic{background:#0a2419}
+body.dark .kpi.r .kpi-ic{background:#240a0a}
+body.dark .kpi.b .kpi-ic{background:#2d0a1a}
+body.dark .kpi.y .kpi-ic{background:#1e1704}
+body.dark .kpi.p .kpi-ic{background:#1a0f2d}
+body.dark #loading{background:linear-gradient(135deg,#06030f,#1a0718)}
+/* dark toggle btn no sidebar */
+.dark-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);cursor:pointer;margin-bottom:8px;transition:all .15s;width:100%;color:rgba(255,255,255,.6);font-size:12px;font-weight:600}
+.dark-toggle:hover{background:rgba(255,255,255,.1);color:#fff}
+.dark-toggle-track{width:32px;height:18px;background:rgba(255,255,255,.15);border-radius:100px;position:relative;transition:background .25s;flex-shrink:0}
+.dark-toggle-track.on{background:var(--azul)}
+.dark-toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.dark-toggle-track.on .dark-toggle-thumb{left:16px}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cabinet Grotesk',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden}
 button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
@@ -936,6 +999,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <button class="ni" data-p="relatorios"><span class="nic">📑</span> Relatórios</button>
   </div>
   <div class="sb-bot">
+    <!-- Dark Mode Toggle -->
+    <button class="dark-toggle" onclick="toggleDarkMode()" id="darkToggleBtn" title="Alternar modo escuro">
+      <span id="darkToggleLabel">🌙 Modo escuro</span>
+      <div class="dark-toggle-track" id="darkTrack">
+        <div class="dark-toggle-thumb"></div>
+      </div>
+    </button>
     <div class="tg-card">
       <div class="tg-row"><span style="font-size:14px">🤖</span><span style="font-size:12px;font-weight:700;color:rgba(255,255,255,.7)">@pensefinances_bot</span><div class="tg-st"><span class="tg-dot"></span> Online</div></div>
       <div style="font-size:10px;color:var(--muted)">Registre via Telegram 24h</div>
@@ -1028,6 +1098,40 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <div class="kpi-v" id="k5">R$ —</div>
       <div class="kpi-l">Investimentos</div>
       <div class="kpi-h">↗ Ver carteira</div>
+    </div>
+  </div>
+
+  <!-- ── PATRIMÔNIO LÍQUIDO ── -->
+  <div id="patrimonioCard" class="card mb" style="cursor:pointer" onclick="go('investimentos')" title="Ver investimentos">
+    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--verde-l);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏦</div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Patrimônio Líquido</div>
+          <div style="font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1.1" id="patrimonioTotal">R$ —</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap" id="patrimonioBreakdown">
+        <div style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.04em">💼 Investimentos</div>
+          <div style="font-size:14px;font-weight:800;color:var(--verde)" id="patrimonioInv">—</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.04em">🏦 Saldo acumulado</div>
+          <div style="font-size:14px;font-weight:800;color:var(--azul)" id="patrimonioSaldo">—</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:var(--verm);text-transform:uppercase;letter-spacing:.04em">⛓️ Dívidas</div>
+          <div style="font-size:14px;font-weight:800;color:var(--verm)" id="patrimonioDividas">—</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">📊 Saúde</div>
+          <div style="font-size:14px;font-weight:800" id="patrimonioSaude">—</div>
+        </div>
+      </div>
+    </div>
+    <div id="patrimonioBar" style="height:4px;background:var(--border);border-radius:0 0 var(--r) var(--r);overflow:hidden">
+      <div id="patrimonioBarFill" style="height:100%;background:linear-gradient(90deg,var(--verde),#34D399);width:0%;transition:width .8s ease"></div>
     </div>
   </div>
 
@@ -1157,7 +1261,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 <!-- ═══ TRANSAÇÕES ═══ -->
 <div class="page" id="page-transacoes">
   <div class="ph"><div><h1>💸 Transações</h1><p id="txSubtitle">Todos os lançamentos — editáveis e pesquisáveis</p></div>
-  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
+  <div class="pa"><button class="btn bs" onclick="reload(true)">🔄</button><button class="btn bg btn-sm" onclick="exportCSV()">⬇️ CSV</button><button class="btn bg btn-sm" onclick="abrirImportacao()">📥 Importar extrato</button><button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Nova</button></div></div>
   <div class="tb">
     <input type="text" class="sf-s" id="srch" placeholder="🔍 Buscar descrição, categoria, local..." oninput="filterTx()">
     <select class="sf-f" id="fTipo" onchange="filterTx()"><option value="">Todos os tipos</option><option>Gasto</option><option>Receita</option></select>
@@ -1617,6 +1721,82 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
+<!-- ═══ MODAL IMPORTAÇÃO OFX/CSV ═══ -->
+<div class="ov" id="ovImport" style="z-index:600">
+<div class="modal" style="max-width:680px;width:95vw">
+  <div class="mh">
+    <div class="mt">📥 Importar Extrato</div>
+    <button class="mc" onclick="CM('ovImport')">✕</button>
+  </div>
+  <div class="mb2">
+    <!-- Step 1: Upload -->
+    <div id="importStep1">
+      <div style="text-align:center;padding:20px 0 16px">
+        <div style="font-size:36px;margin-bottom:8px">📂</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px">Selecione o arquivo do extrato</div>
+        <div style="font-size:12px;color:var(--muted)">Formatos suportados: <strong>OFX</strong> (extrato bancário) e <strong>CSV</strong></div>
+      </div>
+      <!-- Drop zone -->
+      <div id="importDropZone" onclick="document.getElementById('importFileInput').click()"
+        style="border:2px dashed var(--border);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px"
+        ondragover="event.preventDefault();this.style.borderColor='var(--azul)';this.style.background='var(--azul-l)'"
+        ondragleave="this.style.borderColor='var(--border)';this.style.background=''"
+        ondrop="importHandleDrop(event)">
+        <div style="font-size:28px;margin-bottom:6px">📄</div>
+        <div style="font-size:13px;font-weight:600;color:var(--txt2)">Clique ou arraste o arquivo aqui</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">.ofx, .qfx, .csv</div>
+      </div>
+      <input type="file" id="importFileInput" accept=".ofx,.qfx,.csv,.txt" style="display:none" onchange="importHandleFile(this.files[0])">
+      <!-- Guia de como exportar -->
+      <div style="background:var(--azul-l);border-radius:var(--r-sm);padding:12px 14px">
+        <div style="font-size:11px;font-weight:800;color:var(--azul);margin-bottom:6px">💡 Como exportar o extrato do seu banco:</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:var(--txt2)">
+          <div><strong>Nubank:</strong> App → Perfil → Exportar dados → OFX</div>
+          <div><strong>Itaú:</strong> Internet Banking → Extrato → Exportar OFX</div>
+          <div><strong>Bradesco:</strong> Internet Banking → Extrato → OFX</div>
+          <div><strong>Inter:</strong> App → Extrato → Exportar → OFX</div>
+          <div><strong>BB:</strong> Gerenciador Financeiro → OFX</div>
+          <div><strong>Santander:</strong> Internet Banking → Extrato → OFX</div>
+        </div>
+      </div>
+    </div>
+    <!-- Step 2: Preview -->
+    <div id="importStep2" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-size:13px;font-weight:800" id="importFileName">—</div>
+          <div style="font-size:11px;color:var(--muted)" id="importFileSummary">—</div>
+        </div>
+        <button class="btn bg btn-sm" onclick="importReset()">← Trocar arquivo</button>
+      </div>
+      <!-- Filtros de seleção -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn bg btn-sm" onclick="importSelAll(true)">☑️ Selecionar todos</button>
+        <button class="btn bg btn-sm" onclick="importSelAll(false)">⬜ Desmarcar todos</button>
+        <button class="btn bg btn-sm" onclick="importSelTipo('gasto')">💸 Só gastos</button>
+        <button class="btn bg btn-sm" onclick="importSelTipo('receita')">💰 Só receitas</button>
+        <span style="font-size:11px;color:var(--muted);align-self:center;margin-left:auto" id="importSelCount">0 selecionados</span>
+      </div>
+      <!-- Tabela preview -->
+      <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm)">
+        <table class="st" style="font-size:12px" id="importTable">
+          <thead><tr>
+            <th style="width:32px"><input type="checkbox" id="importChkAll" onchange="importSelAll(this.checked)" style="cursor:pointer"></th>
+            <th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th>
+          </tr></thead>
+          <tbody id="importTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn bg" onclick="CM('ovImport')">Cancelar</button>
+    <button class="btn bp" id="importConfirmBtn" style="display:none" onclick="importConfirm()">
+      ✅ Importar selecionados
+    </button>
+  </div>
+</div></div>
+
 </main>
 
 <script>
@@ -1929,6 +2109,58 @@ function renderDash(){
   renderVencimentos();
   // Dica do dia
   renderDicaDia();
+  // Patrimônio Líquido
+  renderPatrimonio();
+}
+
+function renderPatrimonio(){
+  // Ativos: Investimentos (valor atual)
+  const totalInv = INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.atual||i.valor||0),0);
+
+  // Saldo acumulado histórico (soma de todos os saldos mensais com dados)
+  const saldoAcum = HISTORICO.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0))
+                              .reduce((s,h)=>s+h.saldo,0);
+
+  // Passivos: Dívidas restantes (total - pagas*mensal)
+  const totalDividas = DIVIDAS.reduce((s,dv)=>{
+    const restantes = Math.max(parseInt(dv.parcelas||1)-parseInt(dv.pagas||0),0);
+    return s + restantes * parseFloat(dv.mensal||0);
+  },0);
+
+  const patrimonio = totalInv + saldoAcum - totalDividas;
+  const ativos = totalInv + Math.max(saldoAcum, 0);
+  const pctSaude = ativos > 0 ? Math.min((patrimonio/ativos)*100, 100) : 0;
+
+  const cor = patrimonio >= 0 ? 'var(--verde)' : 'var(--verm)';
+  const el = document.getElementById('patrimonioTotal');
+  if(el){
+    el.textContent = (patrimonio<0?'− ':'')+fmt(Math.abs(patrimonio));
+    el.style.color = cor;
+  }
+  const elInv = document.getElementById('patrimonioInv');
+  if(elInv) elInv.textContent = fmt(totalInv);
+  const elSaldo = document.getElementById('patrimonioSaldo');
+  if(elSaldo){
+    elSaldo.textContent = (saldoAcum<0?'− ':'')+fmt(Math.abs(saldoAcum));
+    elSaldo.style.color = saldoAcum>=0?'var(--azul)':'var(--verm)';
+  }
+  const elDividas = document.getElementById('patrimonioDividas');
+  if(elDividas) elDividas.textContent = totalDividas>0?'− '+fmt(totalDividas):'R$ 0';
+  const elSaude = document.getElementById('patrimonioSaude');
+  if(elSaude){
+    const nivel = patrimonio<0?'🔴 Negativo':pctSaude>=80?'🟢 Excelente':pctSaude>=50?'🟡 Bom':'🟠 Regular';
+    elSaude.textContent = nivel;
+    elSaude.style.color = patrimonio<0?'var(--verm)':pctSaude>=80?'var(--verde)':pctSaude>=50?'var(--amar)':'var(--lara)';
+  }
+  const barFill = document.getElementById('patrimonioBarFill');
+  if(barFill){
+    const pct = Math.max(0, Math.min(100, pctSaude));
+    barFill.style.width = pct+'%';
+    barFill.style.background = patrimonio<0
+      ?'linear-gradient(90deg,var(--verm),#F87171)'
+      :pct>=80?'linear-gradient(90deg,var(--verde),#34D399)'
+      :'linear-gradient(90deg,var(--amar),#FCD34D)';
+  }
 }
 
 function renderHistChart(elId, h=80){
@@ -2433,7 +2665,32 @@ document.addEventListener('DOMContentLoaded',()=>{
   }
   // Apply value masks to all money inputs
   mascaraValorInit('.valor-input');
+  // Aplica dark mode salvo
+  applyDarkMode(localStorage.getItem('sf_darkMode') === 'true');
+  // Registra Service Worker (PWA)
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js', {scope:'/'})
+      .then(reg => console.log('✅ SW registrado:', reg.scope))
+      .catch(err => console.warn('SW falhou:', err));
+  }
 });
+
+// ════════════════════════════════════════════════
+// DARK MODE
+// ════════════════════════════════════════════════
+function applyDarkMode(isDark){
+  document.body.classList.toggle('dark', isDark);
+  const track = document.getElementById('darkTrack');
+  const label = document.getElementById('darkToggleLabel');
+  if(track) track.classList.toggle('on', isDark);
+  if(label) label.textContent = isDark ? '☀️ Modo claro' : '🌙 Modo escuro';
+}
+
+function toggleDarkMode(){
+  const isDark = !document.body.classList.contains('dark');
+  localStorage.setItem('sf_darkMode', isDark);
+  applyDarkMode(isDark);
+}
 
 function populateMesSelector(){
   const sel=document.getElementById('txMesAno');
@@ -6081,6 +6338,266 @@ setTimeout(()=>{
   }
 },4000);
 iniciar();
+
+// ════════════════════════════════════════════════
+// IMPORTAÇÃO OFX / CSV
+// ════════════════════════════════════════════════
+let IMPORT_ROWS = [];
+
+function abrirImportacao(){
+  importReset();
+  OM('ovImport');
+}
+
+function importReset(){
+  IMPORT_ROWS = [];
+  document.getElementById('importStep1').style.display = '';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importConfirmBtn').style.display = 'none';
+  document.getElementById('importFileInput').value = '';
+  const dz = document.getElementById('importDropZone');
+  if(dz){ dz.style.borderColor = ''; dz.style.background = ''; }
+}
+
+function importHandleDrop(e){
+  e.preventDefault();
+  const dz = document.getElementById('importDropZone');
+  if(dz){ dz.style.borderColor=''; dz.style.background=''; }
+  const file = e.dataTransfer.files[0];
+  if(file) importHandleFile(file);
+}
+
+function importHandleFile(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const reader = new FileReader();
+  reader.onload = e => {
+    const txt = e.target.result;
+    let rows = [];
+    if(ext === 'csv' || ext === 'txt') rows = parseCSVExtrato(txt);
+    else rows = parseOFXExtrato(txt); // ofx, qfx
+    if(!rows.length){ toast('Nenhuma transação encontrada no arquivo.', 'warning'); return; }
+    IMPORT_ROWS = rows;
+    renderImportPreview(file.name, rows);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseOFXExtrato(txt){
+  const rows = [];
+  // OFX pode ser SGML (antigo) ou XML
+  // Suporte a ambos: busca tags STMTTRN
+  const txBlocks = txt.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi) || [];
+  // Fallback SGML (sem fechamento de tags)
+  const sgmlBlocks = txt.split('<STMTTRN>').slice(1);
+  const blocks = txBlocks.length ? txBlocks : sgmlBlocks;
+
+  blocks.forEach((blk, idx) => {
+    const get = tag => { const m = blk.match(new RegExp(`<${tag}[^>]*>([^<\\r\\n]*)`,'i')); return m ? m[1].trim() : ''; };
+    const trntype = get('TRNTYPE') || 'DEBIT';
+    const dtposted = get('DTPOSTED') || '';
+    const amtRaw = get('TRNAMT') || get('TRNAMT') || '0';
+    const memo = get('MEMO') || get('NAME') || `Transação ${idx+1}`;
+    const fitid = get('FITID') || String(idx);
+
+    // Parse data: YYYYMMDD ou YYYYMMDDHHMMSS
+    let data = '';
+    const dm = dtposted.replace(/[^0-9]/g,'').substring(0,8);
+    if(dm.length === 8){
+      const ano = dm.substring(0,4), mes = dm.substring(4,6), dia = dm.substring(6,8);
+      data = `${dia}/${mes}/${ano}`;
+    }
+
+    const valor = parseFloat(amtRaw.replace(',','.')) || 0;
+    if(valor === 0) return;
+
+    const tipo = valor > 0 ? 'receita' : 'gasto';
+    const cat = autoCategoria(memo);
+
+    rows.push({ id: fitid, data, descricao: limparNomeOFX(memo), valor: Math.abs(valor), tipo, categoria: cat, selecionado: true });
+  });
+  return rows;
+}
+
+function parseCSVExtrato(txt){
+  const rows = [];
+  const lines = txt.split(/\r?\n/).filter(l => l.trim());
+  // Detecta separador: ; ou ,
+  const sep = lines[0]?.includes(';') ? ';' : ',';
+  // Detecta header
+  const firstLine = lines[0].toLowerCase();
+  const startIdx = (firstLine.includes('data') || firstLine.includes('date') || firstLine.includes('descri')) ? 1 : 0;
+
+  lines.slice(startIdx).forEach((line, idx) => {
+    const cols = line.split(sep).map(c => c.replace(/^["']|["']$/g,'').trim());
+    if(cols.length < 2) return;
+
+    // Tenta encontrar colunas por posição ou nome
+    let data = '', descricao = '', valor = 0, tipo = 'gasto';
+
+    // Formatos comuns: Data, Descrição, Valor | Data, Histórico, Valor, Saldo
+    // Nubank CSV: date, category, title, amount
+    if(firstLine.includes('category') && firstLine.includes('title')){
+      // Nubank
+      data = formatDateCSV(cols[0]);
+      descricao = cols[2] || cols[1] || '';
+      valor = Math.abs(parseFloat(cols[3]?.replace(',','.') || '0'));
+      tipo = parseFloat(cols[3]) < 0 ? 'gasto' : 'receita';
+    } else {
+      // Genérico: col0=data, col1=descrição, col2=valor (ou col1=valor)
+      data = formatDateCSV(cols[0]);
+      descricao = cols[1] || '';
+      // Busca coluna numérica
+      for(let i = 1; i < cols.length; i++){
+        const n = parseFloat(cols[i]?.replace(/\./g,'').replace(',','.'));
+        if(!isNaN(n) && n !== 0){ valor = Math.abs(n); tipo = n < 0 ? 'gasto' : 'receita'; break; }
+      }
+    }
+
+    if(!data || valor === 0) return;
+    const cat = autoCategoria(descricao);
+    rows.push({ id: `csv_${idx}`, data, descricao: descricao.substring(0,60), valor, tipo, categoria: cat, selecionado: true });
+  });
+  return rows;
+}
+
+function formatDateCSV(str){
+  if(!str) return '';
+  // YYYY-MM-DD → DD/MM/YYYY
+  const iso = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if(iso) return `${iso[3]}/${iso[2]}/${iso[1]}`;
+  // DD/MM/YYYY já ok
+  if(str.match(/^\d{2}\/\d{2}\/\d{4}/)) return str.substring(0,10);
+  // DD-MM-YYYY
+  const br = str.match(/^(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
+  if(br) return `${br[1]}/${br[2]}/${br[3]}`;
+  return str;
+}
+
+function limparNomeOFX(nome){
+  return nome.replace(/\*/g,' ').replace(/\s{2,}/g,' ').trim().substring(0,60);
+}
+
+function autoCategoria(desc){
+  const d = (desc || '').toLowerCase();
+  if(/supermercado|mercado|padaria|hortifrut|atacad|açougue|carrefour|extra|pão de açúcar|assaí|zaffari|sams club|walmart|atacarejo/i.test(d)) return 'Alimentação';
+  if(/restaurante|lanchonete|ifood|rappi|uber eats|james|churrasco|pizza|hamburguer|sushi|delivery|cafe|bar |bistr/i.test(d)) return 'Alimentação';
+  if(/uber|99|taxi|ônibus|metrô|estacionamento|pedágio|gasolina|combustivel|shell|posto|ipiranga|br distribuidora/i.test(d)) return 'Transporte';
+  if(/farmácia|hospital|clinica|médico|dentista|laboratorio|exame|plano de saúde|unimed|bradesco saude/i.test(d)) return 'Saúde';
+  if(/netflix|spotify|amazon prime|hbo|disney|globoplay|youtube premium|apple tv|assinatura/i.test(d)) return 'Assinaturas';
+  if(/aluguel|condominio|iptu|luz|energia|água|gás|internet|net |claro |vivo |oi |tim /i.test(d)) return 'Moradia';
+  if(/escola|faculdade|curso|udemy|alura|educação|livro|material escolar/i.test(d)) return 'Educação';
+  if(/roupa|calçado|zara|renner|c&a|riachuelo|hm |shein|americanas|magazine|shopping/i.test(d)) return 'Vestuário';
+  if(/cinema|teatro|show|festival|ingresso|ingresso|parque|lazer/i.test(d)) return 'Lazer';
+  if(/salário|pagamento|deposito em conta|ted recebido|pix recebido|receita/i.test(d)) return 'Salário';
+  if(/freelance|renda extra|transferência recebida/i.test(d)) return 'Freelance';
+  return 'Outros';
+}
+
+function renderImportPreview(fileName, rows){
+  document.getElementById('importStep1').style.display = 'none';
+  document.getElementById('importStep2').style.display = '';
+  document.getElementById('importConfirmBtn').style.display = '';
+  document.getElementById('importFileName').textContent = fileName;
+  document.getElementById('importFileSummary').textContent = `${rows.length} transação(ões) encontrada(s)`;
+
+  const tbody = document.getElementById('importTableBody');
+  const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
+  const catOpts = allCats.map(c=>`<option>${esc(c)}</option>`).join('');
+
+  tbody.innerHTML = rows.map((r, i) => `
+    <tr id="importRow_${i}" style="${!r.selecionado?'opacity:.45':''}">
+      <td><input type="checkbox" ${r.selecionado?'checked':''} onchange="importToggle(${i},this.checked)" style="cursor:pointer"></td>
+      <td style="white-space:nowrap;font-size:11px">${esc(r.data)}</td>
+      <td><input type="text" value="${esc(r.descricao)}" onchange="IMPORT_ROWS[${i}].descricao=this.value"
+        style="border:none;background:transparent;width:100%;font-size:12px;color:var(--txt);font-family:inherit;outline:none;padding:2px 0"></td>
+      <td style="font-weight:800;color:${r.tipo==='receita'?'var(--verde)':'var(--verm)'}">
+        ${r.tipo==='receita'?'+':'−'} ${fmt(r.valor)}
+      </td>
+      <td>
+        <select onchange="IMPORT_ROWS[${i}].tipo=this.value;importToggle(${i},null)"
+          style="border:none;background:transparent;font-size:11px;color:var(--txt);cursor:pointer;font-family:inherit">
+          <option value="gasto" ${r.tipo==='gasto'?'selected':''}>💸 Gasto</option>
+          <option value="receita" ${r.tipo==='receita'?'selected':''}>💰 Receita</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="IMPORT_ROWS[${i}].categoria=this.value"
+          style="border:none;background:transparent;font-size:11px;color:var(--txt);cursor:pointer;font-family:inherit;max-width:110px">
+          ${allCats.map(c=>`<option${c===r.categoria?' selected':''}>${esc(c)}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`).join('');
+
+  importUpdateCount();
+}
+
+function importToggle(i, checked){
+  if(checked !== null) IMPORT_ROWS[i].selecionado = checked;
+  const row = document.getElementById(`importRow_${i}`);
+  if(row) row.style.opacity = IMPORT_ROWS[i].selecionado ? '1' : '.45';
+  importUpdateCount();
+}
+
+function importSelAll(sel){
+  IMPORT_ROWS.forEach((r,i) => { r.selecionado = sel; importToggle(i, null); });
+  const chk = document.getElementById('importChkAll');
+  if(chk) chk.checked = sel;
+}
+
+function importSelTipo(tipo){
+  IMPORT_ROWS.forEach((r,i) => { r.selecionado = r.tipo === tipo; importToggle(i, null); });
+}
+
+function importUpdateCount(){
+  const n = IMPORT_ROWS.filter(r=>r.selecionado).length;
+  const el = document.getElementById('importSelCount');
+  if(el) el.textContent = `${n} selecionado(s)`;
+  const btn = document.getElementById('importConfirmBtn');
+  if(btn) btn.textContent = `✅ Importar ${n} transação(ões)`;
+}
+
+function importConfirm(){
+  const sels = IMPORT_ROWS.filter(r => r.selecionado);
+  if(!sels.length){ toast('Nenhuma transação selecionada.', 'warning'); return; }
+
+  const hoje = new Date();
+  let importadas = 0;
+  sels.forEach(r => {
+    // Parse data: DD/MM/YYYY
+    let mesAno = getMesChave(); // fallback: mês atual
+    const dm = r.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(dm){
+      const d = new Date(parseInt(dm[3]), parseInt(dm[2])-1, parseInt(dm[1]));
+      const mLabel = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+      mesAno = mLabel;
+    }
+    const valor = r.tipo === 'gasto' ? -Math.abs(r.valor) : Math.abs(r.valor);
+    const newTx = {
+      data: r.data,
+      hora: '00:00',
+      descricao: r.descricao,
+      categoria: r.categoria || 'Outros',
+      valor,
+      metodo: 'Importado',
+      cartao: '',
+      parcelas: 1,
+      parcela_atual: 1,
+      tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
+      local: '',
+      mes_ano: mesAno,
+      idx: Date.now() + importadas
+    };
+    TODAS_TX.push(newTx);
+    importadas++;
+  });
+
+  salvarTxsLocal();
+  autoRefresh();
+  CM('ovImport');
+  toast(`✅ ${importadas} transação(ões) importada(s) com sucesso!`, 'success');
+  renderTxPage();
+}
 </script>
 </body>
 </html>

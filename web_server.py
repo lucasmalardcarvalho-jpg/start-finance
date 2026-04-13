@@ -64,6 +64,19 @@ def serve_logo():
 def serve_logo_icon():
     return send_file("logo-icon.svg", mimetype="image/svg+xml")
 
+@app.route("/manifest.json")
+def serve_manifest():
+    resp = send_file("manifest.json", mimetype="application/manifest+json")
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    return resp
+
+@app.route("/sw.js")
+def serve_sw():
+    resp = send_file("sw.js", mimetype="application/javascript")
+    resp.headers["Cache-Control"] = "no-cache"
+    resp.headers["Service-Worker-Allowed"] = "/"
+    return resp
+
 
 # ── Dashboard HTML ──────────────────────────────────────────────────
 @app.route("/")

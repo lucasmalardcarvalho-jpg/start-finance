@@ -1,0 +1,27 @@
+{
+  "name": "PenseFinances",
+  "short_name": "PenseFinances",
+  "description": "Seu dashboard financeiro pessoal completo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#130039",
+  "theme_color": "#ee206e",
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/logo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "categories": ["finance", "productivity"],
+  "screenshots": []
+}
