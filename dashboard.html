@@ -201,6 +201,18 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 /* DÍVIDA CARD */
 .dv-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);cursor:default;transition:all .2s}
 .dv-card:hover{box-shadow:var(--sh-md);border-color:var(--verm)}
+/* ENDIVIDAMENTO */
+.endiv-tab-btn{border-radius:7px!important;padding:4px 12px!important;font-size:12px!important}
+.active-endiv{background:var(--txt)!important;color:var(--card)!important;border-color:var(--txt)!important}
+.endiv-kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px}
+.endiv-kpi-label{font-size:11px;color:var(--azul);font-weight:700;margin-bottom:4px}
+.endiv-kpi-val{font-size:18px;font-weight:900;color:var(--txt);margin-bottom:2px}
+.endiv-kpi-sub{font-size:10px;color:var(--muted)}
+.endiv-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;min-width:0}
+.endiv-bar-grp{width:100%;display:flex;gap:2px;align-items:flex-end;justify-content:center}
+.endiv-bar{border-radius:4px 4px 0 0;min-height:4px;transition:height .4s ease;cursor:pointer}
+.endiv-bar:hover{opacity:.8}
+@media(max-width:700px){#endivMainGrid{grid-template-columns:1fr!important}}
 
 /* META CARD */
 .meta-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);transition:all .2s}
@@ -619,6 +631,22 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mf">
     <button class="btn bg" onclick="CM('ovConfirm');if(typeof _confirmNo==='function')_confirmNo()">Cancelar</button>
     <button class="btn bd" id="confirmOkBtn" onclick="CM('ovConfirm');if(typeof _confirmYes==='function')_confirmYes()">Confirmar</button>
+  </div>
+</div></div>
+
+<!-- Modal Recorrência -->
+<div class="ov" id="ovRecorrencia">
+<div class="modal" style="max-width:420px;text-align:center">
+  <div class="mh" style="justify-content:flex-end"><button class="mc" onclick="CM('ovRecorrencia')">✕</button></div>
+  <div style="padding:20px 28px 28px">
+    <div style="font-size:36px;margin-bottom:12px">🔄</div>
+    <div style="font-size:17px;font-weight:900;color:var(--txt);margin-bottom:8px">Esse lançamento é uma recorrência</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px">Você pode alterar esse, futuros ou todos. O que quer fazer?</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn bg" style="font-weight:700" onclick="aplicarEdicaoRecorrencia('apenas')">Apenas esse</button>
+      <button class="btn" style="background:#1e293b;color:#fff;border-color:#1e293b;font-weight:700" onclick="aplicarEdicaoRecorrencia('futuros')">Alterar futuros</button>
+      <button class="btn" style="background:#1e293b;color:#fff;border-color:#1e293b;font-weight:700" onclick="aplicarEdicaoRecorrencia('todos')">Alterar todos</button>
+    </div>
   </div>
 </div></div>
 
@@ -1149,6 +1177,42 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🏁</div></div><div class="kpi-v" id="dvPago">R$ 0,00</div><div class="kpi-l">Total já pago</div></div>
   </div>
   <div id="dividasGrid" class="g2e mb"></div>
+
+  <!-- ═══ ENDIVIDAMENTO ═══ -->
+  <div id="endivSection" style="margin-top:8px">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+      <div style="font-size:18px;font-weight:900;color:var(--txt)">Endividamento de <span id="endivNome" style="color:var(--azul)">—</span></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:4px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:3px">
+          <button id="endivTabAmbos"  class="btn bp btn-sm endiv-tab-btn active-endiv" onclick="endivSetTab('ambos')">Ambos</button>
+          <button id="endivTabParc"   class="btn bs btn-sm endiv-tab-btn" onclick="endivSetTab('parcelas')">Parcelas</button>
+          <button id="endivTabDivs"   class="btn bs btn-sm endiv-tab-btn" onclick="endivSetTab('dividas')">Dívidas</button>
+        </div>
+        <select id="endivFiltDivida" class="fs" style="font-size:12px;padding:5px 10px;border-radius:8px;display:none" onchange="renderEndividamento()"><option value="-1">Todos</option></select>
+        <select id="endivFiltAno" class="fs" style="font-size:12px;padding:5px 10px;border-radius:8px" onchange="renderEndividamento()"></select>
+      </div>
+    </div>
+
+    <!-- Chart + Summary -->
+    <div style="display:grid;grid-template-columns:1fr 280px;gap:16px;margin-bottom:16px" id="endivMainGrid">
+      <!-- Chart card -->
+      <div class="card" style="padding:20px 20px 12px">
+        <div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:4px" id="endivChartTitle">Projeção de Parcelas e Dívidas</div>
+        <div style="display:flex;gap:14px;margin-bottom:14px;font-size:11px;font-weight:600" id="endivLegenda">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#a3e635;display:inline-block"></span>Parcelas</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--azul);display:inline-block"></span>Dívidas</span>
+        </div>
+        <div id="endivBarChart" style="display:flex;align-items:flex-end;gap:4px;height:160px;padding:0 4px"></div>
+        <div id="endivBarLabels" style="display:flex;gap:4px;margin-top:6px;font-size:10px;color:var(--muted);font-weight:600;padding:0 4px"></div>
+      </div>
+      <!-- Summary card -->
+      <div id="endivSummary" style="display:flex;flex-direction:column;gap:10px"></div>
+    </div>
+
+    <!-- Detail table -->
+    <div id="endivTable"></div>
+  </div>
 </div>
 
 <!-- ═══ METAS ═══ -->
@@ -2578,19 +2642,79 @@ async function saveTx(){
       // Tenta API em background (sem bloquear UI)
       fetch('/api/transacao/nova',{method:'POST',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
     } else {
-      // Editar existente
+      // Editar existente — verifica se é parcelada/recorrente
+      const txOriginal = TODAS_TX.find(t=>t.idx===idx);
+      const isParcelada = txOriginal && parseInt(txOriginal.parcelas||0) > 1;
+      if(isParcelada){
+        // Guarda dados pendentes e abre modal de recorrência
+        window._pendingEdit = {idx, dados};
+        btn.disabled=false; btn.textContent='💾 Salvar';
+        OM('ovRecorrencia');
+        return;
+      }
+      // Transação simples — edita direto
       const pos=TODAS_TX.findIndex(t=>t.idx===idx);
       if(pos>=0) TODAS_TX[pos]={...TODAS_TX[pos],...dados,idx};
       else TODAS_TX.push({...dados,idx});
       toast('✅ Atualizado!','success');
       fetch(`/api/transacao/${idx}`,{method:'PUT',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
+      salvarTxsLocal();
+      CM('ovTx');
+      autoRefresh();
+      renderTxPage();
     }
-    salvarTxsLocal();
-    CM('ovTx');
-    autoRefresh();
-    renderTxPage();
   }catch(e){toast('❌ '+e.message,'error')}
   finally{btn.disabled=false;btn.textContent='💾 Salvar'}
+}
+
+function aplicarEdicaoRecorrencia(modo){
+  CM('ovRecorrencia');
+  const {idx, dados} = window._pendingEdit || {};
+  if(idx === undefined) return;
+  const txOriginal = TODAS_TX.find(t=>t.idx===idx);
+  if(!txOriginal) return;
+
+  const descOriginal = txOriginal.descricao;
+  const totalParc = parseInt(txOriginal.parcelas||0);
+  const parcAtual = parseInt(txOriginal.parcela_atual||1);
+
+  if(modo === 'apenas'){
+    // Altera só este
+    const pos = TODAS_TX.findIndex(t=>t.idx===idx);
+    if(pos>=0) TODAS_TX[pos]={...TODAS_TX[pos],...dados,idx,parcela_atual:TODAS_TX[pos].parcela_atual,mes_ano:TODAS_TX[pos].mes_ano};
+    toast('✅ Lançamento atualizado','success');
+
+  } else if(modo === 'futuros'){
+    // Altera este + todos futuros do mesmo grupo (parcela_atual >= atual)
+    TODAS_TX.forEach((t,i)=>{
+      const mesMatch = t.descricao===descOriginal && parseInt(t.parcelas||0)===totalParc;
+      const isFuturo = parseInt(t.parcela_atual||1) >= parcAtual;
+      if(mesMatch && isFuturo){
+        const offset = parseInt(t.parcela_atual||1) - parcAtual;
+        const novoMes = somarMes(dados.mes_ano, offset);
+        TODAS_TX[i]={...t,...dados,idx:t.idx,parcela_atual:t.parcela_atual,mes_ano:novoMes};
+      }
+    });
+    toast('✅ Este e futuros atualizados','success');
+
+  } else if(modo === 'todos'){
+    // Altera todos do mesmo grupo
+    TODAS_TX.forEach((t,i)=>{
+      if(t.descricao===descOriginal && parseInt(t.parcelas||0)===totalParc){
+        const offset = parseInt(t.parcela_atual||1) - 1;
+        const mesBase = somarMes(dados.mes_ano, -(parcAtual-1));
+        const novoMes = somarMes(mesBase, offset);
+        TODAS_TX[i]={...t,...dados,idx:t.idx,parcela_atual:t.parcela_atual,mes_ano:novoMes};
+      }
+    });
+    toast('✅ Todas as recorrências atualizadas','success');
+  }
+
+  salvarTxsLocal();
+  CM('ovTx');
+  autoRefresh();
+  renderTxPage();
+  window._pendingEdit = null;
 }
 
 // Soma N meses a um mes_ano ("mar./2026" + 2 = "mai./2026")
@@ -3098,6 +3222,287 @@ function saveDv(){
 function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();renderDash();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
 function delDv(i){DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')}
 
+// ── Estado do Endividamento ──
+let ENDIV_TAB = 'ambos';
+let ENDIV_ANO = new Date().getFullYear();
+
+function endivSetTab(tab){
+  ENDIV_TAB = tab;
+  ['ambos','parcelas','dividas'].forEach(t=>{
+    const btn = document.getElementById('endivTab'+t.charAt(0).toUpperCase()+t.slice(1).replace('elas','elasParc').replace('ividas','ivsDivs').replace('elasParc','arc').replace('ivsDivs','ivs'));
+    // simpler: just match ids
+  });
+  document.getElementById('endivTabAmbos')?.classList.toggle('active-endiv', tab==='ambos');
+  document.getElementById('endivTabAmbos')?.classList.toggle('btn-bs', tab!=='ambos');
+  document.getElementById('endivTabAmbos')?.classList.toggle('btn-bp', tab==='ambos');
+  document.getElementById('endivTabParc')?.classList.toggle('active-endiv', tab==='parcelas');
+  document.getElementById('endivTabParc')?.classList.toggle('btn-bs', tab!=='parcelas');
+  document.getElementById('endivTabParc')?.classList.toggle('btn-bp', tab==='parcelas');
+  document.getElementById('endivTabDivs')?.classList.toggle('active-endiv', tab==='dividas');
+  document.getElementById('endivTabDivs')?.classList.toggle('btn-bs', tab!=='dividas');
+  document.getElementById('endivTabDivs')?.classList.toggle('btn-bp', tab==='dividas');
+  const filtDiv = document.getElementById('endivFiltDivida');
+  if(filtDiv) filtDiv.style.display = tab==='dividas' ? '' : 'none';
+  renderEndividamento();
+}
+
+function endivGetParcMes(ano){
+  // Retorna array[0..11] com soma das parcelas de transações parceladas por mês
+  const meses = Array(12).fill(0);
+  TODAS_TX.forEach(tx=>{
+    if(!tx.parcelas || parseInt(tx.parcelas||0) < 2) return;
+    if(tx.valor >= 0) return;
+    const parts = (tx.mes_ano||'').split('/');
+    if(parts.length < 2) return;
+    if(parseInt(parts[1]) !== parseInt(ano)) return;
+    const mesIdx = MESES_PT.indexOf(parts[0]);
+    if(mesIdx < 0) return;
+    meses[mesIdx] += Math.abs(parseFloat(tx.valor)||0);
+  });
+  return meses;
+}
+
+function endivGetDivMes(ano, divIdx){
+  // Retorna array[0..11] com projeção de pagamentos de dívidas por mês no ano
+  const meses = Array(12).fill(0);
+  const hoje = new Date();
+  const divs = divIdx >= 0 ? [DIVIDAS[divIdx]] : DIVIDAS;
+  divs.forEach(d=>{
+    if(!d) return;
+    const mensal = parseFloat(d.mensal||0);
+    const parcelas = parseInt(d.parcelas||1);
+    const pagas = parseInt(d.pagas||0);
+    const restantes = Math.max(parcelas - pagas, 0);
+    if(!mensal || !restantes) return;
+    // Projeta parcelas futuras a partir do mês atual
+    let mesCount = 0;
+    for(let i=0; i<48 && mesCount < restantes; i++){
+      const dt = new Date(hoje.getFullYear(), hoje.getMonth()+i, 1);
+      if(dt.getFullYear() === parseInt(ano)){
+        meses[dt.getMonth()] += mensal;
+      }
+      mesCount++;
+    }
+  });
+  return meses;
+}
+
+function renderEndividamento(){
+  const nomeEl = document.getElementById('endivNome');
+  if(nomeEl) nomeEl.textContent = AUTH_USER?.name || '—';
+
+  // Popula select de ano
+  const anoSel = document.getElementById('endivFiltAno');
+  if(anoSel && !anoSel.options.length){
+    const anoAtual = new Date().getFullYear();
+    for(let a=anoAtual-1; a<=anoAtual+2; a++){
+      const opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      if(a === anoAtual) opt.selected = true;
+      anoSel.appendChild(opt);
+    }
+  }
+  ENDIV_ANO = parseInt(anoSel?.value || new Date().getFullYear());
+
+  // Popula select de dívidas
+  const dvSel = document.getElementById('endivFiltDivida');
+  if(dvSel){
+    dvSel.style.display = ENDIV_TAB === 'dividas' ? '' : 'none';
+    dvSel.innerHTML = '<option value="-1">Todos</option>' +
+      DIVIDAS.map((d,i)=>`<option value="${i}">${esc(d.nome)}</option>`).join('');
+  }
+  const divIdx = parseInt(dvSel?.value ?? -1);
+
+  const parcMes = endivGetParcMes(ENDIV_ANO);
+  const divMes  = endivGetDivMes(ENDIV_ANO, ENDIV_TAB==='dividas' ? divIdx : -1);
+  const totalMes = parcMes.map((v,i)=>v + (ENDIV_TAB==='parcelas' ? 0 : divMes[i]));
+
+  // ── Chart ──
+  const chartEl = document.getElementById('endivBarChart');
+  const labelsEl = document.getElementById('endivBarLabels');
+  const titleEl = document.getElementById('endivChartTitle');
+  const legEl = document.getElementById('endivLegenda');
+  if(!chartEl) return;
+
+  const showParc = ENDIV_TAB !== 'dividas';
+  const showDiv  = ENDIV_TAB !== 'parcelas';
+
+  if(titleEl) titleEl.textContent =
+    ENDIV_TAB==='parcelas' ? 'Projeção de Parcelas' :
+    ENDIV_TAB==='dividas'  ? 'Gráfico de Pagamentos' :
+    'Projeção de Parcelas e Dívidas';
+
+  if(legEl) legEl.innerHTML = [
+    showParc ? `<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:#a3e635;display:inline-block"></span>Parcelas</span>` : '',
+    showDiv  ? `<span style="display:flex;align-items:center;gap:4px"><span style="width:10px;height:10px;border-radius:2px;background:var(--azul);display:inline-block"></span>Dívidas</span>` : ''
+  ].join('');
+
+  const maxVal = Math.max(...totalMes, 1);
+  const mesesAbrev = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
+  chartEl.innerHTML = parcMes.map((pv,i)=>{
+    const dv = divMes[i];
+    const tot = (showParc?pv:0) + (showDiv?dv:0);
+    const hTotal = Math.round((tot/maxVal)*150);
+    if(showParc && showDiv){
+      const hParc = tot>0 ? Math.round((pv/tot)*hTotal) : 0;
+      const hDiv  = hTotal - hParc;
+      return `<div class="endiv-bar-wrap" title="${mesesAbrev[i]}: Parcelas ${fmt(pv)} + Dívidas ${fmt(dv)} = ${fmt(tot)}">
+        <div style="display:flex;flex-direction:column-reverse;align-items:center;width:100%;height:${hTotal}px;gap:0">
+          <div class="endiv-bar" style="width:80%;height:${hParc}px;background:#a3e635"></div>
+          ${hDiv>0?`<div class="endiv-bar" style="width:80%;height:${hDiv}px;background:var(--azul)"></div>`:''}
+        </div>
+      </div>`;
+    }
+    const cor = showParc ? '#a3e635' : 'var(--azul)';
+    return `<div class="endiv-bar-wrap" title="${mesesAbrev[i]}: ${fmt(tot)}">
+      <div class="endiv-bar" style="width:80%;height:${Math.max(hTotal,4)}px;background:${cor}"></div>
+    </div>`;
+  }).join('');
+
+  labelsEl.innerHTML = mesesAbrev.map(m=>`<div style="flex:1;text-align:center;font-size:10px">${m}</div>`).join('');
+
+  // ── Summary ──
+  const sumEl = document.getElementById('endivSummary');
+  if(sumEl){
+    const totParcAno = parcMes.reduce((s,v)=>s+v,0);
+    const totDivAno  = divMes.reduce((s,v)=>s+v,0);
+    const totPagoDivs = DIVIDAS.reduce((s,d)=>s+(parseFloat(d.mensal||0)*parseInt(d.pagas||0)),0);
+    const mesMax = totalMes.indexOf(Math.max(...totalMes));
+    const hoje = new Date();
+    const mesesRestParc = parcMes.slice(hoje.getMonth()).filter(v=>v>0).length;
+    const mesesRestDivs = DIVIDAS.reduce((s,d)=>s+Math.max(parseInt(d.parcelas||1)-parseInt(d.pagas||0),0),0)>0
+      ? Math.max(...DIVIDAS.map(d=>Math.max(parseInt(d.parcelas||1)-parseInt(d.pagas||0),0))) : 0;
+
+    const kpis = ENDIV_TAB==='ambos' ? [
+      {label:'Total gasto (parcelas)',val:fmt(totParcAno),sub:'Somatório das parcelas do ano'},
+      {label:'Total pago (dívidas)',val:fmt(totPagoDivs),sub:'Somatório dos pagamentos das dívidas'},
+      {label:'Mês mais pesado',val:`${MESES_NM[mesMax]} · ${fmt(Math.max(...totalMes))}`,sub:'Maior valor em dívidas e parcelas'},
+      {label:'Meses até zerar',val:`${Math.max(mesesRestParc,mesesRestDivs)} meses`,sub:'Tempo restante para zerar parcelamentos e dívidas'}
+    ] : ENDIV_TAB==='parcelas' ? [
+      {label:'Parcelas do mês',val:fmt(parcMes[hoje.getMonth()]),sub:'Somatório das parcelas do mês'},
+      {label:'Parcelas do ano',val:fmt(totParcAno),sub:'Somatório das parcelas do ano'},
+      {label:'Meses até zerar',val:`${mesesRestParc} meses`,sub:'Tempo restante para zerar os parcelamentos'}
+    ] : (() => {
+      const d = divIdx >= 0 ? DIVIDAS[divIdx] : null;
+      if(d){
+        const pago = parseFloat(d.mensal||0)*parseInt(d.pagas||0);
+        const rest = Math.max(parseInt(d.parcelas||1)-parseInt(d.pagas||0),0);
+        return [
+          {label:'Quanto devo',val:fmt(parseFloat(d.total||0)),sub:'Quanto você financiou'},
+          {label:'Quanto paguei',val:fmt(pago),sub:'Quanto você pagou da dívida'},
+          {label:'Meses até zerar',val:`${rest} meses`,sub:'Tempo restante para zerar a dívida'}
+        ];
+      }
+      return [
+        {label:'Total das dívidas',val:fmt(DIVIDAS.reduce((s,dv)=>s+parseFloat(dv.total||0),0)),sub:'Soma de todas as dívidas'},
+        {label:'Total pago',val:fmt(totPagoDivs),sub:'Quanto você já pagou'},
+        {label:'Meses até zerar',val:`${mesesRestDivs} meses`,sub:'Tempo restante para zerar'}
+      ];
+    })();
+
+    sumEl.innerHTML = `<div style="font-size:13px;font-weight:700;color:var(--txt);margin-bottom:2px">Resumo${ENDIV_TAB==='parcelas'?'':' do Ano'}</div>` +
+      kpis.map(k=>`<div class="endiv-kpi"><div class="endiv-kpi-label">${k.label}</div><div class="endiv-kpi-val">${k.val}</div><div class="endiv-kpi-sub">${k.sub}</div></div>`).join('');
+  }
+
+  // ── Tabela ──
+  const tabEl = document.getElementById('endivTable');
+  if(!tabEl) return;
+
+  if(ENDIV_TAB === 'ambos'){
+    // Soma mensal
+    const rows = Array(12).fill(0).map((_,i)=>{
+      const p = parcMes[i], dv = divMes[i];
+      if(!p && !dv) return '';
+      return `<tr>
+        <td style="font-weight:600">${MESES_NM[i]}</td>
+        <td style="color:${p>0?'#65a30d':'var(--muted)'};">${p>0?fmt(p):'R$ 0,00'}</td>
+        <td style="color:${dv>0?'var(--azul)':'var(--muted)'};">${dv>0?fmt(dv):'R$ 0,00'}</td>
+        <td style="font-weight:800;color:var(--txt)">${fmt(p+dv)}</td>
+      </tr>`;
+    }).join('');
+    tabEl.innerHTML = rows ? `<div class="card" style="padding:20px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">Soma mensal</div>
+      <div style="overflow-x:auto"><table class="st" style="font-size:12px">
+        <thead><tr><th>📅 Mês</th><th>🖥 Parcelas</th><th>🖥 Dívidas</th><th>🧾 Total</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div></div>` : `<div class="empty" style="padding:24px"><p>Sem parcelas ou dívidas em ${ENDIV_ANO}</p></div>`;
+
+  } else if(ENDIV_TAB === 'parcelas'){
+    // Gastos parcelados
+    const txParc = TODAS_TX.filter(tx=>{
+      if(!tx.parcelas||parseInt(tx.parcelas||0)<2) return false;
+      if(tx.valor>=0) return false;
+      const parts=(tx.mes_ano||'').split('/');
+      return parseInt(parts[1]||0)===ENDIV_ANO;
+    }).sort((a,b)=>(b.mes_ano||'').localeCompare(a.mes_ano||''));
+    tabEl.innerHTML = txParc.length ? `<div class="card" style="padding:20px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px">Gastos Parcelados</div>
+      <div style="overflow-x:auto"><table class="st" style="font-size:12px">
+        <thead><tr><th>📄 Descrição</th><th>🏷 Categoria</th><th>💰 Valor Total</th><th>💳 Valor da Parcela</th><th>🔢 Parcelas</th><th>💳 Cartão</th><th>🗓 Mês</th></tr></thead>
+        <tbody>${txParc.map(tx=>{
+          const totalTx = Math.abs(parseFloat(tx.valor||0)) * parseInt(tx.parcelas||1);
+          return `<tr>
+            <td style="font-weight:600">${esc(tx.descricao||'—')}</td>
+            <td><span style="background:${tx.cor||'var(--bg)'};color:#fff;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700">${tx.emoji||''} ${esc(tx.categoria||'—')}</span></td>
+            <td style="color:var(--verm);font-weight:700">${fmt(totalTx)}</td>
+            <td style="font-weight:700">${fmt(Math.abs(parseFloat(tx.valor||0)))}</td>
+            <td>${tx.parcela_atual||1} de ${tx.parcelas||1}</td>
+            <td style="color:var(--azul)">${esc(tx.cartao||'—')}</td>
+            <td style="color:var(--muted)">${esc(tx.mes_ano||'—')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div></div>` : `<div class="empty" style="padding:24px"><p>Sem gastos parcelados em ${ENDIV_ANO}</p></div>`;
+
+  } else {
+    // Histórico de dívidas
+    const divSel = divIdx >= 0 ? [DIVIDAS[divIdx]] : DIVIDAS;
+    tabEl.innerHTML = divSel.filter(Boolean).map((d,ii)=>{
+      const realIdx = divIdx >= 0 ? divIdx : ii;
+      const pagas = parseInt(d.pagas||0);
+      const parcelas = parseInt(d.parcelas||1);
+      const mensal = parseFloat(d.mensal||0);
+      const rows = Array(pagas).fill(0).map((_,pi)=>{
+        const hoje2 = new Date();
+        const dtP = new Date(hoje2.getFullYear(), hoje2.getMonth()-pagas+pi, 1);
+        const mesLabel = `${MESES_PT[dtP.getMonth()]}/${dtP.getFullYear()}`;
+        return `<tr>
+          <td>${mesLabel}</td>
+          <td>Parcela ${pi+1} de ${parcelas}</td>
+          <td style="font-weight:700;color:var(--verde-d)">${fmt(mensal)}</td>
+          <td><span style="background:var(--verde-l);color:var(--verde-d);padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700">✅ Pago</span></td>
+        </tr>`;
+      }).join('');
+      const rest = Math.max(parcelas-pagas,0);
+      const rowsFut = Array(rest).fill(0).map((_,pi)=>{
+        const hoje2 = new Date();
+        const dtP = new Date(hoje2.getFullYear(), hoje2.getMonth()+pi, 1);
+        const diasAte = Math.ceil((new Date(hoje2.getFullYear(),hoje2.getMonth()+pi,parseInt(d.venc||5))-hoje2)/86400000);
+        const atrasado = diasAte < 0;
+        return `<tr>
+          <td>${MESES_PT[dtP.getMonth()]}/${dtP.getFullYear()}</td>
+          <td>Parcela ${pagas+pi+1} de ${parcelas}</td>
+          <td style="font-weight:700;color:var(--verm)">${fmt(mensal)}</td>
+          <td><span style="background:${atrasado?'var(--verm-l)':'var(--amar-l)'};color:${atrasado?'var(--verm)':'var(--amar)'};padding:2px 8px;border-radius:100px;font-size:10px;font-weight:700">${atrasado?'Em atraso':'A pagar'}</span></td>
+        </tr>`;
+      }).join('');
+      return `<div class="card" style="padding:20px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div>
+            <div style="font-size:14px;font-weight:800">${esc(d.nome)}</div>
+            ${d.credor?`<div style="font-size:11px;color:var(--muted)">🏦 ${esc(d.credor)}</div>`:''}
+          </div>
+          <button class="btn bg btn-sm" onclick="openDv(${realIdx})">✏️ Editar</button>
+        </div>
+        <div style="overflow-x:auto"><table class="st" style="font-size:12px">
+          <thead><tr><th>📅 Data do Pagamento</th><th>📄 Tipo de Lançamento</th><th>💰 Valor</th><th>🔄 Status</th></tr></thead>
+          <tbody>${rows}${rowsFut}</tbody>
+        </table></div>
+      </div>`;
+    }).join('') || `<div class="empty" style="padding:24px"><p>Sem dívidas cadastradas</p></div>`;
+  }
+}
+
 function renderDividas(){
   // Cálculo correto: valor já pago = mensal * parcelas pagas
   // Valor restante = total - (mensal * pagas)
@@ -3143,6 +3548,8 @@ function renderDividas(){
       </div>
     </div>`;
   }).join('');
+  // Renderiza seção de endividamento
+  renderEndividamento();
 }
 
 // ════════════════════════════════════════════════
