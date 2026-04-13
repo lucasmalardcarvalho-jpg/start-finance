@@ -1028,6 +1028,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div class="pa">
       <button class="btn bs" onclick="reload(true)" id="btnReload">🔄 Atualizar</button>
+      <button class="btn bs" id="btnNotif" onclick="ativarNotificacoes()" title="Ativar alertas de vencimentos" style="display:none">🔔 Notificações</button>
       <button class="btn bp" onclick="OM('ovTx');populateMesSelector();resetTxForm()">+ Lançar</button>
       <!-- User pill topbar -->
       <div style="position:relative" id="topbarUserArea">
@@ -1133,6 +1134,31 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div id="patrimonioBar" style="height:4px;background:var(--border);border-radius:0 0 var(--r) var(--r);overflow:hidden">
       <div id="patrimonioBarFill" style="height:100%;background:linear-gradient(90deg,var(--verde),#34D399);width:0%;transition:width .8s ease"></div>
+    </div>
+  </div>
+
+  <!-- ── SCORE DE SAÚDE FINANCEIRA ── -->
+  <div id="saudeCard" class="card mb">
+    <div style="padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center">
+      <!-- Left: SVG gauge + score number -->
+      <div style="text-align:center;position:relative;width:110px">
+        <svg id="saudeGaugeSVG" width="110" height="65" viewBox="0 0 110 65">
+          <!-- track arc -->
+          <path d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
+          <!-- fill arc (JS updates stroke-dasharray) -->
+          <path id="saudeGaugeFill" d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--verde)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 141"/>
+        </svg>
+        <div style="position:absolute;bottom:4px;left:0;right:0;text-align:center">
+          <div id="saudeScoreNum" style="font-size:28px;font-weight:900;line-height:1;letter-spacing:-1px">—</div>
+          <div id="saudeScoreLabel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">—</div>
+        </div>
+      </div>
+      <!-- Right: criteria + tip -->
+      <div>
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Score de Saúde Financeira</div>
+        <div id="saudeCriteria" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-bottom:10px"></div>
+        <div id="saudeTip" style="font-size:11.5px;color:var(--txt2);background:var(--azul-l);border-radius:8px;padding:8px 12px;line-height:1.4"></div>
+      </div>
     </div>
   </div>
 
@@ -2200,6 +2226,8 @@ function renderDash(){
   renderDicaDia();
   // Patrimônio Líquido
   renderPatrimonio();
+  // Score de Saúde Financeira
+  calcScore();
 }
 
 function renderPatrimonio(){
@@ -2250,6 +2278,167 @@ function renderPatrimonio(){
       :pct>=80?'linear-gradient(90deg,var(--verde),#34D399)'
       :'linear-gradient(90deg,var(--amar),#FCD34D)';
   }
+}
+
+function calcScore(){
+  // ── Dados base ──
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  const mesAtual = hoje.getMonth(); // 0-indexed
+
+  // Mês atual no HISTORICO
+  const mesAtualHist = HISTORICO.find(h => {
+    if(h.futuro) return false;
+    // label formato "Jan/25" ou "Jan 25" — parse pelo índice
+    const idx = HISTORICO.indexOf(h);
+    return idx === HISTORICO.length - 1;
+  });
+  const entradas = mesAtualHist ? (mesAtualHist.entradas || 0) : (MES_DATA.entradas || 0);
+  const saidas   = mesAtualHist ? (mesAtualHist.saidas  || 0) : (MES_DATA.saidas  || 0);
+
+  // Meses com dados (excluindo futuros)
+  const mesesComDados = HISTORICO.filter(h => !h.futuro && (h.entradas > 0 || h.saidas > 0));
+  const totalMeses    = mesesComDados.length;
+
+  // Média de saídas mensais
+  const mediaSaidas = totalMeses > 0
+    ? mesesComDados.reduce((s,h) => s + h.saidas, 0) / totalMeses
+    : saidas;
+
+  // Média de entradas mensais
+  const entradaMedia = totalMeses > 0
+    ? mesesComDados.reduce((s,h) => s + h.entradas, 0) / totalMeses
+    : entradas;
+
+  // Total investimentos
+  const totalInv = INVESTIMENTOS.reduce((s,i) => s + parseFloat(i.atual || i.valor || 0), 0);
+
+  // Total dívidas restantes
+  const totalDividas = DIVIDAS.reduce((s,dv) => {
+    const restantes = Math.max(parseInt(dv.parcelas||1) - parseInt(dv.pagas||0), 0);
+    return s + restantes * parseFloat(dv.mensal || 0);
+  }, 0);
+
+  // ── Critério 1: Controle de Gastos (max 30) ──
+  let c1 = 0;
+  if(entradas > 0){
+    if(saidas <= entradas) c1 = 30;
+    else c1 = Math.max(0, 30 * (1 - (saidas - entradas) / entradas));
+  } else if(saidas === 0){
+    c1 = 30; // sem dados = neutro
+  }
+  c1 = Math.round(c1 * 10) / 10;
+
+  // ── Critério 2: Reserva de Emergência (max 25) ──
+  let c2 = 0;
+  if(mediaSaidas > 0){
+    const mesesReserva = totalInv / mediaSaidas;
+    if(mesesReserva >= 6)       c2 = 25;
+    else if(mesesReserva >= 3)  c2 = 20;
+    else if(mesesReserva >= 2)  c2 = 15;
+    else if(mesesReserva >= 1)  c2 = 8;
+    else                        c2 = 0;
+  } else if(totalInv > 0){
+    c2 = 25; // sem gastos, reserva infinita
+  }
+
+  // ── Critério 3: Dívidas Controladas (max 20) ──
+  let c3 = 0;
+  if(totalDividas === 0){
+    c3 = 20;
+  } else if(entradaMedia > 0){
+    c3 = Math.max(0, 20 * (1 - totalDividas / (entradaMedia * 12)));
+    c3 = Math.round(c3 * 10) / 10;
+  }
+
+  // ── Critério 4: Regularidade Positiva (max 15) ──
+  let c4 = 0;
+  if(totalMeses > 0){
+    const positivos = mesesComDados.filter(h => h.saldo >= 0).length;
+    c4 = Math.round(15 * (positivos / totalMeses) * 10) / 10;
+  }
+
+  // ── Critério 5: Diversificação (max 10) ──
+  const tiposUnicos = new Set(INVESTIMENTOS.map(i => i.tipo).filter(Boolean));
+  const temInv      = totalInv > 0;
+  const temDiversif = tiposUnicos.size >= 3;
+  let c5 = 0;
+  if(temInv && temDiversif)    c5 = 10;
+  else if(temInv || temDiversif) c5 = 5;
+
+  // ── Score total ──
+  const criterios = [
+    { nome: 'Controle de Gastos',     pts: c1, max: 30 },
+    { nome: 'Reserva Emergência',      pts: c2, max: 25 },
+    { nome: 'Dívidas Controladas',     pts: c3, max: 20 },
+    { nome: 'Regularidade Positiva',   pts: c4, max: 15 },
+    { nome: 'Diversificação',          pts: c5, max: 10 },
+  ];
+  const score = Math.round(criterios.reduce((s, c) => s + c.pts, 0));
+
+  // ── Rating ──
+  let label, scoreCor;
+  if(score >= 85)      { label = '🏆 Excelente'; scoreCor = 'var(--verde)'; }
+  else if(score >= 70) { label = '🌟 Muito Bom'; scoreCor = 'var(--verde)'; }
+  else if(score >= 50) { label = '👍 Bom';       scoreCor = 'var(--amar)'; }
+  else if(score >= 30) { label = '⚠️ Atenção';   scoreCor = 'var(--lara)'; }
+  else                 { label = '🔴 Crítico';   scoreCor = 'var(--verm)'; }
+
+  // ── Gauge SVG ──
+  const arcLen  = 141;
+  const filled  = (score / 100) * arcLen;
+  const gaugeFill = document.getElementById('saudeGaugeFill');
+  if(gaugeFill){
+    gaugeFill.setAttribute('stroke-dasharray', `${filled.toFixed(1)} ${(arcLen - filled).toFixed(1)}`);
+    gaugeFill.setAttribute('stroke', scoreCor);
+  }
+
+  const numEl = document.getElementById('saudeScoreNum');
+  if(numEl){ numEl.textContent = score; numEl.style.color = scoreCor; }
+  const lblEl = document.getElementById('saudeScoreLabel');
+  if(lblEl) lblEl.textContent = label;
+
+  // ── Critérios HTML ──
+  function corCriterio(pts, max){
+    const pct = pts / max;
+    if(pct >= 0.8)      return 'var(--verde)';
+    else if(pct >= 0.5) return 'var(--amar)';
+    else if(pct >= 0.3) return 'var(--lara)';
+    else                return 'var(--verm)';
+  }
+
+  const criteriaEl = document.getElementById('saudeCriteria');
+  if(criteriaEl){
+    criteriaEl.innerHTML = criterios.map(c => {
+      const cor = corCriterio(c.pts, c.max);
+      return `<div style="display:flex;align-items:center;gap:6px">
+        <div style="width:6px;height:6px;border-radius:50%;background:${cor};flex-shrink:0"></div>
+        <span style="font-size:11px;color:var(--txt2);flex:1">${c.nome}</span>
+        <span style="font-size:11px;font-weight:800;color:${cor}">${Math.round(c.pts)}/${c.max}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Dica personalizada ──
+  const tips = [
+    '💡 Seus gastos superam as receitas. Revise a aba Categorias para identificar onde cortar.',
+    '💡 Construa uma reserva de emergência de 6 meses de gastos em investimentos seguros.',
+    '💡 Suas dívidas representam uma parcela alta da renda. Priorize quitá-las na aba Dívidas.',
+    '💡 Muitos meses negativos. Tente reduzir gastos fixos ou aumentar a renda.',
+    '💡 Diversifique seus investimentos. Cadastre seus ativos na aba Investimentos.',
+  ];
+  const defaultTip = '✅ Suas finanças estão saudáveis! Continue mantendo a regularidade e aumentando a reserva.';
+
+  // Critério com menor percentual do máximo
+  let worstIdx = -1, worstPct = 1.1;
+  criterios.forEach((c, i) => {
+    const pct = c.pts / c.max;
+    if(pct < worstPct){ worstPct = pct; worstIdx = i; }
+  });
+
+  const tipText = (worstIdx >= 0 && worstPct < 1) ? tips[worstIdx] : defaultTip;
+  const tipEl = document.getElementById('saudeTip');
+  if(tipEl) tipEl.textContent = tipText;
 }
 
 function renderHistChart(elId, h=80){
@@ -5389,6 +5578,8 @@ function entrarNoSistema(){
   init();
   // Verifica e gera recorrências automáticas (após carregar dados)
   setTimeout(verificarRecorrencias, 800);
+  // Mostra botão de notificações se não concedido; envia alertas se já concedido
+  setTimeout(()=>{ checarBotaoNotificacoes(); verificarAlertasVencimento(); }, 1500);
 }
 
 // ── Carrega dados financeiros do usuário ──────
@@ -5475,6 +5666,109 @@ function verificarRecorrencias(){
   // Salva que verificamos este mês
   saveUser('recorr_ultimo_mes', mesAtual);
   saveUser('recorr_geradas', {...lsUser('recorr_geradas',{}), [mesAtual]: geradasMes});
+}
+
+// ════════════════════════════════════════════════
+// NOTIFICAÇÕES PUSH — Alertas de vencimentos
+// ════════════════════════════════════════════════
+function checarBotaoNotificacoes(){
+  const btn = document.getElementById('btnNotif');
+  if(!btn) return;
+  if(!('Notification' in window)){ btn.style.display='none'; return; }
+  btn.style.display = Notification.permission === 'granted' ? 'none' : '';
+}
+
+function ativarNotificacoes(){
+  if(!('Notification' in window)) return;
+  Notification.requestPermission().then(perm => {
+    checarBotaoNotificacoes();
+    if(perm === 'granted'){
+      toast('🔔 Notificações ativadas! Você receberá alertas de vencimentos.','ok');
+      verificarAlertasVencimento();
+    } else {
+      toast('🔕 Notificações não permitidas. Ative nas configurações do navegador.','warn');
+    }
+  });
+}
+
+function enviarNotificacaoLocal(title, body, tag='pf-alert'){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  // Usa Service Worker se disponível (melhor suporte)
+  if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({ type:'NOTIFY', title, body, tag });
+  } else {
+    try { new Notification(title, { body, icon:'/logo-icon.svg', tag }); } catch{}
+  }
+}
+
+function verificarAlertasVencimento(){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const amanha = new Date(hoje); amanha.setDate(amanha.getDate()+1);
+  const doisDias = new Date(hoje); doisDias.setDate(doisDias.getDate()+2);
+
+  // Verifica notificações já enviadas hoje
+  const ultimaVerif = lsUser('notif_ultima_verif', '');
+  const hojeStr = hoje.toISOString().slice(0,10);
+  if(ultimaVerif === hojeStr) return;
+  saveUser('notif_ultima_verif', hojeStr);
+
+  const alertas = [];
+
+  // 1) Fixas a pagar com vencimento próximo
+  FIXAS.forEach(f => {
+    if(f.status === 'Pago') return;
+    const dia = parseInt(f.venc) || parseInt(f.dia) || 0;
+    if(!dia) return;
+    const venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+    if(venc < hoje) venc.setMonth(venc.getMonth()+1); // próximo mês
+    const diff = Math.round((venc - hoje)/(1000*60*60*24));
+    if(diff === 0)      alertas.push({title:'📌 Vence HOJE!', body:`${f.nome} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${f.nome}-${hojeStr}`});
+    else if(diff === 1) alertas.push({title:'📌 Vence amanhã', body:`${f.nome} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${f.nome}-${hojeStr}`});
+    else if(diff === 2) alertas.push({title:'📌 Vence em 2 dias', body:`${f.nome} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${f.nome}-${hojeStr}`});
+  });
+
+  // 2) Cartões com fatura próxima
+  CARTOES.forEach(c => {
+    const diaFech = parseInt(c.fechamento) || 0;
+    const diasPagar = parseInt(c.vencimento) || 0;
+    if(!diaFech || !diasPagar) return;
+    const venc = new Date(hoje.getFullYear(), hoje.getMonth(), diasPagar);
+    if(venc < hoje) venc.setMonth(venc.getMonth()+1);
+    const diff = Math.round((venc - hoje)/(1000*60*60*24));
+    if(diff <= 3 && diff >= 0){
+      const saldo = calcFaturaCartao(c.nome||c.id);
+      if(saldo > 0) alertas.push({title:`💳 Fatura ${c.nome||'Cartão'}`, body:`Vence em ${diff===0?'HOJE':diff===1?'amanhã':diff+' dias'} — ${fmt(saldo)}`, tag:`cartao-${c.nome}-${hojeStr}`});
+    }
+  });
+
+  // 3) Metas com prazo próximo
+  METAS.forEach(m => {
+    if(!m.prazo) return;
+    const [dd,mm,aaaa] = m.prazo.split('/');
+    const venc = new Date(`${aaaa}-${mm}-${dd}`);
+    const diff = Math.round((venc - hoje)/(1000*60*60*24));
+    if(diff >= 0 && diff <= 7){
+      alertas.push({title:`🎯 Meta: ${m.nome}`, body:`Prazo em ${diff===0?'HOJE':diff+' dias'}. Progresso: ${Math.round((parseFloat(m.atual||0)/parseFloat(m.valor||1))*100)}%`, tag:`meta-${m.nome}-${hojeStr}`});
+    }
+  });
+
+  // Envia com delay para não sobrecarregar
+  alertas.slice(0,5).forEach((a, i) => {
+    setTimeout(() => enviarNotificacaoLocal(a.title, a.body, a.tag), i * 1200);
+  });
+
+  if(alertas.length > 0){
+    setTimeout(() => toast(`🔔 ${alertas.length} alerta(s) de vencimento enviado(s)!`, 'info'), 500);
+  }
+}
+
+// Helper para calcular saldo da fatura de um cartão
+function calcFaturaCartao(nomeCartao){
+  const mesAtual = getMesChave();
+  return Math.abs(TODAS_TX
+    .filter(t => t.cartao === nomeCartao && t.mes_ano === mesAtual && parseFloat(t.valor||0) < 0)
+    .reduce((s,t) => s + parseFloat(t.valor||0), 0));
 }
 
 function openRecorr(i=-1){

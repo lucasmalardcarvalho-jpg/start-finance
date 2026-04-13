@@ -76,3 +76,18 @@ self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(clients.openWindow('/'));
 });
+
+// Recebe postMessage do app para exibir notificação local
+self.addEventListener('message', e => {
+  if(e.data && e.data.type === 'NOTIFY'){
+    const { title='PenseFinances', body='', tag='pf' } = e.data;
+    e.waitUntil(
+      self.registration.showNotification(title, {
+        body, tag,
+        icon: '/logo-icon.svg',
+        badge: '/logo-icon.svg',
+        vibrate: [200, 100, 200],
+      })
+    );
+  }
+});
