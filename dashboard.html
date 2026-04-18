@@ -1153,65 +1153,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
   </div>
 
-  <!-- ── PATRIMÔNIO LÍQUIDO ── -->
-  <div id="patrimonioCard" class="card mb" style="cursor:pointer" onclick="go('investimentos')" title="Ver investimentos">
-    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
-      <div style="display:flex;align-items:center;gap:12px">
-        <div style="width:44px;height:44px;border-radius:12px;background:var(--verde-l);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🏦</div>
-        <div>
-          <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Patrimônio Líquido</div>
-          <div style="font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1.1" id="patrimonioTotal">R$ —</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:20px;flex-wrap:wrap" id="patrimonioBreakdown">
-        <div style="text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--verde);text-transform:uppercase;letter-spacing:.04em">💼 Investimentos</div>
-          <div style="font-size:14px;font-weight:800;color:var(--verde)" id="patrimonioInv">—</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--azul);text-transform:uppercase;letter-spacing:.04em">🏦 Saldo acumulado</div>
-          <div style="font-size:14px;font-weight:800;color:var(--azul)" id="patrimonioSaldo">—</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--verm);text-transform:uppercase;letter-spacing:.04em">⛓️ Dívidas</div>
-          <div style="font-size:14px;font-weight:800;color:var(--verm)" id="patrimonioDividas">—</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">📊 Saúde</div>
-          <div style="font-size:14px;font-weight:800" id="patrimonioSaude">—</div>
-        </div>
-      </div>
-    </div>
-    <div id="patrimonioBar" style="height:4px;background:var(--border);border-radius:0 0 var(--r) var(--r);overflow:hidden">
-      <div id="patrimonioBarFill" style="height:100%;background:linear-gradient(90deg,var(--verde),#34D399);width:0%;transition:width .8s ease"></div>
-    </div>
-  </div>
-
-  <!-- ── SCORE DE SAÚDE FINANCEIRA ── -->
-  <div id="saudeCard" class="card mb">
-    <div style="padding:16px 20px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center">
-      <!-- Left: SVG gauge + score number -->
-      <div style="text-align:center;position:relative;width:110px">
-        <svg id="saudeGaugeSVG" width="110" height="65" viewBox="0 0 110 65">
-          <!-- track arc -->
-          <path d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
-          <!-- fill arc (JS updates stroke-dasharray) -->
-          <path id="saudeGaugeFill" d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--verde)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 141"/>
-        </svg>
-        <div style="position:absolute;bottom:4px;left:0;right:0;text-align:center">
-          <div id="saudeScoreNum" style="font-size:28px;font-weight:900;line-height:1;letter-spacing:-1px">—</div>
-          <div id="saudeScoreLabel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">—</div>
-        </div>
-      </div>
-      <!-- Right: criteria + tip -->
-      <div>
-        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px">Score de Saúde Financeira</div>
-        <div id="saudeCriteria" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-bottom:10px"></div>
-        <div id="saudeTip" style="font-size:11.5px;color:var(--txt2);background:var(--azul-l);border-radius:8px;padding:8px 12px;line-height:1.4"></div>
-      </div>
-    </div>
-  </div>
-
   <!-- ── LINHA 2: Evolução + Donut + Últimas Txs ── -->
   <div style="display:grid;grid-template-columns:1.6fr .9fr;gap:15px;margin-bottom:15px">
 
@@ -1905,6 +1846,46 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <!-- Hero summary strip -->
     <div id="relHero" class="card mb" style="padding:0;overflow:hidden"></div>
 
+    <!-- Patrimônio + Score -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
+      <div id="relPatrimonioCard" class="card" style="cursor:pointer" onclick="go('investimentos')">
+        <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:10px;background:var(--verde-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🏦</div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Patrimônio Líquido</div>
+              <div style="font-size:22px;font-weight:900;letter-spacing:-1px;line-height:1.1" id="relPatrimonioTotal">R$ —</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;flex-wrap:wrap" id="relPatrimonioBreakdown">
+            <div style="text-align:center"><div style="font-size:9px;font-weight:700;color:var(--verde);text-transform:uppercase">💼 Invest.</div><div style="font-size:13px;font-weight:800;color:var(--verde)" id="relPatInv">—</div></div>
+            <div style="text-align:center"><div style="font-size:9px;font-weight:700;color:var(--azul);text-transform:uppercase">🏦 Saldo</div><div style="font-size:13px;font-weight:800;color:var(--azul)" id="relPatSaldo">—</div></div>
+            <div style="text-align:center"><div style="font-size:9px;font-weight:700;color:var(--verm);text-transform:uppercase">⛓️ Dívidas</div><div style="font-size:13px;font-weight:800;color:var(--verm)" id="relPatDiv">—</div></div>
+          </div>
+        </div>
+        <div style="height:3px;background:var(--border);border-radius:0 0 var(--r) var(--r);overflow:hidden"><div id="relPatBar" style="height:100%;background:linear-gradient(90deg,var(--verde),#34D399);width:0%;transition:width .8s ease"></div></div>
+      </div>
+      <div id="relSaudeCard2" class="card">
+        <div style="padding:14px 20px;display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:center">
+          <div style="text-align:center;position:relative;width:90px">
+            <svg id="relSaudeGaugeSVG" width="90" height="55" viewBox="0 0 110 65">
+              <path d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--border)" stroke-width="8" stroke-linecap="round"/>
+              <path id="relSaudeGaugeFill" d="M 10 60 A 45 45 0 0 1 100 60" fill="none" stroke="var(--verde)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 141"/>
+            </svg>
+            <div style="position:absolute;bottom:2px;left:0;right:0;text-align:center">
+              <div id="relSaudeScoreNum" style="font-size:22px;font-weight:900;line-height:1;letter-spacing:-1px">—</div>
+              <div id="relSaudeScoreLabel" style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">—</div>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:8px">Score de Saúde</div>
+            <div id="relSaudeCriteria" style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;margin-bottom:8px"></div>
+            <div id="relSaudeTip" style="font-size:11px;color:var(--txt2);background:var(--azul-l);border-radius:6px;padding:6px 10px;line-height:1.4"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Full-width evolution chart -->
     <div class="card mb" id="relEvolCard">
       <div class="ch">
@@ -2295,10 +2276,16 @@ async function reload(manual=false){
     // Valida pelas transações: se a primeira tem user_id e não é nosso, rejeita
     const txs = d.transacoes||[];
     if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) throw new Error('user_mismatch');
-    TODAS_TX=txs;
-    HISTORICO=d.historico||[];
-    // Persiste localmente após carregar da API
-    salvarTxsLocal();
+    // Merge: localStorage é fonte de verdade — não sobrescreve se tiver mais dados locais
+    const _localTxs = lsUser('txs', []);
+    if(txs.length >= _localTxs.length){
+      TODAS_TX = txs;
+      salvarTxsLocal(); // só sobrescreve se API tem >= txs
+    } else {
+      // local tem mais transações — mantém local, ignora API (sync pendente)
+      TODAS_TX = _localTxs.map((t,i)=>({...t, idx:t.idx!==undefined?t.idx:i}));
+    }
+    HISTORICO = d.historico || buildHistoricoLocal();
   }catch(e){
     // Fallback: carrega do localStorage
     carregarTxsLocal();
@@ -2410,10 +2397,6 @@ function renderDash(){
   renderVencimentos();
   // Dica do dia
   renderDicaDia();
-  // Patrimônio Líquido
-  renderPatrimonio();
-  // Score de Saúde Financeira
-  calcScore();
 }
 
 function renderPatrimonio(){
@@ -5651,9 +5634,82 @@ function calcularMesRelatorio(mesChave){
   return {txMes, entradas:round2(e), saidas:round2(s), saldo:round2(e-s), categorias:catsArr, metodos:metsArr};
 }
 
+function _renderRelPatrimonio(){
+  const totIv = INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.atual||i.valor||0),0);
+  const totDiv = DIVIDAS.reduce((s,d)=>s+(parseFloat(d.total||0)-parseFloat(d.mensal||0)*(parseFloat(d.pagas||0))),0);
+  // Saldo acumulado = soma de todos os saldos do histórico
+  const saldoAcum = HISTORICO.reduce((s,h)=>s+h.saldo,0);
+  const patrimonio = totIv + saldoAcum - Math.max(totDiv,0);
+
+  const el = document.getElementById('relPatrimonioTotal');
+  if(!el) return;
+  el.textContent = fmt(patrimonio);
+  el.style.color = patrimonio >= 0 ? 'var(--verde)' : 'var(--verm)';
+
+  const invEl = document.getElementById('relPatInv');
+  const saldoEl = document.getElementById('relPatSaldo');
+  const divEl = document.getElementById('relPatDiv');
+  const barEl = document.getElementById('relPatBar');
+
+  if(invEl) invEl.textContent = fmt(totIv);
+  if(saldoEl){ saldoEl.textContent = (saldoAcum<0?'− ':'')+fmt(Math.abs(saldoAcum)); saldoEl.style.color = saldoAcum>=0?'var(--verde)':'var(--verm)'; }
+  if(divEl) divEl.textContent = '− '+fmt(Math.max(totDiv,0));
+
+  const saude_pct = totIv > 0 ? Math.min(totIv / Math.max(totIv + Math.max(totDiv,0), 1) * 100, 100) : 0;
+  if(barEl) setTimeout(()=>barEl.style.width=saude_pct+'%', 100);
+}
+
+function _renderRelScore(){
+  const entradas = HISTORICO.filter(h=>!h.futuro&&h.entradas>0);
+  const entradaMedia = entradas.length ? entradas.reduce((s,h)=>s+h.entradas,0)/entradas.length : 0;
+  const mesesNeg = HISTORICO.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0)&&h.saldo<0).length;
+  const mesesPos = HISTORICO.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0)&&h.saldo>0).length;
+  const totalDividas = DIVIDAS.reduce((s,d)=>s+d.mensal,0);
+  const temReserva = METAS.some(m=>m.nome&&m.nome.toLowerCase().includes('emergência')&&m.atual>0);
+  const nInv = INVESTIMENTOS.length;
+
+  const criterios=[
+    {nome:'Controle de Gastos',pts:Math.max(0,30-mesesNeg*5),max:30},
+    {nome:'Dívidas Controladas',pts:Math.max(0,20*(1-totalDividas/(entradaMedia||1))),max:20},
+    {nome:'Diversificação',pts:Math.min(nInv*2,10),max:10},
+    {nome:'Reserva Emergência',pts:temReserva?25:0,max:25},
+    {nome:'Regularidade Positiva',pts:Math.min(mesesPos*3,15),max:15},
+  ];
+  const score = Math.round(criterios.reduce((s,c)=>s+c.pts,0));
+
+  const numEl=document.getElementById('relSaudeScoreNum');
+  const lblEl=document.getElementById('relSaudeScoreLabel');
+  const gaugeEl=document.getElementById('relSaudeGaugeFill');
+  const critEl=document.getElementById('relSaudeCriteria');
+  const tipEl=document.getElementById('relSaudeTip');
+  if(!numEl) return;
+
+  const cor = score>=80?'var(--verde)':score>=60?'var(--lara)':'var(--verm)';
+  const lbl = score>=80?'Excelente':score>=60?'Bom':score>=40?'Regular':'Atenção';
+  numEl.textContent=score; numEl.style.color=cor;
+  lblEl.textContent=lbl; lblEl.style.color=cor;
+
+  const arcLen=141;
+  if(gaugeEl){ gaugeEl.style.stroke=cor; gaugeEl.style.strokeDasharray=`${(score/100*arcLen).toFixed(1)} ${arcLen}`; }
+
+  if(critEl) critEl.innerHTML=criterios.map(c=>`
+    <div style="display:flex;align-items:center;gap:4px;font-size:10px">
+      <div style="width:7px;height:7px;border-radius:50%;background:${c.pts/c.max>=0.7?'var(--verde)':c.pts/c.max>=0.4?'var(--lara)':'var(--verm)'};flex-shrink:0"></div>
+      <span style="color:var(--txt2);font-weight:600">${c.nome}</span>
+      <span style="margin-left:auto;font-weight:800;color:var(--txt)">${Math.round(c.pts)}/${c.max}</span>
+    </div>`).join('');
+
+  const tips=['💡 Muitos meses no negativo.','💡 Dívidas altas da renda.','💡 Diversifique investimentos.','💡 Crie reserva de emergência.','💡 Muitos meses negativos.'];
+  const worstIdx = criterios.reduce((bi,c,i)=>c.pts/c.max < criterios[bi].pts/criterios[bi].max?i:bi, 0);
+  if(tipEl) tipEl.textContent = criterios[worstIdx].pts < criterios[worstIdx].max ? tips[worstIdx] : '✅ Finanças saudáveis! Continue assim.';
+}
+
 function renderRel(){
   populateRelMesSel();
   switchRelTab('analise');
+  // Renderiza Patrimônio e Score na aba de relatórios
+  _renderRelPatrimonio();
+  _renderRelScore();
 
   const mesSel = document.getElementById('relMesSel')?.value || getMesChave();
   const [mm, yy] = mesSel.split('/');
@@ -6905,10 +6961,10 @@ function getHistoricoFiltrado(){
   const agora = new Date().getMonth(); // 0-11
   if(CHART_PERIOD==='3m'){
     return HISTORICO.slice(Math.max(0, agora-2), agora+1);
-  } else if(CHART_PERIOD==='rec'){
-    return HISTORICO.filter(h=>h.entradas>0||h.saidas>0);
   }
-  return HISTORICO; // ano completo
+  // Ano completo: remove meses sem nenhum dado (exceto mês atual)
+  const comDados = HISTORICO.filter(h => h.entradas>0 || h.saidas>0 || h.atual);
+  return comDados.length > 0 ? comDados : HISTORICO;
 }
 
 
