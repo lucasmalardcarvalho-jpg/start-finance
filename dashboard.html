@@ -3471,6 +3471,9 @@ async function saveTx(){
       }
       novasTx.forEach(t=>TODAS_TX.push(t));
       aprenderCategoria(dados.descricao, dados.categoria);
+      salvarTxsLocal();   // ✅ persiste no localStorage imediatamente
+      CM('ovTx');         // ✅ fecha o modal
+      autoRefresh();      // ✅ atualiza dashboard e aba ativa
 
       // Tenta API em background (sem bloquear UI)
       fetch('/api/transacao/nova',{method:'POST',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
