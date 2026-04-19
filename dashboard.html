@@ -1388,17 +1388,17 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
   </div>
 
-  <!-- ── LINHA 3: Donut + Resumo do Mês ── -->
-  <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:15px;margin-bottom:15px">
+  <!-- ── LINHA 3: Donut + Minha Carteira + Resumo do Mês (3 colunas juntas) ── -->
+  <div style="display:grid;grid-template-columns:0.9fr 1.1fr 1.4fr;gap:15px;margin-bottom:15px;align-items:start">
 
-    <!-- Donut -->
+    <!-- Donut / Por Categoria -->
     <div class="card" onclick="go('categorias')" style="cursor:pointer;display:flex;flex-direction:column">
       <div class="ch"><div><div class="ct">Por Categoria</div><div class="cs">Este mês</div></div></div>
       <div id="dashDonut"></div>
       <div id="dashCatBars" style="flex:1;padding:0 18px 14px;overflow:hidden"></div>
     </div>
 
-    <!-- Resumo de Investimentos -->
+    <!-- Minha Carteira -->
     <div class="card" id="dashInvCard" style="border-color:#3B6FF018;cursor:pointer" onclick="go('investimentos')">
       <div class="ch">
         <div><div class="ct">📈 Minha Carteira</div><div class="cs" id="dashInvSub">Clique para detalhar →</div></div>
@@ -1407,10 +1407,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <div id="dashInvBody" style="padding:0 18px 16px"></div>
     </div>
 
-  </div>
-
-  <!-- ── LINHA 3b: Resumo do Mês ── -->
-  <div style="margin-bottom:15px">
+    <!-- Resumo do Mês -->
     <div class="card" id="dashResumoCard" style="border-color:#3B6FF018">
       <div class="ch">
         <div><div class="ct">📋 Resumo do Mês</div><div class="cs" id="dashResumoSub">—</div></div>
@@ -1418,9 +1415,10 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <div id="dashNarr" style="padding:0 18px 16px"></div>
     </div>
+
   </div>
 
-  <!-- ── LINHA 3c: Limites + Últimas Txs ── -->
+  <!-- ── LINHA 4: Limites + Últimas Txs ── -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
 
     <!-- Limites por categoria -->
