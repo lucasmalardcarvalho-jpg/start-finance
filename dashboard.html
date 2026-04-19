@@ -2406,6 +2406,27 @@ function OM(id){
 function CM(id){document.getElementById(id).classList.remove('open')}
 document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
 
+// ── Sync ao retornar ao app (mobile: switch de aba, lock screen, etc.) ──
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    const isJWT=AUTH_TOKEN&&AUTH_TOKEN.split('.').length===3;
+    if(isJWT&&AUTH_USER) silentSync();
+  }
+});
+// Safari/iOS: pageshow dispara ao sair do bfcache (retorno de outra aba/app)
+window.addEventListener('pageshow',e=>{
+  if(e.persisted){
+    const isJWT=AUTH_TOKEN&&AUTH_TOKEN.split('.').length===3;
+    if(isJWT&&AUTH_USER) silentSync();
+  }
+});
+// Android botão back — navega dentro do SPA
+window.addEventListener('popstate',e=>{
+  const pg=e.state?.page;
+  if(pg&&document.getElementById('page-'+pg)) go(pg,true);
+  else go('dashboard',true);
+});
+
 // ════════════════════════════════════════════════
 // MÊS — LÓGICA CENTRAL
 // ════════════════════════════════════════════════
@@ -2586,9 +2607,7 @@ async function silentSync(){
       const tsData = await tsRes.json().catch(()=>({}));
       if(tsData.ts && tsData.ts > _lastUdTs){
         _lastUdTs = tsData.ts;
-        if(_lastSyncCount !== -1){ // não é o primeiro sync
-          await pullDataFromServer();
-        }
+        await pullDataFromServer(); // sempre puxa quando servidor é mais novo
       }
     }
 
@@ -2604,41 +2623,43 @@ async function silentSync(){
     const txs = d.transacoes||[];
     if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) return;
     const _localTxs = lsUser('txs', []);
-    if(txs.length > _localTxs.length){
+    // Aplica txs do Sheets se diferente do local
+    const txsChanged = txs.length !== _localTxs.length;
+    if(txs.length > 0 && (txsChanged || _lastSyncCount === -1)){
       TODAS_TX = txs;
       salvarTxsLocal();
       HISTORICO = buildHistoricoLocal();
       calcularMes();
-      renderDash();
-      const cur = document.querySelector('.page.active')?.id?.replace('page-','');
-      if(cur && cur !== 'dashboard'){
-        const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
-        if(fns[cur]) fns[cur]();
+      if(_syncReady && txsChanged){
+        renderDash();
+        const cur2 = document.querySelector('.page.active')?.id?.replace('page-','');
+        if(cur2 && cur2 !== 'dashboard'){
+          const fns2={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+          if(fns2[cur2]) fns2[cur2]();
+        }
+        toast('🔄 Transações atualizadas!','info');
       }
-      toast('🔄 Sincronizado com outro dispositivo!','info');
-      _lastSyncCount = txs.length;
-    } else if(_lastSyncCount === -1){
-      if(txs.length >= _localTxs.length){
-        TODAS_TX = txs;
-        salvarTxsLocal();
-        HISTORICO = buildHistoricoLocal();
-      }
-      _lastSyncCount = TODAS_TX.length;
     }
+    _lastSyncCount = TODAS_TX.length;
   }catch(e){ /* silently ignore */ }
 }
 
+let _syncReady = false; // flag: não mostra toast nos primeiros syncs (carregamento inicial)
 function startAutoSync(){
   stopAutoSync();
   const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
   if(!isJWT) return;
   _lastSyncCount = -1;
-  silentSync(); // sync imediato ao iniciar
-  _syncInterval = setInterval(silentSync, 30000); // a cada 30s
+  _syncReady = false;
+  silentSync().finally(()=>{ setTimeout(()=>{ _syncReady = true; }, 3000); }); // sync imediato; após 3s ativa toasts
+  _syncInterval = setInterval(silentSync, 10000); // a cada 10s para sync quase imediato
 }
 
 function stopAutoSync(){
   if(_syncInterval){ clearInterval(_syncInterval); _syncInterval = null; }
+  _syncReady = false;
+  _lastUdTs = 0;
+  _lastSyncCount = -1;
 }
 
 // ════════════════════════════════════════════════
@@ -2667,6 +2688,8 @@ async function pushDataToServer(){
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
     if(!isJWT || !AUTH_USER) return;
     const data = _collectAllUserData();
+    data._pushTs = Date.now(); // marca timestamp do push para detecção de changes
+    data._device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
     await fetch('/api/userdata', {
       method: 'POST',
       headers: {...apiHeaders(), 'Content-Type': 'application/json'},
@@ -2695,42 +2718,43 @@ async function pullDataFromServer(){
     const data = await res.json();
     if(!data || !Object.keys(data).length) return;
 
-    // Compara com localStorage — só atualiza se servidor tem mais dados
-    const localTxs = lsUser('txs', []);
-    const serverTxs = data.txs || [];
-    const serverHasMore = serverTxs.length > localTxs.length;
     const serverHasData = Object.keys(data).some(k=> Array.isArray(data[k]) ? data[k].length > 0 : Object.keys(data[k]||{}).length > 0);
+    if(!serverHasData) return; // servidor sem dados, não sobrescreve local
 
-    if(!serverHasData) return; // servidor vazio, não sobrescreve
+    // Se há push pendente, envia primeiro para não perder alterações locais
+    if(_pushDebounce !== null){
+      clearTimeout(_pushDebounce);
+      _pushDebounce = null;
+      await pushDataToServer();
+      // Após nosso push, re-busca dados do servidor (pega merge)
+      const res2 = await fetch('/api/userdata', {headers: apiHeaders()}).catch(()=>null);
+      if(res2?.ok){ const d2 = await res2.json().catch(()=>null); if(d2 && Object.keys(d2).length) Object.assign(data, d2); }
+    }
 
-    // Se servidor tem mais transações → pull completo
-    // Se servidor tem o mesmo ou menos txs → pull apenas se outros dados diferem
-    _cloudSyncActive = true; // previne push durante o pull
-    const keys = ['fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia'];
-    if(serverHasMore && data.txs){ saveUser('txs', data.txs); }
+    // Aplica TODOS os dados do servidor — ele é fonte da verdade quando ts mudou
+    _cloudSyncActive = true;
+    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia'];
     keys.forEach(k=>{ if(data[k]!==undefined) saveUser(k, data[k]); });
     _cloudSyncActive = false;
 
-    // Recarrega dados em memória
+    // Recarrega dados em memória e re-renderiza toda a UI afetada
     carregarDadosUsuario();
-    if(serverHasMore){
-      HISTORICO = buildHistoricoLocal();
-      calcularMes();
-      renderDash();
-      const cur = document.querySelector('.page.active')?.id?.replace('page-','');
-      if(cur && cur !== 'dashboard'){
-        const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
-        if(fns[cur]) fns[cur]();
-      }
-      toast('🔄 Dados sincronizados do servidor!','info');
+    HISTORICO = buildHistoricoLocal();
+    calcularMes();
+    renderDash();
+    const cur = document.querySelector('.page.active')?.id?.replace('page-','');
+    if(cur && cur !== 'dashboard'){
+      const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderPlan};
+      if(fns[cur]) fns[cur]();
     }
+    if(_syncReady) toast('🔄 Sincronizado!','info');
   }catch(e){}
 }
 
 // ════════════════════════════════════════════════
 // NAVEGAÇÃO
 // ════════════════════════════════════════════════
-function go(page){
+function go(page, _skipHistory=false){
   // Fecha qualquer modal aberto antes de navegar
   document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
 
@@ -2754,6 +2778,8 @@ function go(page){
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
   const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
+  // Empurra estado para histórico do browser (habilita botão back do Android)
+  if(!_skipHistory) try{ history.pushState({page:targetPage}, '', '#'+targetPage); }catch{}
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
   const p=b.dataset.p;
@@ -8788,10 +8814,7 @@ function iniciar(){
       // Valida que o usuário ainda existe no banco local
       const userNoDb = getUserById(AUTH_USER.id);
       if(userNoDb){ AUTH_USER=userNoDb; } // usa dados mais recentes
-      document.getElementById('loginScreen').classList.add('hidden');
-      carregarDadosUsuario();
-      atualizarUIUsuario();
-      init();
+      entrarNoSistema(); // inclui sync, carregamento de dados e UI
       return;
     }catch(e){ console.warn('Token inválido, redirecionando para login'); }
   }
