@@ -7490,9 +7490,9 @@ function toggleChartLayer(layer, el){
 
 function getHistoricoFiltrado(){
   if(!HISTORICO.length) return [];
-  const agora = new Date().getMonth(); // 0-11
   if(CHART_PERIOD==='3m'){
-    return HISTORICO.slice(Math.max(0, agora-2), agora+1);
+    // Sempre pega os últimos 3 meses do HISTORICO (que vai até o mês atual)
+    return HISTORICO.slice(-3);
   }
   // Ano completo: remove meses sem nenhum dado (exceto mês atual)
   const comDados = HISTORICO.filter(h => h.entradas>0 || h.saidas>0 || h.atual);
@@ -7598,16 +7598,98 @@ function renderResumoMes(d, mes){
 
     <!-- Alertas -->
     ${alertas.length ? `
-    <div style="display:flex;flex-direction:column;gap:6px">
-      ${alertas.slice(0,3).map(a=>`
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
+      ${alertas.map(a=>`
         <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:${a.bg};border-radius:var(--r-xs);border-left:3px solid ${a.cor}">
           <span style="font-size:14px">${a.ico}</span>
           <span style="font-size:12px;font-weight:600;color:var(--txt2)">${a.txt}</span>
         </div>`).join('')}
     </div>` : `
-    <div style="text-align:center;padding:10px 0;color:var(--verde-d);font-size:13px;font-weight:700">
+    <div style="text-align:center;padding:10px 0 14px;color:var(--verde-d);font-size:13px;font-weight:700">
       🎉 Tudo sob controle este mês!
     </div>`}
+
+    <!-- Comparação com mês anterior -->
+    ${(()=>{
+      const mesAnt = HISTORICO[HISTORICO.length-2];
+      if(!mesAnt || (mesAnt.entradas===0 && mesAnt.saidas===0)) return '';
+      const diffE = d.entradas>0&&mesAnt.entradas>0 ? ((d.entradas-mesAnt.entradas)/mesAnt.entradas*100) : null;
+      const diffS = d.saidas>0&&mesAnt.saidas>0 ? ((d.saidas-mesAnt.saidas)/mesAnt.saidas*100) : null;
+      return `<div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">vs. mês anterior (${mesAnt.label})</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="padding:8px 10px;background:var(--verde-l);border-radius:var(--r-xs)">
+            <div style="font-size:10px;font-weight:700;color:var(--verde);margin-bottom:2px">Receitas</div>
+            <div style="font-size:13px;font-weight:900;color:var(--verde)">${fmt(d.entradas)}</div>
+            ${diffE!==null?`<div style="font-size:10px;color:${diffE>=0?'var(--verde-d)':'var(--verm)'}">${diffE>=0?'↑':'↓'} ${Math.abs(diffE).toFixed(1)}%</div>`:''}
+          </div>
+          <div style="padding:8px 10px;background:var(--verm-l);border-radius:var(--r-xs)">
+            <div style="font-size:10px;font-weight:700;color:var(--verm);margin-bottom:2px">Gastos</div>
+            <div style="font-size:13px;font-weight:900;color:var(--verm)">${fmt(d.saidas)}</div>
+            ${diffS!==null?`<div style="font-size:10px;color:${diffS<=0?'var(--verde-d)':'var(--verm)'}">${diffS>=0?'↑':'↓'} ${Math.abs(diffS).toFixed(1)}%</div>`:''}
+          </div>
+        </div>
+      </div>`;
+    })()}
+
+    <!-- Próximos vencimentos -->
+    ${(()=>{
+      const hoje = new Date(); hoje.setHours(0,0,0,0);
+      const itens = [];
+      FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
+        const dia=parseInt(f.venc||0); if(!dia) return;
+        let v=new Date(hoje.getFullYear(),hoje.getMonth(),dia);
+        if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,dia);
+        const diff=Math.round((v-hoje)/(86400000));
+        if(diff<=14) itens.push({nome:f.desc||f.nome,valor:parseFloat(f.valor||0),diff,emoji:'📌'});
+      });
+      CARTOES.forEach(c=>{
+        const diaV=parseInt(c.venc||0); if(!diaV) return;
+        let v=new Date(hoje.getFullYear(),hoje.getMonth(),diaV);
+        if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,diaV);
+        const diff=Math.round((v-hoje)/(86400000));
+        const fat=(MES_DATA.gastosPorCartao||{})[c.nome]||0;
+        if(diff<=14&&fat>0) itens.push({nome:'Fatura '+c.nome,valor:fat,diff,emoji:'💳'});
+      });
+      if(!itens.length) return '';
+      itens.sort((a,b)=>a.diff-b.diff);
+      return `<div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⏰ Próximos vencimentos</div>
+        ${itens.slice(0,3).map(it=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+            <span style="font-size:14px">${it.emoji}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nome)}</div>
+              <div style="font-size:10px;color:${it.diff<=3?'var(--verm)':it.diff<=7?'var(--lara)':'var(--muted)'};font-weight:600">${it.diff===0?'Vence hoje':it.diff===1?'Amanhã':'Em '+it.diff+' dias'}</div>
+            </div>
+            <div style="font-size:12px;font-weight:800;color:var(--verm);flex-shrink:0">${fmt(it.valor)}</div>
+          </div>`).join('')}
+      </div>`;
+    })()}
+
+    <!-- Progresso de metas (top 2) -->
+    ${(()=>{
+      if(!METAS||!METAS.length) return '';
+      const ativas = METAS.filter(m=>parseFloat(m.atual||0)<parseFloat(m.total||0)).slice(0,2);
+      if(!ativas.length) return '';
+      return `<div>
+        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 Progresso de metas</div>
+        ${ativas.map(m=>{
+          const pct=Math.min(parseFloat(m.atual||0)/Math.max(parseFloat(m.total||0),1)*100,100);
+          const cor=pct>=75?'var(--verde)':pct>=40?'var(--azul)':'var(--lara)';
+          return `<div style="margin-bottom:8px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+              <span style="font-weight:700">${m.emoji||'🎯'} ${esc(m.nome)}</span>
+              <span style="color:${cor};font-weight:800">${pct.toFixed(0)}%</span>
+            </div>
+            <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden">
+              <div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px">${fmt(parseFloat(m.atual||0))} de ${fmt(parseFloat(m.total||0))}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    })()}
   `;
 }
 
