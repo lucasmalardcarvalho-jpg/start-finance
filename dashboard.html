@@ -6727,13 +6727,13 @@ function renderFamilia(){
 }
 
 function filtrarTxFamilia(membroId){
-  FAM_MEMBRO_FILTRO = membroId; // null|''|'id'
-  go('transacoes');
-  setTimeout(()=>{
-    renderTxPage();
-    const nome = membroId === '' ? (AUTH_USER?.name||'Titular') : (FAMILIA_MEMBROS.find(m=>m.id===membroId)?.nome||'Membro');
-    toast(`👨‍👩‍👧 Mostrando gastos de: ${nome}`,'info');
-  }, 150);
+  // go('transacoes') reseta FAM_MEMBRO_FILTRO=null internamente,
+  // então navegamos primeiro e depois re-setamos o filtro correto.
+  go('transacoes');                 // navega (reseta filtro para null)
+  FAM_MEMBRO_FILTRO = membroId;     // re-define APÓS o go() resetar
+  renderTxPage();                   // re-renderiza com o filtro correto
+  const nome = membroId === '' ? (AUTH_USER?.name||'Titular') : (FAMILIA_MEMBROS.find(m=>m.id===membroId)?.nome||'Membro');
+  toast(`👨‍👩‍👧 Mostrando gastos de: ${nome}`,'info');
 }
 
 function abrirModalMembro(i=-1){
