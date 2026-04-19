@@ -1220,10 +1220,10 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:15px">
 
     <!-- Cartões -->
-    <div class="card" onclick="go('cartoes')" style="cursor:pointer">
+    <div class="card">
       <div class="ch">
         <div><div class="ct">💳 Cartões</div><div class="cs" id="dashCartoesMes">Fatura do mês</div></div>
-        <span style="font-size:11px;color:var(--azul);font-weight:700">Ver →</span>
+        <span style="font-size:11px;color:var(--azul);font-weight:700;cursor:pointer" onclick="go('cartoes')">Ver →</span>
       </div>
       <div id="dashCartoes" style="padding:0 18px 14px"></div>
     </div>
@@ -2942,14 +2942,18 @@ function renderCartoesDash(){
   const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
   const limUsoD=MES_DATA.cartoesLimiteUso||{};
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
-    const fatMes=gastos[c.nome]||0;           // fatura do mês atual
-    const comprometido=limUsoD[c.nome]||fatMes; // total comprometido no limite
+    const fatMes=gastos[c.nome]||0;
+    const comprometido=limUsoD[c.nome]||fatMes;
     const usado=comprometido;
     const pct=c.limite>0?Math.min(comprometido/c.limite*100,100):0;
     const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
     const cardCor=c.cor||'linear-gradient(135deg,#3B6FF0,#2451C7)';
     const dispColor=pct>80?'var(--verm)':'var(--verde)';
-    return `<div style="margin-bottom:12px">
+    const nomeEsc=esc(c.nome).replace(/'/g,"\\'");
+    return `<div style="margin-bottom:12px;cursor:pointer;padding:8px;border-radius:var(--r-sm);transition:background .15s"
+        onclick="irParaCartao('${nomeEsc}')"
+        onmouseenter="this.style.background='var(--bg)'"
+        onmouseleave="this.style.background=''">
       <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:5px;align-items:center">
         <span style="display:flex;align-items:center;gap:6px">
           <span style="width:12px;height:12px;border-radius:3px;background:${cardCor};display:inline-block;flex-shrink:0"></span>
@@ -4163,6 +4167,14 @@ function voltarListaCartoes(){
   CT_DETAIL_IDX = -1;
   document.getElementById('ctListView').style.display = '';
   document.getElementById('ctDetailView').style.display = 'none';
+}
+
+// Navega direto para o detalhe de um cartão pelo nome (chamado do dashboard)
+function irParaCartao(nomeCartao){
+  const idx = CARTOES.findIndex(c=>c.nome===nomeCartao);
+  go('cartoes');
+  renderCartoes();
+  if(idx >= 0) setTimeout(()=>abrirDetalheCartao(idx), 80);
 }
 
 function delCt(i){CARTOES.splice(i,1);salvarCartoes();voltarListaCartoes();renderCartoes();toast('🗑️ Cartão removido','info')}
