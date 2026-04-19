@@ -2860,34 +2860,30 @@ function renderDonut(elId,cats){
   leg+=`</div>`;
   document.getElementById(elId).innerHTML=`<div class="dw">${svg}${leg}</div>`;
 
-  // Barras de todas as categorias (só no dashboard)
-  if(barsEl && cats.length > 0){
+  // Lista COMPLETA de todas as categorias no dashboard (não só as extras)
+  if(barsEl){
+    if(cats.length === 0){ barsEl.innerHTML=''; return; }
     const maxGasto = cats[0].gasto || 1;
-    const restantes = cats.slice(5); // categorias além do top 5
-    if(restantes.length > 0){
-      barsEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:10px;margin-bottom:4px">
-        <div style="font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Demais categorias</div>
-        ${restantes.map(c=>{
-          const pct=Math.round(c.gasto/totAll*100);
-          const barW=Math.max(c.gasto/maxGasto*100,2);
-          return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border)">
-            <div style="font-size:13px;flex-shrink:0">${c.emoji}</div>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-                <span style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${esc(c.nome)}</span>
-                <span style="font-size:10px;color:var(--muted);flex-shrink:0;margin-left:4px">${pct}%</span>
-              </div>
-              <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
-                <div style="height:100%;width:${barW.toFixed(0)}%;background:${c.cor};border-radius:100px"></div>
-              </div>
+    barsEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:10px">
+      <div style="font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Todas as categorias</div>
+      ${cats.map(c=>{
+        const pct=Math.round(c.gasto/totAll*100);
+        const barW=Math.max(c.gasto/maxGasto*100,2);
+        return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+          <div style="font-size:14px;flex-shrink:0">${c.emoji}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
+              <span style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px">${esc(c.nome)}</span>
+              <span style="font-size:10px;color:var(--muted);flex-shrink:0;margin-left:4px">${pct}%</span>
             </div>
-            <div style="font-size:11px;font-weight:800;color:var(--verm);flex-shrink:0">${fmt(c.gasto)}</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-    } else {
-      barsEl.innerHTML='';
-    }
+            <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
+              <div style="height:100%;width:${barW.toFixed(0)}%;background:${c.cor};border-radius:100px"></div>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:800;color:var(--verm);flex-shrink:0;min-width:64px;text-align:right">${fmt(c.gasto)}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
   }
 }
 
