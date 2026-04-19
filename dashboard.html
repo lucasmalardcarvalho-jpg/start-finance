@@ -1153,20 +1153,16 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
   </div>
 
-  <!-- ── LINHA 2: Evolução + Donut + Últimas Txs ── -->
-  <div style="display:grid;grid-template-columns:1.6fr .9fr;gap:15px;margin-bottom:15px;align-items:start">
-
-    <!-- Evolução mensal compacta -->
+  <!-- ── LINHA 2: Evolução full-width ── -->
+  <div style="margin-bottom:15px">
     <div class="card">
       <div class="ch">
         <div><div class="ct">Evolução Mensal</div><div class="cs" id="dashChartSub">Jan → Dez — passe o mouse para detalhes</div></div>
         <button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button>
       </div>
-      <!-- Period filter bar -->
       <div class="chart-period-bar">
         <button class="cpb" onclick="setChartPeriod('3m',this)">3 meses</button>
         <button class="cpb active" onclick="setChartPeriod('ano',this)">Ano completo</button>
-
         <div style="flex:1"></div>
         <button class="cpb" id="cpbE" onclick="toggleChartLayer('entradas',this)" style="color:var(--verde);border-color:var(--verde)">● Entradas</button>
         <button class="cpb" id="cpbS" onclick="toggleChartLayer('saidas',this)" style="color:var(--verm);border-color:var(--verm)">● Saídas</button>
@@ -1174,26 +1170,26 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <div id="dashChart"></div>
     </div>
+  </div>
 
-    <!-- Coluna direita: Donut + narrativa rápida -->
-    <div style="display:flex;flex-direction:column;gap:15px">
+  <!-- ── LINHA 3: Donut + Resumo do Mês ── -->
+  <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:15px;margin-bottom:15px;align-items:start">
 
-      <!-- Donut -->
-      <div class="card" onclick="go('categorias')" style="cursor:pointer">
-        <div class="ch"><div><div class="ct">Por Categoria</div><div class="cs">Este mês</div></div></div>
-        <div id="dashDonut"></div>
-      </div>
-
-      <!-- Resumo do mês profissional -->
-      <div class="card" id="dashResumoCard" style="border-color:#3B6FF018">
-        <div class="ch">
-          <div><div class="ct">📋 Resumo do Mês</div><div class="cs" id="dashResumoSub">—</div></div>
-          <span id="dashResumoStatus" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--verde-l);color:var(--verde-d)">—</span>
-        </div>
-        <div id="dashNarr" style="padding:0 18px 16px"></div>
-      </div>
-
+    <!-- Donut -->
+    <div class="card" onclick="go('categorias')" style="cursor:pointer">
+      <div class="ch"><div><div class="ct">Por Categoria</div><div class="cs">Este mês</div></div></div>
+      <div id="dashDonut"></div>
     </div>
+
+    <!-- Resumo do mês profissional -->
+    <div class="card" id="dashResumoCard" style="border-color:#3B6FF018">
+      <div class="ch">
+        <div><div class="ct">📋 Resumo do Mês</div><div class="cs" id="dashResumoSub">—</div></div>
+        <span id="dashResumoStatus" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--verde-l);color:var(--verde-d)">—</span>
+      </div>
+      <div id="dashNarr" style="padding:0 18px 16px"></div>
+    </div>
+
   </div>
 
   <!-- ── LINHA 3: Limites + Últimas Txs ── -->
