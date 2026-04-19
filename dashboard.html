@@ -1154,7 +1154,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 
   <!-- ── LINHA 2: Evolução + Donut + Últimas Txs ── -->
-  <div style="display:grid;grid-template-columns:1.6fr .9fr;gap:15px;margin-bottom:15px">
+  <div style="display:grid;grid-template-columns:1.6fr .9fr;gap:15px;margin-bottom:15px;align-items:start">
 
     <!-- Evolução mensal compacta -->
     <div class="card">
@@ -1179,7 +1179,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div style="display:flex;flex-direction:column;gap:15px">
 
       <!-- Donut -->
-      <div class="card" onclick="go('categorias')" style="cursor:pointer;flex:1">
+      <div class="card" onclick="go('categorias')" style="cursor:pointer">
         <div class="ch"><div><div class="ct">Por Categoria</div><div class="cs">Este mês</div></div></div>
         <div id="dashDonut"></div>
       </div>
