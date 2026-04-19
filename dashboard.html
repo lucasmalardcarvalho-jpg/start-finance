@@ -1916,6 +1916,32 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <div id="relInsights" style="padding:0 18px 18px;display:grid;grid-template-columns:repeat(3,1fr);gap:11px"></div>
     </div>
 
+    <!-- Resumo completo: Fixas + Dívidas + Metas + Investimentos + Cartões -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:15px;margin-bottom:15px">
+      <div class="card">
+        <div class="ch"><div><div class="ct">📌 Despesas Fixas</div><div class="cs" id="relFixasSub">—</div></div></div>
+        <div id="relFixasBody" style="padding:0 18px 14px"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">⛓️ Dívidas</div><div class="cs" id="relDividasSub">—</div></div></div>
+        <div id="relDividasBody" style="padding:0 18px 14px"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">📈 Investimentos</div><div class="cs" id="relInvSub">—</div></div></div>
+        <div id="relInvBody" style="padding:0 18px 14px"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
+      <div class="card">
+        <div class="ch"><div><div class="ct">🎯 Metas & Projetos</div><div class="cs" id="relMetasSub">—</div></div></div>
+        <div id="relMetasBody" style="padding:0 18px 14px"></div>
+      </div>
+      <div class="card">
+        <div class="ch"><div><div class="ct">💳 Cartões</div><div class="cs" id="relCartoesSub">—</div></div></div>
+        <div id="relCartoesBody" style="padding:0 18px 14px"></div>
+      </div>
+    </div>
+
     <!-- Transaction table -->
     <div class="card">
       <div class="ch">
@@ -2100,6 +2126,7 @@ let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
 let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[], RECORRENCIAS=[];
 let FAMILIA_MEMBROS = []; // [{id, nome, avatar, cor}]
+let FAM_MEMBRO_FILTRO = null; // null = todos, '' = titular, 'id' = membro específico
 let CAT_MODEL = {};
 
 // ── Globals de estado das features ──
@@ -2167,7 +2194,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2181,7 +2208,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -2294,7 +2321,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -2318,7 +2345,7 @@ function go(page){
   window.scrollTo(0,0);
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:renderTxPage,cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
+  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
 }
 document.querySelectorAll('.ni[data-p]').forEach(b=>b.addEventListener('click',()=>{
@@ -2647,26 +2674,26 @@ function renderEvolucaoAnual(el, h, histParam){
   const melhorList = comDados.filter(hh=>hh.entradas>0||hh.saidas>0);
   const melhor = melhorList.length ? melhorList.reduce((b,hh)=>hh.saldo>b.saldo?hh:b, melhorList[0]) : {saldo:0,label:'—'};
 
-  const statsHtml = `<div style="display:flex;gap:0;padding:10px 18px 10px;border-bottom:1px solid var(--border)">
-    <div style="flex:1;padding:8px 12px;border-left:3px solid var(--verde);margin-right:10px;background:var(--verde-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
+  const statsHtml = `<div style="display:flex;gap:0;padding:8px 18px 8px;border-bottom:1px solid var(--border)">
+    <div style="flex:1;padding:6px 10px;border-left:3px solid var(--verde);margin-right:10px;background:var(--verde-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
       <div style="font-size:9px;font-weight:800;color:var(--verde);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Receitas ${new Date().getFullYear()}</div>
-      <div style="font-size:14px;font-weight:900;color:var(--verde)">${fmt(totE)}</div>
+      <div style="font-size:13px;font-weight:900;color:var(--verde)">${fmt(totE)}</div>
     </div>
-    <div style="flex:1;padding:8px 12px;border-left:3px solid var(--verm);margin-right:10px;background:var(--verm-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
+    <div style="flex:1;padding:6px 10px;border-left:3px solid var(--verm);margin-right:10px;background:var(--verm-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
       <div style="font-size:9px;font-weight:800;color:var(--verm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Gastos ${new Date().getFullYear()}</div>
-      <div style="font-size:14px;font-weight:900;color:var(--verm)">− ${fmt(totS)}</div>
+      <div style="font-size:13px;font-weight:900;color:var(--verm)">− ${fmt(totS)}</div>
     </div>
-    <div style="flex:1;padding:8px 12px;border-left:3px solid var(--azul);margin-right:10px;background:var(--azul-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
+    <div style="flex:1;padding:6px 10px;border-left:3px solid var(--azul);margin-right:10px;background:var(--azul-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
       <div style="font-size:9px;font-weight:800;color:var(--azul);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Saldo ${new Date().getFullYear()}</div>
-      <div style="font-size:14px;font-weight:900;color:${totE-totS>=0?'var(--verde)':'var(--verm)'}">${totE-totS<0?'− ':''}${fmt(Math.abs(totE-totS))}</div>
+      <div style="font-size:13px;font-weight:900;color:${totE-totS>=0?'var(--verde)':'var(--verm)'}">${totE-totS<0?'− ':''}${fmt(Math.abs(totE-totS))}</div>
     </div>
-    <div style="flex:1;padding:8px 12px;border-left:3px solid var(--amar);background:var(--amar-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
+    <div style="flex:1;padding:6px 10px;border-left:3px solid var(--amar);background:var(--amar-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
       <div style="font-size:9px;font-weight:800;color:var(--amar);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Melhor mês</div>
-      <div style="font-size:14px;font-weight:900;color:var(--amar)">${melhor.label||'—'} <span style="font-size:10px;color:var(--muted);font-weight:700">${melhor.saldo?fmtSm(melhor.saldo):''}</span></div>
+      <div style="font-size:13px;font-weight:900;color:var(--amar)">${melhor.label||'—'} <span style="font-size:10px;color:var(--muted);font-weight:700">${melhor.saldo?fmtSm(melhor.saldo):''}</span></div>
     </div>
   </div>`;
 
-  const W=800, H=200, PL=8, PR=8, PT=20, PB=28;
+  const W=800, H=155, PL=8, PR=8, PT=16, PB=24;
   const chartW=W-PL-PR, chartH=H-PT-PB;
   const n=hist.length;
   const colW=chartW/n;
@@ -3341,18 +3368,16 @@ async function confirmDel(){
 
 async function deletarUmaTx(t){
   const realIdx=t.idx;
-  try{
-    const r=await(await fetch(`/api/transacao/${realIdx}`,{method:'DELETE',headers:apiHeaders()})).json();
-    if(r.erro)throw new Error(r.erro);
-    // Remove local imediatamente
-    const pos=TODAS_TX.findIndex(tx=>tx.idx===realIdx);
-    if(pos>=0){
-      TODAS_TX.splice(pos,1);
-      TODAS_TX.forEach(tx=>{ if(tx.idx>realIdx) tx.idx--; });
-    }
-    salvarTxsLocal();
-    autoRefresh();
-  }catch(e){ toast('❌ '+e.message,'error'); }
+  // Remove LOCAL PRIMEIRO — não depende da API
+  const pos=TODAS_TX.findIndex(tx=>tx.idx===realIdx);
+  if(pos>=0){
+    TODAS_TX.splice(pos,1);
+    TODAS_TX.forEach(tx=>{ if(tx.idx>realIdx) tx.idx--; });
+  }
+  salvarTxsLocal();
+  autoRefresh();
+  // Tenta API em background (falha silenciosa)
+  fetch(`/api/transacao/${realIdx}`,{method:'DELETE',headers:apiHeaders()}).catch(()=>{});
 }
 
 async function deletarTodasParcelas(t){
@@ -3378,13 +3403,8 @@ async function deletarTodasParcelas(t){
 
   // Ordena por idx decrescente para deletar de trás pra frente (não afeta índices)
   const sorted=[...relacionadas].sort((a,b)=>b.idx-a.idx);
-  let erros=0;
-  for(const tx of sorted){
-    try{
-      const r=await(await fetch(`/api/transacao/${tx.idx}`,{method:'DELETE',headers:apiHeaders()})).json();
-      if(r.erro) erros++;
-    }catch{ erros++; }
-  }
+  // Dispara deleção na API em background para cada parcela
+  sorted.forEach(tx => fetch(`/api/transacao/${tx.idx}`,{method:'DELETE',headers:apiHeaders()}).catch(()=>{}));
 
   // Remove todas da lista local de uma vez
   const idxSet=new Set(relacionadas.map(tx=>tx.idx));
@@ -3396,7 +3416,6 @@ async function deletarTodasParcelas(t){
 
   salvarTxsLocal();
   autoRefresh();
-  if(erros>0) toast(`⚠️ ${erros} parcelas com erro ao excluir`,'warning');
 }
 
 async function saveTx(){
@@ -3790,7 +3809,12 @@ function renderTxPage(){
   const dias=[...new Set(txMes.map(t=>t.data.split('/')[0]).filter(Boolean))].sort((a,b)=>parseInt(a)-parseInt(b));
   const fDia=document.getElementById('fDia');
   if(fDia) fDia.innerHTML='<option value="">📅 Dia</option>'+dias.map(d=>`<option value="${d}">Dia ${parseInt(d)}</option>`).join('');
-  document.getElementById('txSubtitle').textContent=`Transações de ${getMesNome()}`;
+  if(FAM_MEMBRO_FILTRO !== null){
+    const memNome = FAM_MEMBRO_FILTRO === '' ? (AUTH_USER?.name||'Titular') : (FAMILIA_MEMBROS.find(m=>m.id===FAM_MEMBRO_FILTRO)?.nome||'Membro');
+    document.getElementById('txSubtitle').innerHTML = `Gastos de <strong style="color:var(--azul)">${esc(memNome)}</strong> — ${getMesNome()} &nbsp;<button class="btn bg btn-sm" style="font-size:10px" onclick="FAM_MEMBRO_FILTRO=null;renderTxPage()">✕ Limpar filtro</button>`;
+  } else {
+    document.getElementById('txSubtitle').textContent = `Transações de ${getMesNome()}`;
+  }
   // Reset calendário ao trocar de mês
   if(CAL_DIA_SEL){ limparCalendario(); }
   else { buildCalendario && setTimeout(()=>{},0); } // rebuild se aberto
@@ -3810,6 +3834,11 @@ function filterTx(){
     if(ct&&t.categoria!==ct)return false;
     if(cd&&t.cartao!==cd)return false;
     if(dia&&!t.data.startsWith(dia+'/'))return false;
+    // Filtro por membro familiar
+    if(FAM_MEMBRO_FILTRO !== null){
+      if(FAM_MEMBRO_FILTRO === ''){ if(t.membro) return false; } // titular = sem membro
+      else { if(t.membro !== FAM_MEMBRO_FILTRO) return false; }
+    }
     return true;
   });
   renderTxTable();
@@ -4700,9 +4729,12 @@ function renderMetas(){
         <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${status} — ${pct.toFixed(0)}% do orçamento</div>
         `:`<div style="font-size:14px;font-weight:700;color:var(--txt);margin-bottom:8px">${fmt(gasto)} <span style="font-size:11px;color:var(--muted);font-weight:400">gasto</span></div>`}
         <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${txCount} transação(ões) vinculada(s)</div>
-        <div style="display:flex;gap:5px">
-          <button class="btn bg btn-sm" style="flex:1" onclick="event.stopPropagation();openMt(${i})">✏️ Editar</button>
-          <button class="btn bd btn-sm" onclick="event.stopPropagation();delMt(${i})">🗑️</button>
+        <div style="display:flex;gap:5px;flex-direction:column">
+          <button class="btn bv btn-sm" style="width:100%" onclick="event.stopPropagation();lancarGastoOrcamento('${m.id}','${esc(m.nome)}')">💸 Lançar Gasto</button>
+          <div style="display:flex;gap:5px">
+            <button class="btn bg btn-sm" style="flex:1" onclick="event.stopPropagation();openMt(${i})">✏️ Editar</button>
+            <button class="btn bd btn-sm" onclick="event.stopPropagation();delMt(${i})">🗑️</button>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -4718,6 +4750,19 @@ function verTransacoesMeta(i){
   if(!txs.length){ toast('Nenhuma transação vinculada a este orçamento','info'); return; }
   toast(`${txs.length} transação(ões) em "${m.nome}". Veja em Transações.`,'info');
   go('transacoes');
+}
+
+function lancarGastoOrcamento(projetoId, projetoNome){
+  OM('ovTx');
+  populateMesSelector();
+  resetTxForm();
+  // Pré-seleciona tipo Gasto e o projeto
+  document.getElementById('txTipo').value = 'Gasto';
+  const selProj = document.getElementById('txProjeto');
+  if(selProj){
+    selProj.value = projetoId;
+  }
+  document.getElementById('txTitle').textContent = `Lançar Gasto — ${projetoNome}`;
 }
 
 // ════════════════════════════════════════════════
@@ -5843,6 +5888,116 @@ function renderRel(){
       <div style="font-size:11px;color:var(--muted);line-height:1.4">${ins.d}</div>
     </div>`).join('');
 
+  // ── Despesas Fixas ──
+  const fixasSub = document.getElementById('relFixasSub');
+  const fixasBody = document.getElementById('relFixasBody');
+  if(fixasBody){
+    const totFixas = FIXAS.reduce((s,f)=>s+parseFloat(f.valor||0),0);
+    const pendentes = FIXAS.filter(f=>f.status!=='Pago').length;
+    if(fixasSub) fixasSub.textContent = `${FIXAS.length} fixas · Total ${fmt(totFixas)}`;
+    fixasBody.innerHTML = FIXAS.slice(0,5).map(f=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">
+        <div style="width:8px;height:8px;border-radius:50%;background:${f.status==='Pago'?'var(--verde)':'var(--lara)'};flex-shrink:0"></div>
+        <div style="flex:1;font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.desc)}</div>
+        <div style="font-size:11px;font-weight:800;color:var(--verm);white-space:nowrap">−${fmt(parseFloat(f.valor||0))}</div>
+      </div>`).join('')+(FIXAS.length>5?`<div style="font-size:10px;color:var(--muted);padding:6px 0">+${FIXAS.length-5} mais...</div>`:'');
+    if(pendentes>0) fixasBody.innerHTML += `<div style="margin-top:6px;font-size:11px;font-weight:700;color:var(--lara)">⚠️ ${pendentes} pendente(s)</div>`;
+  }
+
+  // ── Dívidas ──
+  const dividasBody = document.getElementById('relDividasBody');
+  const dividasSub = document.getElementById('relDividasSub');
+  if(dividasBody){
+    const totDiv = DIVIDAS.reduce((s,dv)=>s+dv.mensal,0);
+    if(dividasSub) dividasSub.textContent = `${DIVIDAS.length} dívidas · ${fmt(totDiv)}/mês`;
+    dividasBody.innerHTML = DIVIDAS.length ? DIVIDAS.slice(0,4).map(dv=>{
+      const total = parseFloat(dv.total||0);
+      const pagas = parseInt(dv.pagas||0);
+      const parcelas = parseInt(dv.parcelas||0);
+      const restante = total - (parseFloat(dv.mensal||0)*pagas);
+      const pct = total>0?Math.min(pagas/parcelas*100,100):0;
+      return `<div style="padding:5px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(dv.nome)}</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+          <div style="flex:1;height:4px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:var(--verde);border-radius:100px"></div></div>
+          <span style="font-size:10px;color:var(--muted);white-space:nowrap">${pagas}/${parcelas} · ${fmt(restante)} restante</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">Sem dívidas 🎉</div>';
+  }
+
+  // ── Investimentos ──
+  const invBody = document.getElementById('relInvBody');
+  const invSub = document.getElementById('relInvSub');
+  if(invBody){
+    const totInv = INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.valor||0),0);
+    const totAtual = INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.atual||i.valor||0),0);
+    const rentTotal = totInv>0?((totAtual-totInv)/totInv*100):0;
+    if(invSub) invSub.textContent = `${INVESTIMENTOS.length} ativos · ${rentTotal>=0?'+':''}${rentTotal.toFixed(1)}%`;
+    invBody.innerHTML = INVESTIMENTOS.length ? INVESTIMENTOS.slice(0,4).map(inv=>{
+      const rent = parseFloat(inv.rent||0);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(inv.nome)}</div>
+          <div style="font-size:10px;color:var(--muted)">${esc(inv.tipo)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:11px;font-weight:800">${fmt(parseFloat(inv.atual||inv.valor||0))}</div>
+          <div style="font-size:10px;font-weight:700;color:${rent>=0?'var(--verde)':'var(--verm)'}">${rent>=0?'+':''}${rent.toFixed(1)}%</div>
+        </div>
+      </div>`;
+    }).join('') : '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">Sem investimentos</div>';
+  }
+
+  // ── Metas & Projetos ──
+  const metasBody = document.getElementById('relMetasBody');
+  const metasSub = document.getElementById('relMetasSub');
+  if(metasBody){
+    if(metasSub) metasSub.textContent = `${METAS.length} meta(s)/projeto(s)`;
+    metasBody.innerHTML = METAS.length ? METAS.slice(0,4).map(m=>{
+      const total = parseFloat(m.total||0);
+      const atual = parseFloat(m.atual||0);
+      const pct = total>0?Math.min(atual/total*100,100):0;
+      const isOrc = m.tipo==='orcamento';
+      return `<div style="padding:5px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span style="font-size:13px">${m.emoji||'🎯'}</span>
+          <span style="font-size:11px;font-weight:700;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(m.nome)}</span>
+          <span style="font-size:10px;font-weight:800;color:${isOrc?'var(--azul)':'var(--verde)'}">${isOrc?'Projeto':'Meta'}</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div style="flex:1;height:4px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${isOrc?'var(--azul)':'var(--verde)'};border-radius:100px"></div></div>
+          <span style="font-size:10px;color:var(--muted);white-space:nowrap">${pct.toFixed(0)}%</span>
+        </div>
+      </div>`;
+    }).join('') : '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">Sem metas</div>';
+  }
+
+  // ── Cartões ──
+  const cartoesBody = document.getElementById('relCartoesBody');
+  const cartoesSub = document.getElementById('relCartoesSub');
+  if(cartoesBody){
+    const totFat = CARTOES.reduce((s,c)=>{
+      const fat = Math.abs(txG.filter(t=>t.cartao===c.nome).reduce((a,t)=>a+parseFloat(t.valor||0),0));
+      return s+fat;
+    },0);
+    if(cartoesSub) cartoesSub.textContent = `${CARTOES.length} cartões · Fatura ${fmt(totFat)}`;
+    cartoesBody.innerHTML = CARTOES.length ? CARTOES.slice(0,4).map(c=>{
+      const fat = Math.abs(txG.filter(t=>t.cartao===c.nome).reduce((a,t)=>a+parseFloat(t.valor||0),0));
+      const lim = parseFloat(c.limite||0);
+      const pct = lim>0?Math.min(fat/lim*100,100):0;
+      const cor = pct>=80?'var(--verm)':pct>=60?'var(--lara)':'var(--azul)';
+      return `<div style="padding:5px 0;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <div style="width:10px;height:10px;border-radius:2px;background:${c.cor||'#3B6FF0'};flex-shrink:0"></div>
+          <span style="font-size:11px;font-weight:700;flex:1">${esc(c.nome)}</span>
+          <span style="font-size:11px;font-weight:800;color:${cor}">${fmt(fat)}</span>
+        </div>
+        ${lim>0?`<div style="height:3px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div></div><div style="font-size:9px;color:var(--muted);margin-top:2px">${pct.toFixed(0)}% do limite de ${fmt(lim)}</div>`:''}
+      </div>`;
+    }).join('') : '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">Sem cartões</div>';
+  }
+
   // ── Transaction table ──
   document.getElementById('relBody').innerHTML = txMes.map(t=>`<tr>
     <td>${t.data}</td>
@@ -6496,7 +6651,7 @@ function renderFamilia(){
     const meuAvatar = user?.avatar || '🙂';
     const meuGasto = Math.abs(txsMes.filter(t=>!t.membro&&parseFloat(t.valor||0)<0).reduce((s,t)=>s+parseFloat(t.valor||0),0));
 
-    let html = `<div class="card" style="text-align:center;padding:16px 12px;cursor:pointer;border:2px solid var(--azul)" onclick="filtrarTxFamilia('')">
+    let html = `<div class="card" style="text-align:center;padding:16px 12px;cursor:pointer;border:2px solid ${FAM_MEMBRO_FILTRO===''?'var(--azul)':'var(--border)'}" onclick="filtrarTxFamilia('')">
       <div style="font-size:28px">${meuAvatar}</div>
       <div style="font-size:13px;font-weight:800;margin-top:4px">${esc(meuNome)}</div>
       <div style="font-size:12px;color:var(--verm);font-weight:700;margin-top:2px">${fmt(meuGasto)}</div>
@@ -6508,7 +6663,7 @@ function renderFamilia(){
       const lim = parseFloat(m.limite||0);
       const pct = lim>0?Math.min(gasto/lim*100,100):0;
       const cor = pct>=100?'var(--verm)':pct>=80?'var(--lara)':'var(--verde)';
-      return `<div class="card" style="text-align:center;padding:16px 12px;cursor:pointer" onclick="filtrarTxFamilia('${m.id}')">
+      return `<div class="card" style="text-align:center;padding:16px 12px;cursor:pointer;border:2px solid ${FAM_MEMBRO_FILTRO===m.id?'var(--azul)':'var(--border)'}" onclick="filtrarTxFamilia('${m.id}')">
         <div style="font-size:28px">${m.avatar||'👤'}</div>
         <div style="font-size:13px;font-weight:800;margin-top:4px">${esc(m.nome)}</div>
         <div style="font-size:12px;color:${cor};font-weight:700;margin-top:2px">${fmt(gasto)}${lim>0?` / ${fmt(lim)}`:''}</div>
@@ -6572,18 +6727,13 @@ function renderFamilia(){
 }
 
 function filtrarTxFamilia(membroId){
+  FAM_MEMBRO_FILTRO = membroId; // null|''|'id'
   go('transacoes');
-  // Filtra transações por membro — hack: simula busca
   setTimeout(()=>{
-    const srch = document.getElementById('srch');
-    if(srch){
-      // Não há filtro de membro nativo na toolbar, então mostramos uma mensagem
-      if(membroId){
-        const membro = FAMILIA_MEMBROS.find(m=>m.id===membroId);
-        if(membro) toast(`Mostrando: ${membro.nome}. Filtre manualmente por membro.`,'info');
-      }
-    }
-  }, 300);
+    renderTxPage();
+    const nome = membroId === '' ? (AUTH_USER?.name||'Titular') : (FAMILIA_MEMBROS.find(m=>m.id===membroId)?.nome||'Membro');
+    toast(`👨‍👩‍👧 Mostrando gastos de: ${nome}`,'info');
+  }, 150);
 }
 
 function abrirModalMembro(i=-1){
@@ -7416,7 +7566,7 @@ function autoRefresh(){
   // Re-renderiza a aba ativa se não for dashboard
   const cur = document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur && cur !== 'dashboard'){
-    const fns={transacoes:renderTxPage,cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
     if(fns[cur]) fns[cur]();
   }
 }
