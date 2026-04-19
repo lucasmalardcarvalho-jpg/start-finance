@@ -200,6 +200,8 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 /* TABELAS */
 .tw{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+#txCardList{display:none}
+#fxCardList{display:none}
 .st{width:100%;border-collapse:collapse;font-size:13px}
 .st thead th{background:linear-gradient(135deg,var(--azul),var(--azul-d));color:#fff;padding:10px 13px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
 .st tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
@@ -570,10 +572,41 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Forms */
   .fr,.fr.one{flex-direction:column;gap:8px}
   .parc-btn{padding:7px 12px;font-size:12px;min-height:44px}
-  /* Tables */
-  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0}
-  table.st{font-size:11px;min-width:480px}
-  table.st th,table.st td{padding:8px 8px;white-space:nowrap}
+  /* Tables — hide on mobile, use cards instead */
+  .tw{display:none!important}
+  #txCardList{display:block;padding:0 10px}
+  .tf{padding:8px 12px;font-size:12px;gap:8px;flex-wrap:wrap}
+  /* Transaction mobile cards */
+  .tx-mcard{
+    background:var(--card);border-radius:14px;padding:12px 14px;
+    margin-bottom:8px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,.07);position:relative;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+  }
+  .tx-mcard-icon{
+    width:40px;height:40px;border-radius:12px;display:flex;align-items:center;
+    justify-content:center;font-size:18px;flex-shrink:0;
+  }
+  .tx-mcard-body{flex:1;min-width:0}
+  .tx-mcard-desc{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
+  .tx-mcard-meta{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tx-mcard-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+  .tx-mcard-val{font-size:15px;font-weight:800}
+  .tx-mcard-val.neg{color:var(--verm)}
+  .tx-mcard-val.pos{color:var(--verde)}
+  .tx-mcard-actions{display:flex;gap:5px;margin-top:2px}
+  .tx-mcard-actions button{
+    width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;
+    font-size:13px;display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .tx-mcard-actions .btn-edit{background:var(--azul-l);color:var(--azul)}
+  .tx-mcard-actions .btn-del{background:var(--verm-l);color:var(--verm)}
+  .tx-mcard-date{font-size:10px;color:var(--muted);font-weight:600}
+  /* Filters — compact 2-col grid on mobile */
+  .tb{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;padding:0 10px 6px}
+  .tb .sf-s{grid-column:1/-1}
+  .tb #calWrap{grid-column:1/-1;display:flex;justify-content:flex-end}
   /* Charts */
   #dashChart svg,#relEvolChart svg{min-width:280px}
   .chart-period-bar{padding:8px 10px;gap:5px;flex-wrap:wrap}
@@ -604,10 +637,33 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .toast{bottom:calc(64px + env(safe-area-inset-bottom));right:12px;left:12px;max-width:unset;text-align:center;justify-content:center}
   /* Modal z-index override dentro de media query (garante que fica acima do drawer) */
   .ov{z-index:800!important}
+  /* Fixas card list */
+  #fxCardList{display:block;padding:0 10px;margin-bottom:10px}
+  .fx-mcard{
+    background:var(--card);border-radius:14px;padding:12px 14px;
+    margin-bottom:8px;display:flex;align-items:center;gap:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,.07);
+  }
+  .fx-mcard-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:var(--azul-l)}
+  .fx-mcard.pago .fx-mcard-icon{background:var(--verde-l)}
+  .fx-mcard.atraso .fx-mcard-icon{background:var(--verm-l)}
+  .fx-mcard-body{flex:1;min-width:0}
+  .fx-mcard-desc{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)}
+  .fx-mcard-meta{font-size:11px;color:var(--muted);margin-top:2px}
+  .fx-mcard-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+  .fx-mcard-val{font-size:15px;font-weight:800;color:var(--verm)}
+  .fx-mcard-actions{display:flex;gap:4px}
+  .fx-mcard-actions button{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+  /* "Marcar todas pagas" button full-width on mobile */
+  .tf .btn{width:100%;justify-content:center;margin-top:4px}
+  /* Relatórios — colapsa grids inline dentro do painel de análise */
+  #relPanelAnalise > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  #relPanelAnalise .card > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  /* Família e outros inner grids */
+  #familiaResumoCols[style*="grid-template-columns"]{grid-template-columns:1fr!important}
 }
-@media(max-width:400px){
+@media(max-width:340px){
   .kg{grid-template-columns:1fr!important}
-  #catsGrid{grid-template-columns:1fr 1fr!important}
   .mbn-label{display:none}
   #mobileTopbar .mt-month-nm{display:none}
 }
@@ -1544,8 +1600,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <thead><tr><th>Data / Hora</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Método / Cartão</th><th>Parcelas</th><th>Tipo</th><th>Ações</th></tr></thead>
       <tbody id="txBody"></tbody>
     </table>
-    <div class="tf"><span id="txCnt">—</span><span id="txTots" style="font-weight:700"></span></div>
   </div>
+  <div id="txCardList"></div>
+  <div class="tf"><span id="txCnt">—</span><span id="txTots" style="font-weight:700"></span></div>
 </div>
 
 <!-- ═══ DESPESAS FIXAS ═══ -->
@@ -1563,8 +1620,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="tw mb">
     <table class="st"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Observação</th><th>Ações</th></tr></thead>
     <tbody id="fxBody"></tbody></table>
-    <div class="tf"><span id="fxCnt">0 despesas fixas</span><div><button class="btn bv btn-sm" onclick="marcarTodasPagas()">✅ Marcar todas como pagas</button></div></div>
   </div>
+  <div id="fxCardList"></div>
+  <div class="tf"><span id="fxCnt">0 despesas fixas</span><div><button class="btn bv btn-sm" onclick="marcarTodasPagas()">✅ Marcar todas como pagas</button></div></div>
   <!-- Regras Recorrentes -->
   <div class="card">
     <div class="ch">
@@ -4378,7 +4436,51 @@ function normalizeTx(t){
   };
 }
 
+function renderTxCards(){
+  const el=document.getElementById('txCardList');
+  if(!el) return;
+  if(!TX_FILT.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ic">🔍</div><h3>Nada encontrado</h3><p>Tente outros filtros ou registre no Telegram</p></div>`;
+    document.getElementById('txCnt').textContent='0 transações';
+    document.getElementById('txTots').textContent='';
+    return;
+  }
+  el.innerHTML=TX_FILT.map((t,i)=>{
+    const r=normalizeTx(t);
+    const neg=r.valor<0;
+    const pt=parseInt(r.parcelas)||0;
+    const pa=parseInt(r.parcela_atual)||0;
+    const parcStr=pt>0?(pa>0?`${pa}/${pt}x`:`${pt}x`):'';
+    const metaArr=[];
+    if(r.data) metaArr.push(r.data);
+    if(r.metodo) metaArr.push(r.metodo);
+    if(r.cartao) metaArr.push(r.cartao);
+    if(parcStr) metaArr.push(`🔢${parcStr}`);
+    if(r.localizacao) metaArr.push(`📍${r.localizacao}`);
+    return `<div class="tx-mcard" onclick="editTx(${i})">
+      <div class="tx-mcard-icon" style="background:${r.cor}22">${r.emoji}</div>
+      <div class="tx-mcard-body">
+        <div class="tx-mcard-desc">${esc(r.descricao||r.categoria)}</div>
+        <div class="tx-mcard-meta">${metaArr.map(esc).join(' · ')}</div>
+      </div>
+      <div class="tx-mcard-right">
+        <div class="tx-mcard-val ${neg?'neg':'pos'}">${neg?'−':'+'}${fmt(r.valor)}</div>
+        <div class="tx-mcard-actions" onclick="event.stopPropagation()">
+          <button class="btn-edit" onclick="editTx(${i})">✏️</button>
+          <button class="btn-del" onclick="promptDel(${i})">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const tG=TX_FILT.filter(t=>t.valor<0).reduce((s,t)=>s+Math.abs(t.valor),0);
+  const tR=TX_FILT.filter(t=>t.valor>0).reduce((s,t)=>s+t.valor,0);
+  document.getElementById('txCnt').textContent=`${TX_FILT.length} transação(ões) — ${getMesNome()}`;
+  document.getElementById('txTots').innerHTML=`<span style="color:var(--verde);font-weight:700">+${fmt(tR)}</span> | <span style="color:var(--verm);font-weight:700">−${fmt(tG)}</span>`;
+}
+
 function renderTxTable(){
+  // On mobile, delegate to card layout
+  if(window.innerWidth<=768){ renderTxCards(); return; }
   const el=document.getElementById('txBody');
   if(!TX_FILT.length){el.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-ic">🔍</div><h3>Nada encontrado</h3><p>Tente outros filtros ou registre no Telegram</p></div></td></tr>`;
   document.getElementById('txCnt').textContent='0 transações';document.getElementById('txTots').textContent='';return;}
@@ -4689,6 +4791,41 @@ function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';s
 function delFx(i){FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')}
 function marcarTodasPagas(){FIXAS.forEach(f=>f.status='Pago');salvarFixas();renderFixas();toast('✅ Todas pagas!','success')}
 
+function renderFxCards(){
+  const el=document.getElementById('fxCardList');
+  if(!el) return;
+  const emjs={Contas:'⚡',Moradia:'🏠',Saúde:'❤️',Educação:'📚',Assinaturas:'📺',Transporte:'🚗',Outros:'📦'};
+  if(!FIXAS.length){
+    el.innerHTML=`<div class="empty"><div class="empty-ic">📌</div><h3>Sem despesas fixas</h3><p>Adicione compromissos recorrentes</p></div>`;
+    return;
+  }
+  el.innerHTML=FIXAS.map((f,i)=>{
+    const pago=f.status==='Pago';
+    const atraso=f.status==='Em atraso';
+    const cls=pago?'fx-mcard pago':atraso?'fx-mcard atraso':'fx-mcard';
+    const spCls=pago?'pill pr':atraso?'pill pa2':'pill pp';
+    const meta=[f.cat, f.venc?'Dia '+f.venc:'', f.obs||''].filter(Boolean).join(' · ');
+    const toggleBg=pago?'var(--verm-l)':'var(--verde-l)';
+    const toggleClr=pago?'var(--verm)':'var(--verde-d)';
+    return `<div class="${cls}">
+      <div class="fx-mcard-icon">${emjs[f.cat]||'📦'}</div>
+      <div class="fx-mcard-body">
+        <div class="fx-mcard-desc">${esc(f.desc)}</div>
+        <div class="fx-mcard-meta">${esc(meta)}</div>
+      </div>
+      <div class="fx-mcard-right">
+        <div class="fx-mcard-val">${fmt(f.valor)}</div>
+        <span class="${spCls}" style="font-size:10px">${esc(f.status)}</span>
+        <div class="fx-mcard-actions">
+          <button style="background:${toggleBg};color:${toggleClr}" onclick="toggleFx(${i})">${pago?'↩️':'✅'}</button>
+          <button style="background:var(--azul-l);color:var(--azul)" onclick="openFx(${i})">✏️</button>
+          <button style="background:var(--verm-l);color:var(--verm)" onclick="delFx(${i})">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function renderFixas(){
   const emjs={Contas:'⚡',Moradia:'🏠',Saúde:'❤️',Educação:'📚',Assinaturas:'📺',Transporte:'🚗',Outros:'📦'};
   const tot=FIXAS.reduce((s,f)=>s+parseFloat(f.valor||0),0);
@@ -4696,8 +4833,10 @@ function renderFixas(){
   const pd=FIXAS.filter(f=>f.status!=='Pago').reduce((s,f)=>s+parseFloat(f.valor||0),0);
   document.getElementById('fxTot').textContent=fmt(tot);document.getElementById('fxPg').textContent=fmt(pg);document.getElementById('fxPd').textContent=fmt(pd);
   document.getElementById('fxCnt').textContent=`${FIXAS.length} despesa(s) fixa(s)`;
+  // Mobile: use cards
+  if(window.innerWidth<=768){ renderFxCards(); renderRecorr(); return; }
   const el=document.getElementById('fxBody');
-  if(!FIXAS.length){el.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-ic">📌</div><h3>Sem despesas fixas</h3><p>Adicione compromissos recorrentes</p></div></td></tr>`;return;}
+  if(!FIXAS.length){el.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-ic">📌</div><h3>Sem despesas fixas</h3><p>Adicione compromissos recorrentes</p></div></td></tr>`;renderRecorr();return;}
   el.innerHTML=FIXAS.map((f,i)=>{
     const sp=f.status==='Pago'?'pill pr':f.status==='Em atraso'?'pill pa2':'pill pp';
     return `<tr><td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${emjs[f.cat]||'📦'}</span><span style="font-weight:700">${esc(f.desc)}</span></div></td>
