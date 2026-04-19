@@ -1389,7 +1389,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 
   <!-- ── LINHA 3: Donut + Minha Carteira + Resumo do Mês (3 colunas juntas) ── -->
-  <div style="display:grid;grid-template-columns:0.9fr 1.1fr 1.4fr;gap:15px;margin-bottom:15px;align-items:start">
+  <div style="display:grid;grid-template-columns:0.9fr 1.1fr 1.4fr;gap:15px;margin-bottom:15px;align-items:stretch">
 
     <!-- Donut / Por Categoria -->
     <div class="card" onclick="go('categorias')" style="cursor:pointer;display:flex;flex-direction:column">
@@ -8118,26 +8118,6 @@ function renderResumoMes(d, mes){
   if(dividasMes>0) alertas.push({ico:'📅',txt:`${fmt(dividasMes)}/mês em parcelas de dívidas`,cor:'var(--muted)',bg:'var(--bg)'});
   if(cats.find(c=>c.status==='estourou')) alertas.push({ico:'🔴',txt:`Limite estourado: ${cats.filter(c=>c.status==='estourou').map(c=>esc(c.nome)).join(', ')}`,cor:'var(--verm)',bg:'var(--verm-l)'});
 
-  // Próximos vencimentos (14 dias)
-  const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const venc=[];
-  FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
-    const dia=parseInt(f.venc||0); if(!dia) return;
-    let v=new Date(hoje.getFullYear(),hoje.getMonth(),dia);
-    if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,dia);
-    const diff=Math.round((v-hoje)/86400000);
-    if(diff<=14) venc.push({nome:f.desc||f.nome,valor:parseFloat(f.valor||0),diff,emoji:'📌'});
-  });
-  CARTOES.forEach(c=>{
-    const diaV=parseInt(c.venc||0); if(!diaV) return;
-    let v=new Date(hoje.getFullYear(),hoje.getMonth(),diaV);
-    if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,diaV);
-    const diff=Math.round((v-hoje)/86400000);
-    const fat=(MES_DATA.gastosPorCartao||{})[c.nome]||0;
-    if(diff<=14&&fat>0) venc.push({nome:'Fatura '+c.nome,valor:fat,diff,emoji:'💳'});
-  });
-  venc.sort((a,b)=>a.diff-b.diff);
-
   // Metas ativas (top 2)
   const metasAtivas=(METAS||[]).filter(m=>parseFloat(m.atual||0)<parseFloat(m.total||0)).slice(0,2);
 
@@ -8204,18 +8184,6 @@ function renderResumoMes(d, mes){
       <span style="font-size:12px;font-weight:600;color:var(--txt2)">${a.txt}</span>
     </div>`).join('')}
   </div>`:`<div style="text-align:center;padding:8px 0 12px;color:var(--verde-d);font-size:13px;font-weight:700">🎉 Tudo sob controle este mês!</div>`}
-
-  ${venc.length?`
-  <div style="margin-bottom:12px">
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⏰ Próximos vencimentos</div>
-    ${venc.slice(0,3).map(it=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:14px;flex-shrink:0">${it.emoji}</span>
-      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nome)}</div>
-        <div style="font-size:10px;color:${it.diff<=3?'var(--verm)':it.diff<=7?'var(--lara)':'var(--muted)'};font-weight:600">${it.diff===0?'Hoje':it.diff===1?'Amanhã':'Em '+it.diff+' dias'}</div>
-      </div>
-      <div style="font-size:12px;font-weight:800;color:var(--verm);flex-shrink:0">${fmt(it.valor)}</div>
-    </div>`).join('')}
-  </div>`:'' }
 
   ${metasAtivas.length?`
   <div>
