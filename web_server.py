@@ -5,7 +5,7 @@ START FINANCE — Web Server v4.0
 - CRUD completo
 """
 
-import os, json, logging, threading
+import os, json, logging, threading, time
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file
 from sheets_manager import SheetsManager, get_mes_ano, MESES_PT, parsear_valor
@@ -381,6 +381,66 @@ def pluggy_sync(item_id):
     except Exception as e:
         logger.error(f"❌ Pluggy sync {item_id}: {e}")
         return jsonify({"erro": str(e)}), 500
+
+
+# ── User Data Sync — armazena dados financeiros por usuário ──────
+# Permite sincronização entre dispositivos (desktop ↔ mobile)
+import os as _os
+
+_USER_DATA_DIR = _os.path.join(_os.path.dirname(__file__), 'userdata')
+_user_data_mem = {}  # cache em memória
+
+def _ud_path(user_id: str) -> str:
+    _os.makedirs(_USER_DATA_DIR, exist_ok=True)
+    return _os.path.join(_USER_DATA_DIR, f"{user_id}.json")
+
+@app.route("/api/userdata", methods=["GET"])
+@requer_auth
+def get_userdata():
+    user_id = request.user["sub"]
+    # Tenta memória primeiro
+    if user_id in _user_data_mem:
+        return jsonify(_user_data_mem[user_id])
+    # Tenta arquivo
+    path = _ud_path(user_id)
+    if _os.path.exists(path):
+        try:
+            with open(path) as f:
+                data = json.load(f)
+                _user_data_mem[user_id] = data
+                return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({})
+
+@app.route("/api/userdata", methods=["POST"])
+@requer_auth
+def save_userdata():
+    user_id = request.user["sub"]
+    data = request.json or {}
+    # Guarda em memória (acesso rápido)
+    _user_data_mem[user_id] = data
+    # Persiste em arquivo (sobrevive a restarts no mesmo volume)
+    try:
+        path = _ud_path(user_id)
+        with open(path, 'w') as f:
+            json.dump(data, f)
+    except Exception as e:
+        logger.warning(f"userdata write error: {e}")
+    return jsonify({"ok": True})
+
+@app.route("/api/userdata/ts", methods=["GET"])
+@requer_auth
+def get_userdata_ts():
+    """Retorna apenas o timestamp da última atualização (leve, para polling)."""
+    user_id = request.user["sub"]
+    path = _ud_path(user_id)
+    ts = 0
+    if _os.path.exists(path):
+        ts = int(_os.path.getmtime(path) * 1000)
+    elif user_id in _user_data_mem:
+        ts = int(time.time() * 1000)
+    return jsonify({"ts": ts, "user_id": user_id})
 
 
 # ── Health ────────────────────────────────────────────────────────

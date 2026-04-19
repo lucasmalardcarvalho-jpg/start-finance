@@ -523,8 +523,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .kpi-top{margin-bottom:4px}
   /* Grids */
   .g2,.g2e,.g3,.g4,.g32{grid-template-columns:1fr!important;gap:10px}
-  /* Inline dashboard grids — força 1 coluna em todos os grids inline */
-  [style*="grid-template-columns"]:not(#catsGrid):not(#familiaMembros):not(#familiaKpis){grid-template-columns:1fr!important}
+  /* Inline layout grids — só colapsa grids que são filhos diretos de .page (layout externo)
+     Não afeta grids internos dentro de .card (preserva KPIs e mini-grids do conteúdo) */
+  .page > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   /* Buttons */
   .btn{font-size:12px;padding:9px 12px;min-height:40px}
   .btn-sm{padding:6px 10px;font-size:11px;min-height:34px}
@@ -1408,7 +1409,18 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
   </div>
 
-  <!-- ── LINHA 3: Limites + Últimas Txs ── -->
+  <!-- ── LINHA 3b: Resumo do Mês ── -->
+  <div style="margin-bottom:15px">
+    <div class="card" id="dashResumoCard" style="border-color:#3B6FF018">
+      <div class="ch">
+        <div><div class="ct">📋 Resumo do Mês</div><div class="cs" id="dashResumoSub">—</div></div>
+        <span id="dashResumoStatus" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--verde-l);color:var(--verde-d)">—</span>
+      </div>
+      <div id="dashNarr" style="padding:0 18px 16px"></div>
+    </div>
+  </div>
+
+  <!-- ── LINHA 3c: Limites + Últimas Txs ── -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-bottom:15px">
 
     <!-- Limites por categoria -->
@@ -2550,11 +2562,29 @@ async function reload(manual=false){
 // ════════════════════════════════════════════════
 let _syncInterval = null;
 let _lastSyncCount = -1;
+let _lastUdTs = 0; // timestamp do último userdata do servidor
 
 async function silentSync(){
   try{
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
     if(!isJWT || !AUTH_USER) return;
+
+    // 1) Checa se userdata do servidor foi atualizado por outro dispositivo
+    const tsRes = await Promise.race([
+      fetch('/api/userdata/ts', {headers: apiHeaders()}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('t')),3000))
+    ]).catch(()=>null);
+    if(tsRes?.ok){
+      const tsData = await tsRes.json().catch(()=>({}));
+      if(tsData.ts && tsData.ts > _lastUdTs){
+        _lastUdTs = tsData.ts;
+        if(_lastSyncCount !== -1){ // não é o primeiro sync
+          await pullDataFromServer();
+        }
+      }
+    }
+
+    // 2) Sync de transações via Google Sheets
     const res = await Promise.race([
       fetch('/api/todas', {headers: apiHeaders()}),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
@@ -2566,7 +2596,6 @@ async function silentSync(){
     const txs = d.transacoes||[];
     if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) return;
     const _localTxs = lsUser('txs', []);
-    // Se a API tem mais dados do que o local → houve sync de outro dispositivo
     if(txs.length > _localTxs.length){
       TODAS_TX = txs;
       salvarTxsLocal();
@@ -2581,7 +2610,6 @@ async function silentSync(){
       toast('🔄 Sincronizado com outro dispositivo!','info');
       _lastSyncCount = txs.length;
     } else if(_lastSyncCount === -1){
-      // Primeira sincronização — garante que temos os dados mais recentes
       if(txs.length >= _localTxs.length){
         TODAS_TX = txs;
         salvarTxsLocal();
@@ -2603,6 +2631,92 @@ function startAutoSync(){
 
 function stopAutoSync(){
   if(_syncInterval){ clearInterval(_syncInterval); _syncInterval = null; }
+}
+
+// ════════════════════════════════════════════════
+// CLOUD SYNC — sincroniza TODOS os dados entre dispositivos via /api/userdata
+// ════════════════════════════════════════════════
+let _pushDebounce = null;
+let _cloudSyncActive = false;
+
+function _collectAllUserData(){
+  return {
+    txs:          lsUser('txs', []),
+    fixas:        lsUser('fixas', []),
+    dividas:      lsUser('dividas', []),
+    metas:        lsUser('metas', []),
+    inv:          lsUser('inv', []),
+    cartoes:      lsUser('cartoes', []),
+    limites:      lsUser('limites', {}),
+    cats:         lsUser('cats', []),
+    recorrencias: lsUser('recorrencias', []),
+    familia:      lsUser('familia', []),
+  };
+}
+
+async function pushDataToServer(){
+  try{
+    const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
+    if(!isJWT || !AUTH_USER) return;
+    const data = _collectAllUserData();
+    await fetch('/api/userdata', {
+      method: 'POST',
+      headers: {...apiHeaders(), 'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+  }catch(e){}
+}
+
+function schedulePush(){
+  // Debounce: envia após 2s de inatividade
+  const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
+  if(!isJWT) return;
+  clearTimeout(_pushDebounce);
+  _pushDebounce = setTimeout(pushDataToServer, 2000);
+}
+
+async function pullDataFromServer(){
+  try{
+    const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
+    if(!isJWT || !AUTH_USER) return;
+    const res = await Promise.race([
+      fetch('/api/userdata', {headers: apiHeaders()}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
+    ]);
+    if(!res.ok) return;
+    const data = await res.json();
+    if(!data || !Object.keys(data).length) return;
+
+    // Compara com localStorage — só atualiza se servidor tem mais dados
+    const localTxs = lsUser('txs', []);
+    const serverTxs = data.txs || [];
+    const serverHasMore = serverTxs.length > localTxs.length;
+    const serverHasData = Object.keys(data).some(k=> Array.isArray(data[k]) ? data[k].length > 0 : Object.keys(data[k]||{}).length > 0);
+
+    if(!serverHasData) return; // servidor vazio, não sobrescreve
+
+    // Se servidor tem mais transações → pull completo
+    // Se servidor tem o mesmo ou menos txs → pull apenas se outros dados diferem
+    _cloudSyncActive = true; // previne push durante o pull
+    const keys = ['fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia'];
+    if(serverHasMore && data.txs){ saveUser('txs', data.txs); }
+    keys.forEach(k=>{ if(data[k]!==undefined) saveUser(k, data[k]); });
+    _cloudSyncActive = false;
+
+    // Recarrega dados em memória
+    carregarDadosUsuario();
+    if(serverHasMore){
+      HISTORICO = buildHistoricoLocal();
+      calcularMes();
+      renderDash();
+      const cur = document.querySelector('.page.active')?.id?.replace('page-','');
+      if(cur && cur !== 'dashboard'){
+        const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+        if(fns[cur]) fns[cur]();
+      }
+      toast('🔄 Dados sincronizados do servidor!','info');
+    }
+  }catch(e){}
 }
 
 // ════════════════════════════════════════════════
@@ -2699,6 +2813,8 @@ function renderDash(){
   renderDashTxs(d.txMes);
   // Resumo de investimentos
   renderInvDash();
+  // Resumo do mês
+  renderResumoMes(d, mes);
   // Cartões
   renderCartoesDash();
   // Dívidas
@@ -6928,6 +7044,8 @@ function lsUser(k, def=null){
 }
 function saveUser(k, v){
   _save_raw(userKey(k), v);
+  // Cloud sync automático para JWT users (não dispara durante pull do servidor)
+  if(!_cloudSyncActive) schedulePush();
 }
 
 // ── Interface: tabs login/cadastro ─────────────
@@ -7116,8 +7234,11 @@ function entrarNoSistema(){
   if(Object.keys(CAT_MODEL).length === 0) setTimeout(treinarCatModelComHistorico, 1200);
   // Mostra botão de notificações se não concedido; envia alertas se já concedido
   setTimeout(()=>{ checarBotaoNotificacoes(); verificarAlertasVencimento(); }, 1500);
-  // Inicia auto-sync em background (só para usuários com JWT real)
-  setTimeout(startAutoSync, 2000);
+  // Pull inicial do servidor — traz dados de outros dispositivos
+  setTimeout(async ()=>{
+    await pullDataFromServer();
+    startAutoSync(); // só inicia polling após o pull inicial
+  }, 2000);
 }
 
 // ── Carrega dados financeiros do usuário ──────
@@ -7969,6 +8090,150 @@ function renderInvDash(){
     <div style="text-align:right;margin-top:2px">
       <span style="font-size:11px;color:var(--azul);font-weight:700">Ver carteira completa →</span>
     </div>
+  `;
+}
+
+function renderResumoMes(d, mes){
+  const el  = document.getElementById('dashNarr');
+  const sub = document.getElementById('dashResumoSub');
+  const st  = document.getElementById('dashResumoStatus');
+  const card= document.getElementById('dashResumoCard');
+  if(!el) return;
+
+  const saldo    = d.saldo;
+  const positivo = saldo >= 0;
+  const txs      = d.txMes || [];
+  const cats     = d.categorias || [];
+  const top      = cats.slice(0,3);
+  const fixasPend= FIXAS.filter(f=>f.status!=='Pago').length;
+  const dividasMes = DIVIDAS.reduce((s,dv)=>s+parseFloat(dv.mensal||0),0);
+  const taxaPoup = d.entradas>0 ? Math.max(0, saldo/d.entradas*100) : 0;
+
+  if(sub) sub.textContent = mes;
+  if(st){ st.textContent=positivo?'💚 No azul':'🔴 No vermelho'; st.style.background=positivo?'var(--verde-l)':'var(--verm-l)'; st.style.color=positivo?'var(--verde-d)':'var(--verm)'; }
+  if(card) card.style.borderColor = positivo?'#10B98133':'#EF444433';
+
+  const alertas=[];
+  if(fixasPend>0) alertas.push({ico:'⚠️',txt:`${fixasPend} despesa(s) fixa(s) pendente(s)`,cor:'var(--amar)',bg:'var(--amar-l)'});
+  if(!positivo)   alertas.push({ico:'🔴',txt:`Gastos superaram receitas em ${fmt(Math.abs(saldo))}`,cor:'var(--verm)',bg:'var(--verm-l)'});
+  if(taxaPoup>20) alertas.push({ico:'🏆',txt:`Taxa de poupança de ${taxaPoup.toFixed(0)}% — ótimo desempenho!`,cor:'var(--verde-d)',bg:'var(--verde-l)'});
+  if(dividasMes>0) alertas.push({ico:'📅',txt:`${fmt(dividasMes)}/mês em parcelas de dívidas`,cor:'var(--muted)',bg:'var(--bg)'});
+  if(cats.find(c=>c.status==='estourou')) alertas.push({ico:'🔴',txt:`Limite estourado: ${cats.filter(c=>c.status==='estourou').map(c=>esc(c.nome)).join(', ')}`,cor:'var(--verm)',bg:'var(--verm-l)'});
+
+  // Próximos vencimentos (14 dias)
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const venc=[];
+  FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
+    const dia=parseInt(f.venc||0); if(!dia) return;
+    let v=new Date(hoje.getFullYear(),hoje.getMonth(),dia);
+    if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,dia);
+    const diff=Math.round((v-hoje)/86400000);
+    if(diff<=14) venc.push({nome:f.desc||f.nome,valor:parseFloat(f.valor||0),diff,emoji:'📌'});
+  });
+  CARTOES.forEach(c=>{
+    const diaV=parseInt(c.venc||0); if(!diaV) return;
+    let v=new Date(hoje.getFullYear(),hoje.getMonth(),diaV);
+    if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,diaV);
+    const diff=Math.round((v-hoje)/86400000);
+    const fat=(MES_DATA.gastosPorCartao||{})[c.nome]||0;
+    if(diff<=14&&fat>0) venc.push({nome:'Fatura '+c.nome,valor:fat,diff,emoji:'💳'});
+  });
+  venc.sort((a,b)=>a.diff-b.diff);
+
+  // Metas ativas (top 2)
+  const metasAtivas=(METAS||[]).filter(m=>parseFloat(m.atual||0)<parseFloat(m.total||0)).slice(0,2);
+
+  // vs. mês anterior
+  const mesAnt = HISTORICO[HISTORICO.length-2];
+  const diffE = mesAnt&&d.entradas>0&&mesAnt.entradas>0 ? ((d.entradas-mesAnt.entradas)/mesAnt.entradas*100) : null;
+  const diffS = mesAnt&&d.saidas>0&&mesAnt.saidas>0 ? ((d.saidas-mesAnt.saidas)/mesAnt.saidas*100) : null;
+
+  el.innerHTML = `
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px">
+    <div style="padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Transações</div>
+      <div style="font-size:18px;font-weight:900;color:var(--azul)">${d.registros}</div>
+      <div style="font-size:10px;color:var(--muted)">${txs.filter(t=>t.valor<0).length} gastos</div>
+    </div>
+    <div style="padding:10px 14px;border-right:1px solid var(--border)">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Poupança</div>
+      <div style="font-size:18px;font-weight:900;color:${taxaPoup>=20?'var(--verde)':taxaPoup>=10?'var(--lara)':'var(--verm)'}">${taxaPoup.toFixed(1)}%</div>
+      <div style="font-size:10px;color:${saldo>0?'var(--verde-d)':saldo<0?'var(--verm)':'var(--muted)'}">${saldo>0?'💚 '+fmt(saldo):saldo<0?'🔴 Negativo':'Neutro'}</div>
+    </div>
+    <div style="padding:10px 14px">
+      <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Média/gasto</div>
+      <div style="font-size:18px;font-weight:900;color:var(--txt)">${d.registros>0?fmt(d.saidas/Math.max(txs.filter(t=>t.valor<0).length,1)):'—'}</div>
+      <div style="font-size:10px;color:var(--muted)">por transação</div>
+    </div>
+  </div>
+
+  ${(diffE!==null||diffS!==null)?`
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+    <div style="padding:8px 10px;background:var(--verde-l);border-radius:var(--r-xs)">
+      <div style="font-size:10px;font-weight:700;color:var(--verde)">Receitas vs ${mesAnt?.label||'ant.'}</div>
+      <div style="font-size:14px;font-weight:900;color:var(--verde)">${fmt(d.entradas)}</div>
+      ${diffE!==null?`<div style="font-size:10px;color:${diffE>=0?'var(--verde-d)':'var(--verm)'}">${diffE>=0?'↑':'↓'} ${Math.abs(diffE).toFixed(1)}%</div>`:''}
+    </div>
+    <div style="padding:8px 10px;background:var(--verm-l);border-radius:var(--r-xs)">
+      <div style="font-size:10px;font-weight:700;color:var(--verm)">Gastos vs ${mesAnt?.label||'ant.'}</div>
+      <div style="font-size:14px;font-weight:900;color:var(--verm)">${fmt(d.saidas)}</div>
+      ${diffS!==null?`<div style="font-size:10px;color:${diffS<=0?'var(--verde-d)':'var(--verm)'}">${diffS>=0?'↑':'↓'} ${Math.abs(diffS).toFixed(1)}%</div>`:''}
+    </div>
+  </div>`:'' }
+
+  ${top.length?`
+  <div style="margin-bottom:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Top categorias</div>
+    ${top.map(c=>{ const pct=d.saidas>0?(c.gasto/d.saidas*100):0; return `
+      <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+        <span style="font-size:14px">${c.emoji}</span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.nome)}</span>
+            <span style="flex-shrink:0;margin-left:6px;color:var(--verm)">${fmt(c.gasto)} <span style="font-weight:400;color:var(--muted)">${pct.toFixed(0)}%</span></span>
+          </div>
+          <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${c.cor};border-radius:100px"></div>
+          </div>
+        </div>
+      </div>`;}).join('')}
+  </div>`:'' }
+
+  ${alertas.length?`
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px">
+    ${alertas.map(a=>`<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:${a.bg};border-radius:var(--r-xs);border-left:3px solid ${a.cor}">
+      <span style="font-size:14px;flex-shrink:0">${a.ico}</span>
+      <span style="font-size:12px;font-weight:600;color:var(--txt2)">${a.txt}</span>
+    </div>`).join('')}
+  </div>`:`<div style="text-align:center;padding:8px 0 12px;color:var(--verde-d);font-size:13px;font-weight:700">🎉 Tudo sob controle este mês!</div>`}
+
+  ${venc.length?`
+  <div style="margin-bottom:12px">
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⏰ Próximos vencimentos</div>
+    ${venc.slice(0,3).map(it=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:14px;flex-shrink:0">${it.emoji}</span>
+      <div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nome)}</div>
+        <div style="font-size:10px;color:${it.diff<=3?'var(--verm)':it.diff<=7?'var(--lara)':'var(--muted)'};font-weight:600">${it.diff===0?'Hoje':it.diff===1?'Amanhã':'Em '+it.diff+' dias'}</div>
+      </div>
+      <div style="font-size:12px;font-weight:800;color:var(--verm);flex-shrink:0">${fmt(it.valor)}</div>
+    </div>`).join('')}
+  </div>`:'' }
+
+  ${metasAtivas.length?`
+  <div>
+    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 Progresso de metas</div>
+    ${metasAtivas.map(m=>{ const pct=Math.min(parseFloat(m.atual||0)/Math.max(parseFloat(m.total||0),1)*100,100); const cor=pct>=75?'var(--verde)':pct>=40?'var(--azul)':'var(--lara)'; return `
+      <div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+          <span style="font-weight:700">${m.emoji||'🎯'} ${esc(m.nome)}</span>
+          <span style="color:${cor};font-weight:800">${pct.toFixed(0)}%</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden">
+          <div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div>
+        </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:2px">${fmt(parseFloat(m.atual||0))} de ${fmt(parseFloat(m.total||0))}</div>
+      </div>`;}).join('')}
+  </div>`:'' }
   `;
 }
 
