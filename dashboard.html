@@ -523,8 +523,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .kpi-top{margin-bottom:4px}
   /* Grids */
   .g2,.g2e,.g3,.g4,.g32{grid-template-columns:1fr!important;gap:10px}
-  /* Inline dashboard grids */
-  [style*="grid-template-columns:1.6fr"],[style*="grid-template-columns:1fr 1.6fr"],[style*="grid-template-columns:1fr 1fr"],[style*="grid-template-columns:2fr"]{grid-template-columns:1fr!important}
+  /* Inline dashboard grids — força 1 coluna em todos os grids inline */
+  [style*="grid-template-columns"]:not(#catsGrid):not(#familiaMembros):not(#familiaKpis){grid-template-columns:1fr!important}
   /* Buttons */
   .btn{font-size:12px;padding:9px 12px;min-height:40px}
   .btn-sm{padding:6px 10px;font-size:11px;min-height:34px}
@@ -532,11 +532,36 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Filters toolbar */
   .tb{flex-wrap:wrap;gap:6px}
   .sf-s,.sf-f{width:100%!important;font-size:13px;padding:9px 10px}
-  /* Modal */
-  .modal{margin:0;width:100%;max-width:100%;border-radius:20px 20px 0 0;max-height:92vh;overflow-y:auto;-webkit-overflow-scrolling:touch;position:fixed;bottom:0;left:0;right:0}
-  .ov{align-items:flex-end}
-  .mf{padding:12px 14px 24px;gap:8px}
-  .mf .btn{flex:1;padding:12px;font-size:14px}
+  /* Modal — bottom sheet com header e footer fixos, body rolável */
+  .ov{align-items:flex-end!important;padding:0!important}
+  .modal{
+    margin:0!important;width:100%!important;max-width:100%!important;
+    border-radius:20px 20px 0 0!important;
+    max-height:90vh!important;
+    overflow:hidden!important;
+    position:fixed!important;bottom:0!important;left:0!important;right:0!important;top:auto!important;
+    display:flex!important;flex-direction:column!important;
+    animation:mInMob .28s cubic-bezier(.4,0,.2,1)!important;
+  }
+  @keyframes mInMob{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  /* Handle bar drag hint no topo do modal */
+  .modal::before{
+    content:'';display:block;width:40px;height:4px;
+    background:var(--border);border-radius:100px;
+    margin:10px auto 0;flex-shrink:0;
+  }
+  .mh{flex-shrink:0!important}
+  .mb2{flex:1!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
+  .mf{
+    flex-shrink:0!important;
+    display:flex!important;
+    padding:10px 14px!important;
+    padding-bottom:max(18px,env(safe-area-inset-bottom))!important;
+    gap:8px!important;
+    background:var(--card)!important;
+    border-top:1px solid var(--border)!important;
+  }
+  .mf .btn{flex:1!important;padding:14px!important;font-size:15px!important;min-height:52px!important}
   .fi{margin-bottom:10px}
   .fi label{font-size:12px;margin-bottom:4px;display:block}
   .fi input,.fi select,.fi textarea{font-size:16px!important;padding:10px 12px;min-height:44px} /* font-size:16px prevents zoom on iOS */
@@ -1372,13 +1397,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <div id="dashCatBars" style="flex:1;padding:0 18px 14px;overflow:hidden"></div>
     </div>
 
-    <!-- Resumo do mês profissional -->
-    <div class="card" id="dashResumoCard" style="border-color:#3B6FF018">
+    <!-- Resumo de Investimentos -->
+    <div class="card" id="dashInvCard" style="border-color:#3B6FF018;cursor:pointer" onclick="go('investimentos')">
       <div class="ch">
-        <div><div class="ct">📋 Resumo do Mês</div><div class="cs" id="dashResumoSub">—</div></div>
-        <span id="dashResumoStatus" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--verde-l);color:var(--verde-d)">—</span>
+        <div><div class="ct">📈 Minha Carteira</div><div class="cs" id="dashInvSub">Clique para detalhar →</div></div>
+        <span id="dashInvStatus" style="font-size:12px;font-weight:700;padding:4px 10px;border-radius:100px;background:var(--verde-l);color:var(--verde-d)">—</span>
       </div>
-      <div id="dashNarr" style="padding:0 18px 16px"></div>
+      <div id="dashInvBody" style="padding:0 18px 16px"></div>
     </div>
 
   </div>
@@ -2521,6 +2546,66 @@ async function reload(manual=false){
 }
 
 // ════════════════════════════════════════════════
+// AUTO-SYNC — sincronização em tempo real entre dispositivos
+// ════════════════════════════════════════════════
+let _syncInterval = null;
+let _lastSyncCount = -1;
+
+async function silentSync(){
+  try{
+    const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
+    if(!isJWT || !AUTH_USER) return;
+    const res = await Promise.race([
+      fetch('/api/todas', {headers: apiHeaders()}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
+    ]);
+    if(!res.ok) return;
+    const d = await res.json();
+    if(d.erro) return;
+    if(d.user_id && d.user_id !== AUTH_USER?.id) return;
+    const txs = d.transacoes||[];
+    if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) return;
+    const _localTxs = lsUser('txs', []);
+    // Se a API tem mais dados do que o local → houve sync de outro dispositivo
+    if(txs.length > _localTxs.length){
+      TODAS_TX = txs;
+      salvarTxsLocal();
+      HISTORICO = buildHistoricoLocal();
+      calcularMes();
+      renderDash();
+      const cur = document.querySelector('.page.active')?.id?.replace('page-','');
+      if(cur && cur !== 'dashboard'){
+        const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+        if(fns[cur]) fns[cur]();
+      }
+      toast('🔄 Sincronizado com outro dispositivo!','info');
+      _lastSyncCount = txs.length;
+    } else if(_lastSyncCount === -1){
+      // Primeira sincronização — garante que temos os dados mais recentes
+      if(txs.length >= _localTxs.length){
+        TODAS_TX = txs;
+        salvarTxsLocal();
+        HISTORICO = buildHistoricoLocal();
+      }
+      _lastSyncCount = TODAS_TX.length;
+    }
+  }catch(e){ /* silently ignore */ }
+}
+
+function startAutoSync(){
+  stopAutoSync();
+  const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
+  if(!isJWT) return;
+  _lastSyncCount = -1;
+  silentSync(); // sync imediato ao iniciar
+  _syncInterval = setInterval(silentSync, 30000); // a cada 30s
+}
+
+function stopAutoSync(){
+  if(_syncInterval){ clearInterval(_syncInterval); _syncInterval = null; }
+}
+
+// ════════════════════════════════════════════════
 // NAVEGAÇÃO
 // ════════════════════════════════════════════════
 function go(page){
@@ -2612,8 +2697,8 @@ function renderDash(){
   renderCatListDash(d.categorias);
   // Txs recentes
   renderDashTxs(d.txMes);
-  // Resumo do mês profissional
-  renderResumoMes(d, mes);
+  // Resumo de investimentos
+  renderInvDash();
   // Cartões
   renderCartoesDash();
   // Dívidas
@@ -7031,6 +7116,8 @@ function entrarNoSistema(){
   if(Object.keys(CAT_MODEL).length === 0) setTimeout(treinarCatModelComHistorico, 1200);
   // Mostra botão de notificações se não concedido; envia alertas se já concedido
   setTimeout(()=>{ checarBotaoNotificacoes(); verificarAlertasVencimento(); }, 1500);
+  // Inicia auto-sync em background (só para usuários com JWT real)
+  setTimeout(startAutoSync, 2000);
 }
 
 // ── Carrega dados financeiros do usuário ──────
@@ -7581,6 +7668,7 @@ function confirmarLogout(){
   showConfirm(`Deseja sair da conta de <strong>${AUTH_USER?.name||'usuário'}</strong>?`, logout, '🚪', 'Sair', 'bd');
 }
 function logout(){
+  stopAutoSync(); // Para o polling antes de limpar estado
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
   // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
@@ -7752,9 +7840,8 @@ function getHistoricoFiltrado(){
     // Sempre pega os últimos 3 meses do HISTORICO (que vai até o mês atual)
     return HISTORICO.slice(-3);
   }
-  // Ano completo: remove meses sem nenhum dado (exceto mês atual)
-  const comDados = HISTORICO.filter(h => h.entradas>0 || h.saidas>0 || h.atual);
-  return comDados.length > 0 ? comDados : HISTORICO;
+  // Ano completo: sempre mostra todos os 12 meses para contexto visual completo
+  return HISTORICO;
 }
 
 
@@ -7776,178 +7863,112 @@ function getDicaHoje(){
   return DICAS[idx];
 }
 
-function renderResumoMes(d, mes){
-  const el  = document.getElementById('dashNarr');
-  const sub = document.getElementById('dashResumoSub');
-  const st  = document.getElementById('dashResumoStatus');
-  const card= document.getElementById('dashResumoCard');
+function renderInvDash(){
+  const el  = document.getElementById('dashInvBody');
+  const sub = document.getElementById('dashInvSub');
+  const st  = document.getElementById('dashInvStatus');
+  const card= document.getElementById('dashInvCard');
   if(!el) return;
 
-  const saldo   = d.saldo;
-  const positivo = saldo >= 0;
-  const txs     = d.txMes || [];
-  const cats    = d.categorias || [];
-  const top     = cats.slice(0,3);
-  const fixasPend = FIXAS.filter(f=>f.status!=='Pago').length;
-  const dividasMes = DIVIDAS.reduce((s,dv)=>s+parseFloat(dv.mensal||0),0);
-  const taxaPoup = d.entradas>0 ? Math.max(0, saldo/d.entradas*100) : 0;
-  const nCartoes = CARTOES.length;
+  if(!INVESTIMENTOS || INVESTIMENTOS.length === 0){
+    if(st){ st.textContent='Sem dados'; st.style.background='var(--bg)'; st.style.color='var(--muted)'; }
+    el.innerHTML=`<div style="text-align:center;padding:28px 0;color:var(--muted)">
+      <div style="font-size:32px;margin-bottom:8px">📈</div>
+      <div style="font-size:13px;font-weight:700">Nenhum investimento cadastrado</div>
+      <div style="font-size:11px;margin-top:4px">Clique para adicionar sua carteira</div>
+    </div>`;
+    return;
+  }
 
-  // Sub e status badge
-  if(sub) sub.textContent = mes;
+  // Totais
+  const totalInv   = INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.valor||0),0);
+  const totalAtual = INVESTIMENTOS.reduce((s,i)=>s+parseFloat(i.atual||i.valor||0),0);
+  const ganhoAbs   = totalAtual - totalInv;
+  const ganhoRel   = totalInv > 0 ? (ganhoAbs / totalInv * 100) : 0;
+  const positivo   = ganhoAbs >= 0;
+
+  // Badge
   if(st){
-    st.textContent = positivo ? '💚 No azul' : '🔴 No vermelho';
+    st.textContent = positivo ? `▲ ${ganhoRel.toFixed(1)}%` : `▼ ${Math.abs(ganhoRel).toFixed(1)}%`;
     st.style.background = positivo ? 'var(--verde-l)' : 'var(--verm-l)';
     st.style.color      = positivo ? 'var(--verde-d)' : 'var(--verm)';
   }
-  // Borda do card
   if(card) card.style.borderColor = positivo ? '#10B98133' : '#EF444433';
 
-  // Alertas automáticos
-  const alertas = [];
-  if(fixasPend>0) alertas.push({ico:'⚠️',txt:`${fixasPend} despesa(s) fixa(s) pendente(s)`,cor:'var(--amar)',bg:'var(--amar-l)'});
-  if(!positivo)   alertas.push({ico:'🔴',txt:`Gastos superaram receitas em ${fmt(Math.abs(saldo))}`,cor:'var(--verm)',bg:'var(--verm-l)'});
-  if(taxaPoup>20) alertas.push({ico:'🏆',txt:`Taxa de poupança de ${taxaPoup.toFixed(0)}% — ótimo desempenho!`,cor:'var(--verde-d)',bg:'var(--verde-l)'});
-  if(dividasMes>0) alertas.push({ico:'📅',txt:`${fmt(dividasMes)}/mês em parcelas de dívidas`,cor:'var(--muted)',bg:'var(--bg)'});
-  if(cats.find(c=>c.status==='estourou')) alertas.push({ico:'🔴',txt:`Limite estourado em: ${cats.filter(c=>c.status==='estourou').map(c=>esc(c.nome)).join(', ')}`,cor:'var(--verm)',bg:'var(--verm-l)'});
+  // Breakdown por tipo
+  const tipos = {};
+  INVESTIMENTOS.forEach(i=>{
+    const tp = i.tipo||'Outros';
+    if(!tipos[tp]) tipos[tp]={label:tp,valor:0,atual:0};
+    tipos[tp].valor += parseFloat(i.valor||0);
+    tipos[tp].atual += parseFloat(i.atual||i.valor||0);
+  });
+  const tiposList = Object.values(tipos).sort((a,b)=>b.atual-a.atual);
+  const tiposCores = {'Renda Fixa':'#3B6FF0','Ações':'#10B981','FIIs':'#F59E0B','Cripto':'#F97316','ETF':'#8B5CF6','Outros':'#9CA3AF'};
+
+  // Melhor e pior performer
+  const sorted = [...INVESTIMENTOS].sort((a,b)=>parseFloat(b.rent||0)-parseFloat(a.rent||0));
+  const melhor = sorted[0];
+  const pior   = sorted[sorted.length-1];
 
   el.innerHTML = `
-    <!-- KPIs mini -->
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px">
+    <!-- KPIs principais -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;margin-bottom:14px">
       <div style="padding:10px 14px;border-right:1px solid var(--border)">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Transações</div>
-        <div style="font-size:18px;font-weight:900;color:var(--azul)">${d.registros}</div>
-        <div style="font-size:10px;color:var(--muted)">${txs.filter(t=>t.valor<0).length} gastos · ${txs.filter(t=>t.valor>0).length} receitas</div>
-      </div>
-      <div style="padding:10px 14px;border-right:1px solid var(--border)">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Taxa de poupança</div>
-        <div style="font-size:18px;font-weight:900;color:${taxaPoup>=20?'var(--verde)':taxaPoup>=10?'var(--lara)':'var(--verm)'}">${taxaPoup.toFixed(1)}%</div>
-        <div style="font-size:10px;color:${saldo>0?'var(--verde-d)':saldo<0?'var(--verm)':'var(--muted)'}">
-          ${saldo>0?'💚 '+fmt(saldo)+' guardados':saldo<0?'🔴 Gasto acima da receita':'Neutro'}
-        </div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Total investido</div>
+        <div style="font-size:17px;font-weight:900;color:var(--txt)">${fmt(totalInv)}</div>
+        <div style="font-size:10px;color:var(--muted)">${INVESTIMENTOS.length} ativo${INVESTIMENTOS.length!==1?'s':''}</div>
       </div>
       <div style="padding:10px 14px">
-        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Média/transação</div>
-        <div style="font-size:18px;font-weight:900;color:var(--txt)">${d.registros>0?fmt(d.saidas/Math.max(txs.filter(t=>t.valor<0).length,1)):'—'}</div>
-        <div style="font-size:10px;color:var(--muted)">por gasto registrado</div>
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;margin-bottom:2px">Valor atual</div>
+        <div style="font-size:17px;font-weight:900;color:${positivo?'var(--verde)':'var(--verm)'}">${fmt(totalAtual)}</div>
+        <div style="font-size:10px;color:${positivo?'var(--verde-d)':'var(--verm)'}">
+          ${positivo?'▲':'▼'} ${fmt(Math.abs(ganhoAbs))} (${ganhoRel.toFixed(1)}%)
+        </div>
       </div>
     </div>
 
-    <!-- Top categorias -->
-    ${top.length ? `
-    <div style="margin-bottom:12px">
-      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Top categorias</div>
-      ${top.map(c=>{
-        const pct = d.saidas>0 ? (c.gasto/d.saidas*100) : 0;
-        return `<div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
-          <span style="font-size:14px">${c.emoji}</span>
-          <div style="flex:1">
-            <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:3px">
-              <span>${esc(c.nome)}</span>
-              <span style="color:var(--verm)">${fmt(c.gasto)} <span style="font-weight:400;color:var(--muted)">${pct.toFixed(0)}%</span></span>
-            </div>
-            <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
-              <div style="height:100%;width:${pct}%;background:${c.cor};border-radius:100px"></div>
-            </div>
+    <!-- Breakdown por tipo -->
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Distribuição da carteira</div>
+      ${tiposList.map(tp=>{
+        const pct = totalAtual>0 ? (tp.atual/totalAtual*100) : 0;
+        const cor = tiposCores[tp.label]||'#9CA3AF';
+        const g   = tp.atual - tp.valor;
+        return `<div style="margin-bottom:7px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px">
+            <span style="color:var(--txt2)">${tp.label}</span>
+            <span style="color:var(--txt)">${fmt(tp.atual)} <span style="font-weight:400;color:var(--muted)">${pct.toFixed(0)}%</span></span>
           </div>
+          <div style="position:relative;height:6px;background:var(--border);border-radius:100px;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;height:100%;width:${pct.toFixed(1)}%;background:${cor};border-radius:100px;transition:width .4s"></div>
+          </div>
+          <div style="font-size:10px;color:${g>=0?'var(--verde-d)':'var(--verm)'};margin-top:1px">${g>=0?'▲':'▼'} ${fmt(Math.abs(g))}</div>
         </div>`;
       }).join('')}
+    </div>
+
+    <!-- Destaques: melhor e pior -->
+    ${melhor ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="padding:9px 10px;background:var(--verde-l);border-radius:var(--r-xs);border-left:3px solid var(--verde)">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--verde-d);margin-bottom:3px">🏆 Melhor</div>
+        <div style="font-size:11px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(melhor.nome.split('—')[0].trim())}</div>
+        <div style="font-size:13px;font-weight:900;color:var(--verde-d)">+${parseFloat(melhor.rent||0).toFixed(1)}%</div>
+      </div>
+      ${pior && pior !== melhor ? `
+      <div style="padding:9px 10px;background:var(--bg);border-radius:var(--r-xs);border-left:3px solid var(--border)">
+        <div style="font-size:9px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:3px">📉 Menor rent.</div>
+        <div style="font-size:11px;font-weight:800;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(pior.nome.split('—')[0].trim())}</div>
+        <div style="font-size:13px;font-weight:900;color:${parseFloat(pior.rent||0)>=0?'var(--lara)':'var(--verm)'}">
+          ${parseFloat(pior.rent||0)>=0?'+':''}${parseFloat(pior.rent||0).toFixed(1)}%
+        </div>
+      </div>` : ''}
     </div>` : ''}
 
-    <!-- Alertas -->
-    ${alertas.length ? `
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">
-      ${alertas.map(a=>`
-        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:${a.bg};border-radius:var(--r-xs);border-left:3px solid ${a.cor}">
-          <span style="font-size:14px">${a.ico}</span>
-          <span style="font-size:12px;font-weight:600;color:var(--txt2)">${a.txt}</span>
-        </div>`).join('')}
-    </div>` : `
-    <div style="text-align:center;padding:10px 0 14px;color:var(--verde-d);font-size:13px;font-weight:700">
-      🎉 Tudo sob controle este mês!
-    </div>`}
-
-    <!-- Comparação com mês anterior -->
-    ${(()=>{
-      const mesAnt = HISTORICO[HISTORICO.length-2];
-      if(!mesAnt || (mesAnt.entradas===0 && mesAnt.saidas===0)) return '';
-      const diffE = d.entradas>0&&mesAnt.entradas>0 ? ((d.entradas-mesAnt.entradas)/mesAnt.entradas*100) : null;
-      const diffS = d.saidas>0&&mesAnt.saidas>0 ? ((d.saidas-mesAnt.saidas)/mesAnt.saidas*100) : null;
-      return `<div style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">vs. mês anterior (${mesAnt.label})</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <div style="padding:8px 10px;background:var(--verde-l);border-radius:var(--r-xs)">
-            <div style="font-size:10px;font-weight:700;color:var(--verde);margin-bottom:2px">Receitas</div>
-            <div style="font-size:13px;font-weight:900;color:var(--verde)">${fmt(d.entradas)}</div>
-            ${diffE!==null?`<div style="font-size:10px;color:${diffE>=0?'var(--verde-d)':'var(--verm)'}">${diffE>=0?'↑':'↓'} ${Math.abs(diffE).toFixed(1)}%</div>`:''}
-          </div>
-          <div style="padding:8px 10px;background:var(--verm-l);border-radius:var(--r-xs)">
-            <div style="font-size:10px;font-weight:700;color:var(--verm);margin-bottom:2px">Gastos</div>
-            <div style="font-size:13px;font-weight:900;color:var(--verm)">${fmt(d.saidas)}</div>
-            ${diffS!==null?`<div style="font-size:10px;color:${diffS<=0?'var(--verde-d)':'var(--verm)'}">${diffS>=0?'↑':'↓'} ${Math.abs(diffS).toFixed(1)}%</div>`:''}
-          </div>
-        </div>
-      </div>`;
-    })()}
-
-    <!-- Próximos vencimentos -->
-    ${(()=>{
-      const hoje = new Date(); hoje.setHours(0,0,0,0);
-      const itens = [];
-      FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
-        const dia=parseInt(f.venc||0); if(!dia) return;
-        let v=new Date(hoje.getFullYear(),hoje.getMonth(),dia);
-        if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,dia);
-        const diff=Math.round((v-hoje)/(86400000));
-        if(diff<=14) itens.push({nome:f.desc||f.nome,valor:parseFloat(f.valor||0),diff,emoji:'📌'});
-      });
-      CARTOES.forEach(c=>{
-        const diaV=parseInt(c.venc||0); if(!diaV) return;
-        let v=new Date(hoje.getFullYear(),hoje.getMonth(),diaV);
-        if(v<hoje) v=new Date(hoje.getFullYear(),hoje.getMonth()+1,diaV);
-        const diff=Math.round((v-hoje)/(86400000));
-        const fat=(MES_DATA.gastosPorCartao||{})[c.nome]||0;
-        if(diff<=14&&fat>0) itens.push({nome:'Fatura '+c.nome,valor:fat,diff,emoji:'💳'});
-      });
-      if(!itens.length) return '';
-      itens.sort((a,b)=>a.diff-b.diff);
-      return `<div style="margin-bottom:14px">
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">⏰ Próximos vencimentos</div>
-        ${itens.slice(0,3).map(it=>`
-          <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
-            <span style="font-size:14px">${it.emoji}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(it.nome)}</div>
-              <div style="font-size:10px;color:${it.diff<=3?'var(--verm)':it.diff<=7?'var(--lara)':'var(--muted)'};font-weight:600">${it.diff===0?'Vence hoje':it.diff===1?'Amanhã':'Em '+it.diff+' dias'}</div>
-            </div>
-            <div style="font-size:12px;font-weight:800;color:var(--verm);flex-shrink:0">${fmt(it.valor)}</div>
-          </div>`).join('')}
-      </div>`;
-    })()}
-
-    <!-- Progresso de metas (top 2) -->
-    ${(()=>{
-      if(!METAS||!METAS.length) return '';
-      const ativas = METAS.filter(m=>parseFloat(m.atual||0)<parseFloat(m.total||0)).slice(0,2);
-      if(!ativas.length) return '';
-      return `<div>
-        <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 Progresso de metas</div>
-        ${ativas.map(m=>{
-          const pct=Math.min(parseFloat(m.atual||0)/Math.max(parseFloat(m.total||0),1)*100,100);
-          const cor=pct>=75?'var(--verde)':pct>=40?'var(--azul)':'var(--lara)';
-          return `<div style="margin-bottom:8px">
-            <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-              <span style="font-weight:700">${m.emoji||'🎯'} ${esc(m.nome)}</span>
-              <span style="color:${cor};font-weight:800">${pct.toFixed(0)}%</span>
-            </div>
-            <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden">
-              <div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div>
-            </div>
-            <div style="font-size:10px;color:var(--muted);margin-top:2px">${fmt(parseFloat(m.atual||0))} de ${fmt(parseFloat(m.total||0))}</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-    })()}
+    <div style="text-align:right;margin-top:2px">
+      <span style="font-size:11px;color:var(--azul);font-weight:700">Ver carteira completa →</span>
+    </div>
   `;
 }
 
