@@ -1456,7 +1456,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div style="margin-bottom:15px">
     <div class="card">
       <div class="ch">
-        <div><div class="ct">Evolução Mensal</div><div class="cs" id="dashChartSub">Jan → Dez — passe o mouse para detalhes</div></div>
+        <div><div class="ct">Evolução Mensal</div><div class="cs" id="dashChartSub">Janeiro → Dezembro — passe o mouse para detalhes</div></div>
         <button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button>
       </div>
       <div class="chart-period-bar">
@@ -1465,14 +1465,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         <div style="flex:1"></div>
         <button class="cpb" id="cpbE" onclick="toggleChartLayer('entradas',this)" style="color:var(--verde);border-color:var(--verde)">● Entradas</button>
         <button class="cpb" id="cpbS" onclick="toggleChartLayer('saidas',this)" style="color:var(--verm);border-color:var(--verm)">● Saídas</button>
-        <button class="cpb" id="cpbSd" onclick="toggleChartLayer('saldo',this)" style="color:var(--azul);border-color:var(--azul)">● Saldo</button>
       </div>
       <div id="dashChart"></div>
     </div>
   </div>
 
   <!-- ── LINHA 3: Donut + Minha Carteira + Resumo do Mês (3 colunas juntas) ── -->
-  <div style="display:grid;grid-template-columns:0.9fr 1.1fr 1.4fr;gap:15px;margin-bottom:15px;align-items:stretch">
+  <div style="display:grid;grid-template-columns:0.9fr 1.1fr 1.4fr;gap:15px;margin-bottom:15px;align-items:start">
 
     <!-- Donut / Por Categoria -->
     <div class="card" onclick="go('categorias')" style="cursor:pointer;display:flex;flex-direction:column">
@@ -8152,8 +8151,10 @@ let CHART_LAYERS = {entradas:true, saidas:true, saldo:false};
 
 function setChartPeriod(period, el){
   CHART_PERIOD = period;
-  document.querySelectorAll('.chart-period-bar .cpb:not(#cpbE):not(#cpbS):not(#cpbSd)').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.chart-period-bar .cpb:not(#cpbE):not(#cpbS)').forEach(b=>b.classList.remove('active'));
   if(el) el.classList.add('active');
+  const sub = document.getElementById('dashChartSub');
+  if(sub) sub.textContent = period==='3m' ? 'Últimos 3 meses' : `Janeiro → Dezembro ${new Date().getFullYear()}`;
   renderHistChart('dashChart',60);
 }
 
@@ -8166,11 +8167,13 @@ function toggleChartLayer(layer, el){
 function getHistoricoFiltrado(){
   if(!HISTORICO.length) return [];
   if(CHART_PERIOD==='3m'){
-    // Sempre pega os últimos 3 meses do HISTORICO (que vai até o mês atual)
     return HISTORICO.slice(-3);
   }
-  // Ano completo: sempre mostra todos os 12 meses para contexto visual completo
-  return HISTORICO;
+  // Ano completo: mostra Jan→Dez do ano corrente (dados na esquerda)
+  const ano = new Date().getFullYear();
+  const anoHist = HISTORICO.filter(h => h.chave && h.chave.endsWith('/'+ano));
+  // Se não há dados do ano corrente no histórico, cai para todos
+  return anoHist.length ? anoHist : HISTORICO;
 }
 
 
@@ -8395,21 +8398,6 @@ function renderResumoMes(d, mes){
     </div>`).join('')}
   </div>`:`<div style="text-align:center;padding:8px 0 12px;color:var(--verde-d);font-size:13px;font-weight:700">🎉 Tudo sob controle este mês!</div>`}
 
-  ${metasAtivas.length?`
-  <div>
-    <div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 Progresso de metas</div>
-    ${metasAtivas.map(m=>{ const pct=Math.min(parseFloat(m.atual||0)/Math.max(parseFloat(m.total||0),1)*100,100); const cor=pct>=75?'var(--verde)':pct>=40?'var(--azul)':'var(--lara)'; return `
-      <div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-          <span style="font-weight:700">${m.emoji||'🎯'} ${esc(m.nome)}</span>
-          <span style="color:${cor};font-weight:800">${pct.toFixed(0)}%</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:100px;overflow:hidden">
-          <div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div>
-        </div>
-        <div style="font-size:10px;color:var(--muted);margin-top:2px">${fmt(parseFloat(m.atual||0))} de ${fmt(parseFloat(m.total||0))}</div>
-      </div>`;}).join('')}
-  </div>`:'' }
   `;
 }
 
