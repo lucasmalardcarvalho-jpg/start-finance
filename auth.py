@@ -220,14 +220,16 @@ def registrar_rotas_auth(app, sheets_factory=None):
 
     @app.route("/api/register", methods=["POST"])
     def register():
-        """Registra novo usuário — persiste em arquivo para sync entre dispositivos."""
+        """Registra novo usuário — persiste em arquivo para sync entre dispositivos.
+        Aceita client_id para re-registro silencioso quando o servidor perdeu os dados."""
         try:
-            dados    = request.json or {}
-            nome     = (dados.get("name",     "") or "").strip()
-            email    = (dados.get("email",    "") or "").strip().lower()
-            password = (dados.get("password", "") or "").strip()
-            avatar   = (dados.get("avatar",   "🙂") or "🙂")
-            cor      = (dados.get("color",    "#3B6FF0") or "#3B6FF0")
+            dados     = request.json or {}
+            nome      = (dados.get("name",      "") or "").strip()
+            email     = (dados.get("email",     "") or "").strip().lower()
+            password  = (dados.get("password",  "") or "").strip()
+            avatar    = (dados.get("avatar",    "🙂") or "🙂")
+            cor       = (dados.get("color",     "#3B6FF0") or "#3B6FF0")
+            client_id = (dados.get("client_id", "") or "").strip()
 
             if not nome or not email or not password:
                 return jsonify({"erro": "Nome, email e senha são obrigatórios"}), 400
@@ -235,19 +237,36 @@ def registrar_rotas_auth(app, sheets_factory=None):
                 return jsonify({"erro": "Email inválido"}), 400
             if len(password) < 6 and not _is_hash(password):
                 return jsonify({"erro": "Senha deve ter pelo menos 6 caracteres"}), 400
-            # Sanitiza nome (máx 80 chars, sem HTML)
             nome = nome[:80].replace("<","").replace(">","").replace("&","").strip()
 
-            # Verifica se email já existe (env + arquivo)
+            # Verifica se email já existe
             all_users = get_users()
-            if any(u["email"].lower() == email for u in all_users):
-                return jsonify({"erro": "Este email já está cadastrado"}), 409
+            existing = next((u for u in all_users if u["email"].lower() == email), None)
+            if existing:
+                # Re-registro silencioso: client_id bate com ID existente ou é o mesmo email
+                # Retorna token sem criar duplicata
+                token = gerar_token(existing)
+                logger.info(f"↩️ Re-registro silencioso: {email}")
+                return jsonify({
+                    "token": token,
+                    "user": {
+                        "id":     existing["id"],
+                        "name":   existing["name"],
+                        "email":  existing["email"],
+                        "avatar": existing.get("avatar","🙂"),
+                        "color":  existing.get("color","#3B6FF0"),
+                    }
+                }), 200
 
             # Garante que a senha seja armazenada como hash
             pwd_hash = password if _is_hash(password) else _sha256(password)
 
+            # Usa client_id do frontend para preservar keys de dados locais
+            user_id = client_id if (client_id and len(client_id) > 4) else \
+                      "u_" + str(int(time.time() * 1000)) + "_" + uuid.uuid4().hex[:8]
+
             new_user = {
-                "id":        "u_" + str(int(time.time() * 1000)) + "_" + uuid.uuid4().hex[:8],
+                "id":        user_id,
                 "name":      nome,
                 "email":     email,
                 "password":  pwd_hash,

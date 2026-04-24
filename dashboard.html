@@ -7743,6 +7743,22 @@ async function fazerLogin(){
             setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no PenseFinances'; }, 400);
             return;
           }
+          // Servidor não tem a conta (filesystem efêmero foi resetado) — re-registra silenciosamente
+          // preservando o ID local para que os dados no localStorage permaneçam acessíveis
+          try{
+            const _rr = await fetch('/api/register',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({name:_u.name,email:_u.email,password:await hashSenha(senha),
+                avatar:_u.avatar||'🙂',color:_u.color||'#3B6FF0',client_id:_u.id})});
+            const _rd = await _rr.json();
+            if(_rd.token){
+              AUTH_TOKEN = _rd.token; AUTH_USER = _rd.user;
+              ls_save('sf_jwt_'+_rd.user.id,_rd.token);
+              ls_save('sf_token',_rd.token);
+              ls_save('sf_user',JSON.stringify(_rd.user));
+              setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no PenseFinances'; },400);
+              return;
+            }
+          }catch(e){}
         }catch(e){ /* servidor offline — login local sem sync */ }
       }
       // Usuário local (isLocal) ou servidor offline — login sem sync
