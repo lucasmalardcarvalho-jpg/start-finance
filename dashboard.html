@@ -7735,6 +7735,17 @@ async function fazerLogin(){
           const _r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:await hashSenha(senha)})});
           const _d = await _r.json();
           if(_d.token){
+            // Se o servidor retornou um ID diferente do local, migra os dados para o novo ID
+            if(_d.user.id !== _u.id){
+              const oldPfx = 'sf_'+_u.id+'_', newPfx = 'sf_'+_d.user.id+'_';
+              Object.keys(localStorage).filter(k=>k.startsWith(oldPfx)).forEach(k=>{
+                localStorage.setItem(newPfx+k.slice(oldPfx.length), localStorage.getItem(k));
+              });
+              // Atualiza o registro local com o novo ID
+              const _us2 = getUsers();
+              const _idx = _us2.findIndex(u=>u.email===_d.user.email);
+              if(_idx>=0){ _us2[_idx].id = _d.user.id; saveUsers(_us2); }
+            }
             AUTH_TOKEN = _d.token;
             AUTH_USER  = _d.user;
             ls_save('sf_jwt_' + _d.user.id, _d.token);
