@@ -1484,7 +1484,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 
   <!-- ── LINHA 3: Donut + Minha Carteira + Resumo do Mês (3 colunas) ── -->
-  <div style="display:grid;grid-template-columns:1fr 1.1fr 1.3fr;gap:15px;margin-bottom:15px;align-items:start">
+  <div style="display:grid;grid-template-columns:1fr 1fr 1.15fr;gap:15px;margin-bottom:15px;align-items:stretch">
 
     <!-- Donut / Por Categoria -->
     <div class="card" onclick="go('categorias')" style="cursor:pointer;display:flex;flex-direction:column">
@@ -3218,13 +3218,13 @@ function renderEvolucaoAnual(el, h, histParam){
   const anoLabel = hist.length && hist[0].chave ? hist[0].chave.split('/')[1] : new Date().getFullYear();
 
   const statsHtml = `<div style="display:flex;gap:0;padding:8px 18px 8px;border-bottom:1px solid var(--border)">
-    <div style="flex:1;padding:6px 10px;border-left:3px solid #8BC34A;margin-right:10px;background:#f1f8e9;border-radius:0 var(--r-sm) var(--r-sm) 0">
-      <div style="font-size:9px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Receitas ${anoLabel}</div>
-      <div style="font-size:13px;font-weight:900;color:#558B2F">${fmt(totE)}</div>
+    <div style="flex:1;padding:6px 10px;border-left:3px solid #3B6FF0;margin-right:10px;background:rgba(59,111,240,.07);border-radius:0 var(--r-sm) var(--r-sm) 0">
+      <div style="font-size:9px;font-weight:800;color:#3B6FF0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Receitas ${anoLabel}</div>
+      <div style="font-size:13px;font-weight:900;color:#3B6FF0">${fmt(totE)}</div>
     </div>
-    <div style="flex:1;padding:6px 10px;border-left:3px solid #FF69B4;margin-right:10px;background:#fff0f6;border-radius:0 var(--r-sm) var(--r-sm) 0">
-      <div style="font-size:9px;font-weight:800;color:#C2185B;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Gastos ${anoLabel}</div>
-      <div style="font-size:13px;font-weight:900;color:#C2185B">− ${fmt(totS)}</div>
+    <div style="flex:1;padding:6px 10px;border-left:3px solid #ee206e;margin-right:10px;background:#fce4ef;border-radius:0 var(--r-sm) var(--r-sm) 0">
+      <div style="font-size:9px;font-weight:800;color:#ee206e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Gastos ${anoLabel}</div>
+      <div style="font-size:13px;font-weight:900;color:#ee206e">− ${fmt(totS)}</div>
     </div>
     <div style="flex:1;padding:6px 10px;border-left:3px solid var(--azul);margin-right:10px;background:var(--azul-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
       <div style="font-size:9px;font-weight:800;color:var(--azul);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Saldo ${anoLabel}</div>
@@ -3253,21 +3253,29 @@ function renderEvolucaoAnual(el, h, histParam){
 
     // Highlight mês atual
     if(hh.atual){
-      bars+=`<rect x="${(cx-colW/2+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${chartH}" rx="6" fill="#8BC34A" opacity="0.06"/>`;
+      bars+=`<rect x="${(cx-colW/2+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${chartH}" rx="6" fill="#3B6FF0" opacity="0.06"/>`;
     }
 
     if(hh.entradas>0){
       const bh=Math.max((hh.entradas/maxVal)*chartH, 3);
       const by=PT+chartH-bh;
-      bars+=`<rect x="${(cx-barW-gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#8BC34A" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
+      bars+=`<rect x="${(cx-barW-gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#3B6FF0" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
     }
     if(hh.saidas>0){
       const bh=Math.max((hh.saidas/maxVal)*chartH, 3);
       const by=PT+chartH-bh;
-      bars+=`<rect x="${(cx+gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#FF69B4" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
+      bars+=`<rect x="${(cx+gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#ee206e" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
     }
 
-    const labelCor=hh.atual?'#558B2F':(hh.futuro?'#D1D5DB':'#6B7280');
+    // Placeholder dashed bars for empty future months
+    if(isFut && hh.entradas===0 && hh.saidas===0){
+      const gh=14;
+      const gby=(PT+chartH-gh).toFixed(1);
+      bars+=`<rect x="${(cx-barW-gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#3B6FF0" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;
+      bars+=`<rect x="${(cx+gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#ee206e" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;
+    }
+
+    const labelCor=hh.atual?'#3B6FF0':(hh.futuro?'#D1D5DB':'#6B7280');
     const labelTxt=hh.label.replace('.','').toUpperCase();
     bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${labelCor}" font-weight="${hh.atual?'800':'600'}" font-family="Cabinet Grotesk">${labelTxt}</text>`;
   });
@@ -3280,8 +3288,8 @@ function renderEvolucaoAnual(el, h, histParam){
   </div>`;
 
   const legendHtml=`<div style="padding:6px 16px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#558B2F"><div style="width:10px;height:10px;border-radius:3px;background:#8BC34A"></div>Receitas</div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#C2185B"><div style="width:10px;height:10px;border-radius:3px;background:#FF69B4"></div>Despesas</div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#3B6FF0"><div style="width:10px;height:10px;border-radius:3px;background:#3B6FF0"></div>Receitas</div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#ee206e"><div style="width:10px;height:10px;border-radius:3px;background:#ee206e"></div>Despesas</div>
   </div>`;
 
   el.innerHTML=statsHtml+svgHtml+legendHtml;
@@ -5822,10 +5830,11 @@ function renderPlan(){
         const xN=PL+i*colW+colW/2;
         const op=h.futuro?0.3:1;
         const isFut=h.futuro;
-        if(h.atual) bars+=`<rect x="${(PL+i*colW+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${CH}" rx="6" fill="#8BC34A" opacity="0.06"/>`;
-        if(h.entradas>0){const bh=Math.max((h.entradas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN-barW-gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#8BC34A" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
-        if(h.saidas>0){const bh=Math.max((h.saidas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN+gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#FF69B4" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
-        const cor=h.atual?'#558B2F':(h.futuro?'#D1D5DB':'#6B7280');
+        if(h.atual) bars+=`<rect x="${(PL+i*colW+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${CH}" rx="6" fill="#3B6FF0" opacity="0.06"/>`;
+        if(h.entradas>0){const bh=Math.max((h.entradas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN-barW-gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#3B6FF0" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
+        if(h.saidas>0){const bh=Math.max((h.saidas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN+gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#ee206e" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
+        if(isFut&&h.entradas===0&&h.saidas===0){const gh=14,gby=(baseline-gh).toFixed(1);bars+=`<rect x="${(xN-barW-gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#3B6FF0" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;bars+=`<rect x="${(xN+gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#ee206e" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;}
+        const cor=h.atual?'#3B6FF0':(h.futuro?'#D1D5DB':'#6B7280');
         bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${cor}" font-weight="${h.atual?'800':'600'}" font-family="Cabinet Grotesk">${h.label.replace('.','').toUpperCase()}</text>`;
       });
       chartEl.innerHTML=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:260px">
@@ -5833,8 +5842,8 @@ function renderPlan(){
         ${bars}
       </svg></div>
       <div style="display:flex;gap:14px;padding:6px 12px 8px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#558B2F"><div style="width:10px;height:10px;border-radius:3px;background:#8BC34A"></div>Receitas</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#C2185B"><div style="width:10px;height:10px;border-radius:3px;background:#FF69B4"></div>Despesas</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#3B6FF0"><div style="width:10px;height:10px;border-radius:3px;background:#3B6FF0"></div>Receitas</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#ee206e"><div style="width:10px;height:10px;border-radius:3px;background:#ee206e"></div>Despesas</div>
       </div>`;
       setupChartTooltip(chartEl);
     }
@@ -5858,7 +5867,7 @@ function renderPlan(){
               <div style="display:flex;align-items:center;gap:8px"><span>${medals[i]||'📦'}</span><span style="font-size:13px;font-weight:600">${EMOJIS[cat]||'📦'} ${cat}</span></div>
               <span style="font-size:13px;font-weight:800;color:var(--verm)">${fmt(val)}</span>
             </div>
-            <div style="background:var(--bg);border-radius:4px;height:5px;overflow:hidden"><div style="background:#FF69B4;height:100%;width:${pct}%;border-radius:4px;transition:width .4s"></div></div>
+            <div style="background:var(--bg);border-radius:4px;height:5px;overflow:hidden"><div style="background:#ee206e;height:100%;width:${pct}%;border-radius:4px;transition:width .4s"></div></div>
           </div>`;
         }).join('')
       :`<div style="color:var(--muted);text-align:center;padding:20px">Sem dados para ${PLAN_ANO}</div>`;
@@ -5883,13 +5892,13 @@ function renderPlan(){
             ${taxa!==null?`<span style="font-size:11px;font-weight:700;color:${corT}">${taxa}%</span>`:''}
           </div>
           <div style="display:flex;gap:6px;margin-bottom:8px">
-            <div style="flex:1;background:#f1f8e9;border-radius:8px;padding:7px;text-align:center">
-              <div style="font-size:9px;font-weight:700;color:#558B2F;text-transform:uppercase;margin-bottom:1px">Rec.</div>
-              <div style="font-size:12px;font-weight:800;color:#558B2F">${h.entradas>0?fmtSm(h.entradas):'—'}</div>
+            <div style="flex:1;background:rgba(59,111,240,.07);border-radius:8px;padding:7px;text-align:center">
+              <div style="font-size:9px;font-weight:700;color:#3B6FF0;text-transform:uppercase;margin-bottom:1px">Rec.</div>
+              <div style="font-size:12px;font-weight:800;color:#3B6FF0">${h.entradas>0?fmtSm(h.entradas):'—'}</div>
             </div>
-            <div style="flex:1;background:#fff0f6;border-radius:8px;padding:7px;text-align:center">
-              <div style="font-size:9px;font-weight:700;color:#C2185B;text-transform:uppercase;margin-bottom:1px">Desp.</div>
-              <div style="font-size:12px;font-weight:800;color:#C2185B">${h.saidas>0?fmtSm(h.saidas):'—'}</div>
+            <div style="flex:1;background:#fce4ef;border-radius:8px;padding:7px;text-align:center">
+              <div style="font-size:9px;font-weight:700;color:#ee206e;text-transform:uppercase;margin-bottom:1px">Desp.</div>
+              <div style="font-size:12px;font-weight:800;color:#ee206e">${h.saidas>0?fmtSm(h.saidas):'—'}</div>
             </div>
           </div>
           <div style="text-align:center;font-size:13px;font-weight:800;color:${corS};background:var(--bg);border-radius:8px;padding:5px">
@@ -8339,14 +8348,23 @@ function toggleChartLayer(layer, el){
 
 function getHistoricoFiltrado(){
   if(!HISTORICO.length) return [];
-  if(CHART_PERIOD==='3m'){
-    return HISTORICO.slice(-3);
-  }
-  // Ano completo: mostra Jan→Dez do ano corrente (dados na esquerda)
+  if(CHART_PERIOD==='3m') return HISTORICO.slice(-3);
+  // Ano completo: todos os 12 meses do ano atual, incluindo futuros sem dados
   const ano = new Date().getFullYear();
-  const anoHist = HISTORICO.filter(h => h.chave && h.chave.endsWith('/'+ano));
-  // Se não há dados do ano corrente no histórico, cai para todos
-  return anoHist.length ? anoHist : HISTORICO;
+  const hoje = new Date();
+  const hist12=[];
+  for(let m=0;m<12;m++){
+    const chave=`${MESES_PT[m]}/${ano}`;
+    const ex=HISTORICO.find(h=>h.chave===chave);
+    if(ex){ hist12.push(ex); }
+    else {
+      const d=new Date(ano,m,1);
+      hist12.push({label:MESES_PT[m].replace('.',''),chave,entradas:0,saidas:0,saldo:0,
+        atual:(d.getMonth()===hoje.getMonth()&&d.getFullYear()===hoje.getFullYear()),
+        futuro:d>hoje});
+    }
+  }
+  return hist12;
 }
 
 
