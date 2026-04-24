@@ -7037,18 +7037,8 @@ async function hashSenha(s){
 }
 function isHash(s){ return /^[0-9a-f]{64}$/.test(s||''); }
 
-// Seed: sem credenciais hardcoded — usuários criam próprias contas
-function seedUsers(){
-  // Nenhum usuário padrão — segurança: não armazenar senhas hardcoded
-}
-
-// Seed functions removed — production build
-
-function _noop_seed_1(){const DID='__removed__';
+function _noop_seed_1(){return;
   const users=getUsers();
-  if(users.find(u=>u.id===DID)) return;
-  /* removed */
-  saveUsers(users);
   const ns=k=>`sf_${DID}_${k}`;
   const E={Alimentação:"🍽️",Transporte:"🚗",Contas:"⚡",Lazer:"🎮",Saúde:"❤️",Educação:"📚",Moradia:"🏠",Beleza:"💅",Vestuário:"👗",Pet:"🐾",Tecnologia:"📱",Presentes:"🎁",Veículo:"🚘",Impostos:"🧾",Assinaturas:"📺",Salário:"💰",Freelance:"💼",Investimento:"📈",Outros:"📦"};
   const C={Alimentação:"#EF4444",Transporte:"#F97316",Contas:"#3B6FF0",Lazer:"#8B5CF6",Saúde:"#10B981",Educação:"#F59E0B",Moradia:"#6366F1",Beleza:"#EC4899",Vestuário:"#14B8A6",Pet:"#84CC16",Tecnologia:"#0EA5E9",Presentes:"#FB923C",Veículo:"#64748B",Impostos:"#78716C",Assinaturas:"#A78BFA",Salário:"#10B981",Freelance:"#34D399",Investimento:"#3B6FF0",Outros:"#9CA3AF"};
@@ -7175,9 +7165,8 @@ function _noop_seed_1(){const DID='__removed__';
   }));
 }
 
-function _noop_seed_2(){const DID='__removed__';
+function _noop_seed_2(){return;
   const users=getUsers();
-  if(users.find(u=>u.id===DID)) return;
   /* removed */
   saveUsers(users);
   const ns=k=>`sf_${DID}_${k}`;
@@ -7570,7 +7559,7 @@ function carregarUsuariosLogin(){
   const label = document.querySelector('#formLogin > div:first-child'); // "Acesso rápido"
   if(!el) return;
 
-  const users = getUsers().filter(u => !['hellennn_demo','nicolas_demo'].includes(u.id));
+  const users = getUsers();
 
   if(!users.length){
     el.innerHTML = '';
@@ -9413,37 +9402,13 @@ function init(){
   setTimeout(()=>{document.getElementById('loading').style.opacity='0';setTimeout(()=>document.getElementById('loading').style.display='none',500)},2500);
 }
 
-function cleanDemoUsers(){
-  // Remove perfis de demonstração para ambiente de produção
-  const demos=['hellennn_demo','nicolas_demo'];
-  const users=getUsers();
-  const clean=users.filter(u=>!demos.includes(u.id));
-  if(clean.length!==users.length){
-    saveUsers(clean);
-    demos.forEach(did=>{
-      try{
-        Object.keys(localStorage)
-          .filter(k=>k.startsWith(`sf_${did}_`))
-          .forEach(k=>localStorage.removeItem(k));
-      }catch(e){}
-    });
-  }
-}
-
 function iniciar(){
-  cleanDemoUsers();
   const token   = ls_get('sf_token');
   const userStr = ls_get('sf_user');
   if(token && token !== '' && userStr){
     try{
       AUTH_USER  = JSON.parse(userStr);
       AUTH_TOKEN = token;
-      // Rejeita perfis de demonstração removidos
-      if(['hellennn_demo','nicolas_demo'].includes(AUTH_USER?.id)){
-        ls_save('sf_token',''); ls_save('sf_user','');
-        AUTH_USER=null; AUTH_TOKEN='';
-        mostrarLogin(); return;
-      }
       // Valida que o usuário ainda existe no banco local
       const userNoDb = getUserById(AUTH_USER.id);
       if(userNoDb){ AUTH_USER=userNoDb; } // usa dados mais recentes

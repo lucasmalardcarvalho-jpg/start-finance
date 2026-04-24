@@ -84,6 +84,27 @@ class AIExtractor:
         self.gemini_key = os.environ.get("GEMINI_API_KEY", "")
 
     async def transcrever_audio(self, caminho_audio: str) -> str:
+        if not self.gemini_key:
+            return ""
+        try:
+            import base64
+            with open(caminho_audio, "rb") as f:
+                audio_b64 = base64.b64encode(f.read()).decode()
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={self.gemini_key}"
+            payload = {
+                "contents": [{"parts": [
+                    {"inline_data": {"mime_type": "audio/ogg", "data": audio_b64}},
+                    {"text": "Transcreva exatamente o que foi dito neste áudio em português. Retorne apenas o texto transcrito, sem comentários."}
+                ]}],
+                "generationConfig": {"temperature": 0.0, "maxOutputTokens": 300}
+            }
+            async with httpx.AsyncClient(timeout=30) as client:
+                resp = await client.post(url, json=payload)
+            if resp.status_code == 200:
+                data = resp.json()
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        except Exception as e:
+            logger.error(f"Erro transcrição áudio: {e}")
         return ""
 
     async def extrair(self, texto: str, timestamp: datetime):
