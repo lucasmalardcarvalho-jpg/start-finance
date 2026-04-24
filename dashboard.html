@@ -2455,7 +2455,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <div style="text-align:center;padding:20px 0 16px">
         <div style="font-size:36px;margin-bottom:8px">📂</div>
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">Selecione o arquivo do extrato</div>
-        <div style="font-size:12px;color:var(--muted)">Formatos suportados: <strong>OFX</strong> (extrato bancário) e <strong>CSV</strong></div>
+        <div style="font-size:12px;color:var(--muted)">Formatos suportados: <strong>OFX</strong>, <strong>CSV</strong> e <strong>PDF</strong></div>
       </div>
       <!-- Drop zone -->
       <div id="importDropZone" onclick="document.getElementById('importFileInput').click()"
@@ -2465,17 +2465,22 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         ondrop="importHandleDrop(event)">
         <div style="font-size:28px;margin-bottom:6px">📄</div>
         <div style="font-size:13px;font-weight:600;color:var(--txt2)">Clique ou arraste o arquivo aqui</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">.ofx, .qfx, .csv</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">.ofx, .qfx, .csv, .pdf</div>
       </div>
-      <input type="file" id="importFileInput" accept=".ofx,.qfx,.csv,.txt" style="display:none" onchange="importHandleFile(this.files[0])">
+      <input type="file" id="importFileInput" accept=".ofx,.qfx,.csv,.txt,.pdf" style="display:none" onchange="importHandleFile(this.files[0])">
+      <!-- PDF loading indicator -->
+      <div id="importPdfLoading" style="display:none;text-align:center;padding:16px;color:var(--muted)">
+        <div style="font-size:24px;margin-bottom:6px">⏳</div>
+        <div style="font-size:13px">Lendo PDF, aguarde...</div>
+      </div>
       <!-- Guia de como exportar -->
       <div style="background:var(--azul-l);border-radius:var(--r-sm);padding:12px 14px">
         <div style="font-size:11px;font-weight:800;color:var(--azul);margin-bottom:6px">💡 Como exportar o extrato do seu banco:</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px;color:var(--txt2)">
-          <div><strong>Nubank:</strong> App → Perfil → Exportar dados → OFX</div>
-          <div><strong>Itaú:</strong> Internet Banking → Extrato → Exportar OFX</div>
+          <div><strong>Nubank:</strong> App → Perfil → Exportar dados → OFX ou PDF</div>
+          <div><strong>Itaú:</strong> Internet Banking → Extrato → Exportar OFX/PDF</div>
           <div><strong>Bradesco:</strong> Internet Banking → Extrato → OFX</div>
-          <div><strong>Inter:</strong> App → Extrato → Exportar → OFX</div>
+          <div><strong>Inter:</strong> App → Extrato → Exportar → OFX ou PDF</div>
           <div><strong>BB:</strong> Gerenciador Financeiro → OFX</div>
           <div><strong>Santander:</strong> Internet Banking → Extrato → OFX</div>
         </div>
@@ -2483,12 +2488,22 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <!-- Step 2: Preview -->
     <div id="importStep2" style="display:none">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div>
           <div style="font-size:13px;font-weight:800" id="importFileName">—</div>
           <div style="font-size:11px;color:var(--muted)" id="importFileSummary">—</div>
         </div>
         <button class="btn bg btn-sm" onclick="importReset()">← Trocar arquivo</button>
+      </div>
+      <!-- Banco detectado + cartão destino -->
+      <div id="importBancoInfo" style="background:var(--azul-l);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="font-size:12px;color:var(--azul);font-weight:700" id="importBancoLabel">🏦 Banco: —</div>
+        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
+          <label style="font-size:11px;font-weight:700;color:var(--txt2)">Cartão de destino:</label>
+          <select id="importCartaoSel" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt);font-family:inherit;cursor:pointer">
+            <option value="">— Nenhum (avulso) —</option>
+          </select>
+        </div>
       </div>
       <!-- Filtros de seleção -->
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
@@ -2499,7 +2514,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         <span style="font-size:11px;color:var(--muted);align-self:center;margin-left:auto" id="importSelCount">0 selecionados</span>
       </div>
       <!-- Tabela preview -->
-      <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm)">
+      <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm)">
         <table class="st" style="font-size:12px" id="importTable">
           <thead><tr>
             <th style="width:32px"><input type="checkbox" id="importChkAll" onchange="importSelAll(this.checked)" style="cursor:pointer"></th>
@@ -9780,23 +9795,31 @@ function renderFluxo(){
 }
 
 // ════════════════════════════════════════════════
-// IMPORTAÇÃO OFX / CSV
+// IMPORTAÇÃO OFX / CSV / PDF
 // ════════════════════════════════════════════════
 let IMPORT_ROWS = [];
+let IMPORT_BANCO_DETECTADO = null;
 
 function abrirImportacao(){
+  if(!CARTOES.length){
+    toast('Adicione um cartão primeiro antes de importar um extrato.', 'warning');
+    return;
+  }
   importReset();
   OM('ovImport');
 }
 
 function importReset(){
   IMPORT_ROWS = [];
+  IMPORT_BANCO_DETECTADO = null;
   document.getElementById('importStep1').style.display = '';
   document.getElementById('importStep2').style.display = 'none';
   document.getElementById('importConfirmBtn').style.display = 'none';
   document.getElementById('importFileInput').value = '';
+  const loading = document.getElementById('importPdfLoading');
+  if(loading) loading.style.display = 'none';
   const dz = document.getElementById('importDropZone');
-  if(dz){ dz.style.borderColor = ''; dz.style.background = ''; }
+  if(dz){ dz.style.borderColor = ''; dz.style.background = ''; dz.style.display = ''; }
 }
 
 function importHandleDrop(e){
@@ -9810,17 +9833,170 @@ function importHandleDrop(e){
 function importHandleFile(file){
   if(!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
+
+  if(ext === 'pdf'){
+    const loading = document.getElementById('importPdfLoading');
+    const dz = document.getElementById('importDropZone');
+    if(loading) loading.style.display = '';
+    if(dz) dz.style.display = 'none';
+    parsePDFExtrato(file).then(rows => {
+      if(loading) loading.style.display = 'none';
+      if(dz) dz.style.display = '';
+      if(!rows.length){ toast('Nenhuma transação encontrada no PDF. Tente exportar como OFX ou CSV.', 'warning'); return; }
+      IMPORT_ROWS = rows;
+      renderImportPreview(file.name, rows);
+    }).catch(err => {
+      if(loading) loading.style.display = 'none';
+      if(dz) dz.style.display = '';
+      console.error('PDF parse error:', err);
+      toast('Erro ao ler o PDF. Tente exportar como OFX ou CSV.', 'warning');
+    });
+    return;
+  }
+
   const reader = new FileReader();
-  reader.onload = e => {
-    const txt = e.target.result;
+  reader.onload = ev => {
+    const txt = ev.target.result;
     let rows = [];
     if(ext === 'csv' || ext === 'txt') rows = parseCSVExtrato(txt);
-    else rows = parseOFXExtrato(txt); // ofx, qfx
+    else rows = parseOFXExtrato(txt);
     if(!rows.length){ toast('Nenhuma transação encontrada no arquivo.', 'warning'); return; }
+    IMPORT_BANCO_DETECTADO = detectarBancoPorConteudo(txt);
     IMPORT_ROWS = rows;
     renderImportPreview(file.name, rows);
   };
   reader.readAsText(file, 'UTF-8');
+}
+
+async function parsePDFExtrato(file){
+  if(!window.pdfjsLib){
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      s.onload = resolve; s.onerror = reject;
+      document.head.appendChild(s);
+    });
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({data: arrayBuffer}).promise;
+  const lines = [];
+  for(let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const byY = {};
+    content.items.forEach(item => {
+      const y = Math.round(item.transform[5]);
+      if(!byY[y]) byY[y] = [];
+      byY[y].push({x: item.transform[4], str: item.str});
+    });
+    Object.keys(byY).map(Number).sort((a,b) => b-a).forEach(y => {
+      const lineStr = byY[y].sort((a,b) => a.x-b.x).map(i => i.str).join(' ').trim();
+      if(lineStr) lines.push(lineStr);
+    });
+  }
+  IMPORT_BANCO_DETECTADO = detectarBancoPorConteudo(lines.join('\n'));
+  return parseTxtBancario(lines);
+}
+
+function parseTxtBancario(lines){
+  const rows = [];
+  const amtPat = '[-\u2212]?\\s*R?\\$?\\s*[\\d]{1,3}(?:[.,]\\d{3})*[.,]\\d{2}';
+  const dateRe = new RegExp('^(\\d{2}[/\\-]\\d{2}[/\\-](?:\\d{4}|\\d{2}))\\s+(.+?)\\s+('+amtPat+')\\s*$');
+  const monthMap = {jan:'01',fev:'02',feb:'02',mar:'03',abr:'04',apr:'04',mai:'05',may:'05',jun:'06',jul:'07',ago:'08',aug:'08',set:'09',sep:'09',out:'10',oct:'10',nov:'11',dez:'12',dec:'12'};
+  const nuRe = new RegExp('^(\\d{2})\\s+([a-z\u00e1\u00e0\u00e2\u00e3\u00e9\u00ea\u00ed\u00f3\u00f4\u00f5\u00fa\u00e7A-Z]{3})\\s+(\\d{4})\\s+(.+?)\\s+('+amtPat+')\\s*$');
+
+  lines.forEach((line, idx) => {
+    let m = line.match(dateRe);
+    if(m){
+      const data = formatDateCSV(m[1]);
+      const descricao = m[2].trim();
+      const valorStr = m[3].replace(/[R$\s\u2212-]/g,'').replace(/\./g,'').replace(',','.');
+      const valor = parseFloat(valorStr);
+      if(data && !isNaN(valor) && valor !== 0){
+        rows.push({id:`pdf_${idx}`, data, descricao:descricao.substring(0,60), valor:Math.abs(valor), tipo:valor<0?'gasto':'receita', categoria:autoCategoria(descricao), selecionado:true});
+      }
+      return;
+    }
+    m = line.match(nuRe);
+    if(m){
+      const mm = monthMap[m[2].toLowerCase()];
+      if(mm){
+        const data = `${m[1]}/${mm}/${m[3]}`;
+        const descricao = m[4].trim();
+        const valorStr = m[5].replace(/[R$\s\u2212-]/g,'').replace(/\./g,'').replace(',','.');
+        const valor = parseFloat(valorStr);
+        if(!isNaN(valor) && valor !== 0){
+          rows.push({id:`pdf_${idx}`, data, descricao:descricao.substring(0,60), valor:Math.abs(valor), tipo:valor<0?'gasto':'receita', categoria:autoCategoria(descricao), selecionado:true});
+        }
+      }
+    }
+  });
+
+  const seen = new Set();
+  return rows.filter(r => {
+    const k = `${r.data}|${r.descricao}|${r.valor}`;
+    if(seen.has(k)) return false;
+    seen.add(k); return true;
+  });
+}
+
+function detectarBancoPorConteudo(txt){
+  const bidMatch = txt.match(/<BANKID>0*(\d+)/i);
+  if(bidMatch){
+    const codes = {'341':'Itaú','237':'Bradesco','001':'Banco do Brasil','033':'Santander','260':'Nubank','077':'Inter','104':'Caixa','336':'C6 Bank','655':'Neon','290':'PagSeguro','323':'Mercado Pago','212':'Banco Original','422':'Safra'};
+    if(codes[bidMatch[1]]) return codes[bidMatch[1]];
+  }
+  const orgMatch = txt.match(/<ORG>([^<\r\n]+)/i);
+  if(orgMatch){
+    const o = orgMatch[1].trim().toLowerCase();
+    if(o.includes('itau')||o.includes('ita\u00fa')) return 'Ita\u00fa';
+    if(o.includes('bradesco')) return 'Bradesco';
+    if(o.includes('nubank')||o.includes('nu pag')) return 'Nubank';
+    if(o.includes('inter')) return 'Inter';
+    if(o.includes('santander')) return 'Santander';
+    if(o.includes('brasil')||o.includes('bancobrasil')) return 'Banco do Brasil';
+    if(o.includes('caixa')) return 'Caixa';
+    if(o.includes('c6')) return 'C6 Bank';
+    if(o.includes('neon')) return 'Neon';
+    return orgMatch[1].trim();
+  }
+  const t = txt.toLowerCase();
+  if(t.includes('nu pagamentos')||t.includes('nubank')) return 'Nubank';
+  if(t.includes('banco inter')||t.includes('inter s.a')||t.includes('inter bank')) return 'Inter';
+  if(t.includes('bradesco')) return 'Bradesco';
+  if(t.includes('ita\u00fa')||t.includes('itau')) return 'Ita\u00fa';
+  if(t.includes('santander')) return 'Santander';
+  if(t.includes('caixa econ\u00f4mica')||t.includes(' cef ')) return 'Caixa';
+  if(t.includes('banco do brasil')) return 'Banco do Brasil';
+  if(t.includes('c6 bank')||t.includes('c6bank')) return 'C6 Bank';
+  if(t.includes('neon')) return 'Neon';
+  if(t.includes('mercado pago')) return 'Mercado Pago';
+  if(t.includes('picpay')) return 'PicPay';
+  if(t.includes('sicoob')) return 'Sicoob';
+  if(t.includes('sicredi')) return 'Sicredi';
+  return null;
+}
+
+function mapearBancoParaCartao(banco){
+  if(!banco || !CARTOES.length) return null;
+  const b = banco.toLowerCase().replace(/banco\s+/,'').replace(/\s+/g,'');
+  let c = CARTOES.find(x => x.banco && x.banco.toLowerCase().replace(/banco\s+/,'').replace(/\s+/g,'').includes(b));
+  if(c) return c;
+  c = CARTOES.find(x => x.banco && b.includes(x.banco.toLowerCase().replace(/banco\s+/,'').replace(/\s+/g,'')));
+  if(c) return c;
+  const bFirst = banco.toLowerCase().split(' ')[0];
+  c = CARTOES.find(x => x.nome && x.nome.toLowerCase().includes(bFirst));
+  if(c) return c;
+  return null;
+}
+
+function importPreencherCartaoSel(autoCartao){
+  const sel = document.getElementById('importCartaoSel');
+  if(!sel) return;
+  sel.innerHTML = '<option value="">— Nenhum (avulso) —</option>' +
+    CARTOES.map(c => `<option value="${esc(c.nome)}">${esc(c.nome)}${c.banco?' ('+esc(c.banco)+')':''}</option>`).join('');
+  if(autoCartao) sel.value = autoCartao.nome;
 }
 
 function parseOFXExtrato(txt){
@@ -10000,9 +10176,15 @@ function renderImportPreview(fileName, rows){
   document.getElementById('importFileName').textContent = fileName;
   document.getElementById('importFileSummary').textContent = `${rows.length} transação(ões) encontrada(s)`;
 
+  const bancoEl = document.getElementById('importBancoLabel');
+  const autoCartao = mapearBancoParaCartao(IMPORT_BANCO_DETECTADO);
+  if(bancoEl) bancoEl.textContent = IMPORT_BANCO_DETECTADO
+    ? `🏦 Banco detectado: ${IMPORT_BANCO_DETECTADO}`
+    : '🏦 Banco: não detectado — selecione o cartão manualmente';
+  importPreencherCartaoSel(autoCartao);
+
   const tbody = document.getElementById('importTableBody');
   const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
-  const catOpts = allCats.map(c=>`<option>${esc(c)}</option>`).join('');
 
   tbody.innerHTML = rows.map((r, i) => `
     <tr id="importRow_${i}" style="${!r.selecionado?'opacity:.45':''}">
@@ -10060,34 +10242,29 @@ function importConfirm(){
   const sels = IMPORT_ROWS.filter(r => r.selecionado);
   if(!sels.length){ toast('Nenhuma transação selecionada.', 'warning'); return; }
 
-  const hoje = new Date();
+  const cartaoNome = document.getElementById('importCartaoSel')?.value || '';
+  const cartaoObj = CARTOES.find(c => c.nome === cartaoNome);
+  const metodo = cartaoNome ? (cartaoObj && cartaoObj.fech ? 'Cartão crédito' : 'Débito') : 'Importado';
+
   let importadas = 0;
   sels.forEach(r => {
-    // Parse data: DD/MM/YYYY
-    let mesAno = getMesChave(); // fallback: mês atual
+    let mesAno = getMesChave();
     const dm = r.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if(dm){
       const d = new Date(parseInt(dm[3]), parseInt(dm[2])-1, parseInt(dm[1]));
-      const mLabel = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
-      mesAno = mLabel;
+      mesAno = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
     }
     const valor = r.tipo === 'gasto' ? -Math.abs(r.valor) : Math.abs(r.valor);
-    const newTx = {
-      data: r.data,
-      hora: '00:00',
+    TODAS_TX.push({
+      data: r.data, hora: '00:00',
       descricao: r.descricao,
       categoria: r.categoria || 'Outros',
-      valor,
-      metodo: 'Importado',
-      cartao: '',
-      parcelas: 1,
-      parcela_atual: 1,
+      valor, metodo, cartao: cartaoNome,
+      parcelas: 1, parcela_atual: 1,
       tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
-      local: '',
-      mes_ano: mesAno,
+      local: '', mes_ano: mesAno,
       idx: Date.now() + importadas
-    };
-    TODAS_TX.push(newTx);
+    });
     aprenderCategoria(r.descricao, r.categoria);
     importadas++;
   });
