@@ -1,10 +1,10 @@
 """
-START FINANCE — Auth v1.0
+START FINANCE — Auth v2.0
 Login multi-usuário com JWT.
-Usuários configurados via variável de ambiente USERS_JSON ou padrão.
+Usuários configurados via USERS_JSON (env) e/ou registrados via /api/register (arquivo persistente).
 """
 
-import os, json, hashlib, hmac, base64, time, logging
+import os, json, hashlib, hmac, base64, time, logging, uuid
 from functools import wraps
 from flask import request, jsonify
 
@@ -13,21 +13,61 @@ logger = logging.getLogger(__name__)
 JWT_SECRET = os.environ.get("JWT_SECRET", "start-finance-secret-2026")
 TOKEN_EXP   = 60 * 60 * 24 * 7  # 7 dias
 
+# ── Banco de usuários registrados (arquivo persistente) ───────────────
+_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'users.json')
+
+def _load_db_users() -> list:
+    """Carrega usuários registrados do arquivo persistente."""
+    try:
+        os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
+        if os.path.exists(_DB_PATH):
+            with open(_DB_PATH, 'r', encoding='utf-8') as f:
+                return json.load(f)
+    except Exception as e:
+        logger.warning(f"Erro ao carregar users.json: {e}")
+    return []
+
+def _save_db_users(users: list) -> None:
+    """Persiste a lista de usuários registrados."""
+    try:
+        os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
+        with open(_DB_PATH, 'w', encoding='utf-8') as f:
+            json.dump(users, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logger.error(f"Erro ao salvar users.json: {e}")
+
+
 # ── Usuários ──────────────────────────────────────────────────────────
-# Configure via env var USERS_JSON:
-# '[{"id":"1","name":"Lucas","email":"lucas@pense.com","password":"senha123","avatar":"🧑‍💼"}]'
 def get_users() -> list:
+    """Retorna todos os usuários: env var (prioridade) + arquivo persistente."""
+    env_users = []
     raw = os.environ.get("USERS_JSON", "")
     if raw:
         try:
-            return json.loads(raw)
+            env_users = json.loads(raw)
         except Exception:
             pass
-    # Usuário padrão de desenvolvimento
-    return [
-        {"id": "1", "name": "Lucas",  "email": "lucas@startfinance.com",  "password": "start123", "avatar": "🧑‍💼", "color": "#3B6FF0"},
-        {"id": "2", "name": "Hellen", "email": "hellen@startfinance.com", "password": "start123", "avatar": "👩‍💼", "color": "#EC4899"},
-    ]
+
+    # Usuários registrados via API (arquivo persistente)
+    db_users = _load_db_users()
+
+    # Mescla: env_users têm prioridade por email
+    env_emails = {u["email"].lower() for u in env_users}
+    merged = list(env_users)
+    for u in db_users:
+        if u["email"].lower() not in env_emails:
+            merged.append(u)
+
+    return merged
+
+
+# ── Hashing de senha ──────────────────────────────────────────────────
+def _sha256(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+def _is_hash(s: str) -> bool:
+    """Verifica se a string é um SHA-256 hex (64 chars)."""
+    return isinstance(s, str) and len(s) == 64 and all(c in '0123456789abcdef' for c in s.lower())
 
 
 # ── JWT simples (sem dependência externa) ─────────────────────────────
@@ -75,9 +115,26 @@ def verificar_token(token: str) -> dict | None:
 
 # ── Autenticação ──────────────────────────────────────────────────────
 def autenticar(email: str, password: str) -> dict | None:
+    """
+    Suporta tanto senhas plaintext (usuários de env var) quanto
+    SHA-256 hasheadas (usuários registrados via API).
+    O frontend envia a senha já hasheada; env var users têm plaintext.
+    """
     for u in get_users():
-        if u["email"].lower() == email.lower() and u["password"] == password:
-            return u
+        if u["email"].lower() == email.lower():
+            stored = u["password"]
+            if _is_hash(stored):
+                # Senha armazenada como hash — compara hash com hash
+                # Frontend envia a senha já hasheada pelo crypto.subtle
+                if stored == password:
+                    return u
+                # Caso extremo: frontend enviou plaintext — compara hash do plaintext
+                if _sha256(password) == stored:
+                    return u
+            else:
+                # Senha em plaintext (usuários de env var)
+                if stored == password:
+                    return u
     return None
 
 
@@ -108,7 +165,7 @@ def registrar_rotas_auth(app, sheets_factory=None):
     def login():
         try:
             dados = request.json or {}
-            email    = (dados.get("email", "") or "").strip()
+            email    = (dados.get("email", "") or "").strip().lower()
             password = (dados.get("password", "") or "").strip()
             if not email or not password:
                 return jsonify({"erro": "Email e senha obrigatórios"}), 400
@@ -128,6 +185,61 @@ def registrar_rotas_auth(app, sheets_factory=None):
             })
         except Exception as e:
             logger.error(f"❌ Login: {e}")
+            return jsonify({"erro": str(e)}), 500
+
+    @app.route("/api/register", methods=["POST"])
+    def register():
+        """Registra novo usuário — persiste em arquivo para sync entre dispositivos."""
+        try:
+            dados    = request.json or {}
+            nome     = (dados.get("name",     "") or "").strip()
+            email    = (dados.get("email",    "") or "").strip().lower()
+            password = (dados.get("password", "") or "").strip()
+            avatar   = (dados.get("avatar",   "🙂") or "🙂")
+            cor      = (dados.get("color",    "#3B6FF0") or "#3B6FF0")
+
+            if not nome or not email or not password:
+                return jsonify({"erro": "Nome, email e senha são obrigatórios"}), 400
+            if len(password) < 6 and not _is_hash(password):
+                return jsonify({"erro": "Senha deve ter pelo menos 6 caracteres"}), 400
+
+            # Verifica se email já existe (env + arquivo)
+            all_users = get_users()
+            if any(u["email"].lower() == email for u in all_users):
+                return jsonify({"erro": "Este email já está cadastrado"}), 409
+
+            # Garante que a senha seja armazenada como hash
+            pwd_hash = password if _is_hash(password) else _sha256(password)
+
+            new_user = {
+                "id":        "u_" + str(int(time.time() * 1000)) + "_" + uuid.uuid4().hex[:8],
+                "name":      nome,
+                "email":     email,
+                "password":  pwd_hash,
+                "avatar":    avatar,
+                "color":     cor,
+                "createdAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+
+            # Persiste no arquivo
+            db_users = _load_db_users()
+            db_users.append(new_user)
+            _save_db_users(db_users)
+
+            token = gerar_token(new_user)
+            logger.info(f"✅ Novo usuário registrado: {email}")
+            return jsonify({
+                "token": token,
+                "user": {
+                    "id":     new_user["id"],
+                    "name":   new_user["name"],
+                    "email":  new_user["email"],
+                    "avatar": new_user["avatar"],
+                    "color":  new_user["color"],
+                }
+            }), 201
+        except Exception as e:
+            logger.error(f"❌ Register: {e}")
             return jsonify({"erro": str(e)}), 500
 
     @app.route("/api/me")

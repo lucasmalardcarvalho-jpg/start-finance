@@ -670,11 +670,24 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .fx-mcard-actions button{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
   /* "Marcar todas pagas" button full-width on mobile */
   .tf .btn{width:100%;justify-content:center;margin-top:4px}
+  /* Planejamento: mostra controles de filtro (ano/modo) no mobile */
+  #page-planejamento .ph{display:flex!important;align-items:center;justify-content:flex-end;padding:2px 10px 8px!important;flex-wrap:wrap;gap:8px}
+  #page-planejamento .ph > div:first-child{display:none}
+  /* Plan year dropdown: abre para a esquerda no mobile para não sair da tela */
+  .plan-year-drop{right:auto!important;left:0!important}
   /* Relatórios — colapsa grids inline dentro do painel de análise */
   #relPanelAnalise > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   #relPanelAnalise .card > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   /* Família e outros inner grids */
   #familiaResumoCols[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  /* Card detail: empilha coluna esquerda (card+info) acima do extrato */
+  #ctDetailView > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  /* Back bar do detalhe: empilha botões em 2 linhas se necessário */
+  #ctDetailView > div:first-child{flex-wrap:wrap;gap:8px}
+  /* Extrato no mobile: altura automática (não limita scroll) */
+  #ctDetailExtrato{max-height:none!important;overflow-y:visible!important}
+  /* Card visual no detalhe: não maior que a tela */
+  #ctDetailCardVisual{width:100%!important;max-width:340px;margin:0 auto 14px!important}
   /* KPI grids: mantém 2 colunas em mobile (override do 1fr geral) */
   .g3:has(>.kpi),.g4:has(>.kpi){grid-template-columns:1fr 1fr!important}
   /* Chart stats bar (4 itens flex): quebra em 2×2 no mobile */
@@ -2796,16 +2809,18 @@ let _cloudSyncActive = false;
 
 function _collectAllUserData(){
   return {
-    txs:          lsUser('txs', []),
-    fixas:        lsUser('fixas', []),
-    dividas:      lsUser('dividas', []),
-    metas:        lsUser('metas', []),
-    inv:          lsUser('inv', []),
-    cartoes:      lsUser('cartoes', []),
-    limites:      lsUser('limites', {}),
-    cats:         lsUser('cats', []),
-    recorrencias: lsUser('recorrencias', []),
-    familia:      lsUser('familia', []),
+    txs:           lsUser('txs', []),
+    fixas:         lsUser('fixas', []),
+    dividas:       lsUser('dividas', []),
+    metas:         lsUser('metas', []),
+    inv:           lsUser('inv', []),
+    cartoes:       lsUser('cartoes', []),
+    limites:       lsUser('limites', {}),
+    cats:          lsUser('cats', []),
+    recorrencias:  lsUser('recorrencias', []),
+    familia:       lsUser('familia', []),
+    faturas_pagas: lsUser('faturas_pagas', {}),
+    vcal_pagos:    lsUser('vcal_pagos', {}),
   };
 }
 
@@ -2816,12 +2831,27 @@ async function pushDataToServer(){
     const data = _collectAllUserData();
     data._pushTs = Date.now(); // marca timestamp do push para detecção de changes
     data._device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
-    await fetch('/api/userdata', {
+    const res = await fetch('/api/userdata', {
       method: 'POST',
       headers: {...apiHeaders(), 'Content-Type': 'application/json'},
       body: JSON.stringify(data)
     });
+    if(res?.status === 401) _handleSessionExpired();
   }catch(e){}
+}
+
+let _sessionExpiredShown = false;
+function _handleSessionExpired(){
+  if(_sessionExpiredShown) return;
+  _sessionExpiredShown = true;
+  stopAutoSync();
+  toast('🔒 Sessão expirada — faça login novamente', 'error');
+  setTimeout(()=>{
+    _sessionExpiredShown = false;
+    ls_save('sf_token',''); ls_save('sf_user','');
+    AUTH_TOKEN=''; AUTH_USER=null;
+    mostrarLogin();
+  }, 3000);
 }
 
 function schedulePush(){
@@ -2840,6 +2870,7 @@ async function pullDataFromServer(){
       fetch('/api/userdata', {headers: apiHeaders()}),
       new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
     ]);
+    if(res?.status === 401){ _handleSessionExpired(); return; }
     if(!res.ok) return;
     const data = await res.json();
     if(!data || !Object.keys(data).length) return;
@@ -2859,7 +2890,7 @@ async function pullDataFromServer(){
 
     // Aplica TODOS os dados do servidor — ele é fonte da verdade quando ts mudou
     _cloudSyncActive = true;
-    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia'];
+    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia','faturas_pagas','vcal_pagos'];
     keys.forEach(k=>{ if(data[k]!==undefined) saveUser(k, data[k]); });
     _cloudSyncActive = false;
 
@@ -7529,16 +7560,10 @@ function selCorLogin(el, cor){
 
 // ── Acesso rápido (mostra usuários cadastrados) ──
 function carregarUsuariosLogin(){
-  seedUsers();
-  const users = getUsers();
+  // Acesso rápido desativado — cada usuário deve fazer login com email+senha
+  // Isso garante que perfis de outros usuários não apareçam na tela de login
   const el = document.getElementById('loginUserBtns');
-  if(!el) return;
-  if(!users.length){ el.innerHTML=''; return; }
-  el.innerHTML = users.slice(0,4).map(u=>`
-    <button class="login-user-btn" data-email="${esc(u.email)}" onclick="loginRapido(this.dataset.email)">
-      <span class="lu-av" style="font-size:24px;display:block;margin-bottom:4px">${esc(u.avatar)||'🙂'}</span>
-      <span class="lu-nm" style="font-size:12px;font-weight:700">${esc(u.name)}</span>
-    </button>`).join('');
+  if(el) el.innerHTML = '';
 }
 
 function loginRapido(email){
@@ -7582,12 +7607,51 @@ async function criarConta(){
   if(senha.length<6) { errEl.textContent='⚠️ Senha deve ter pelo menos 6 caracteres'; errEl.classList.add('show'); return; }
   if(senha!==senha2) { errEl.textContent='❌ As senhas não coincidem'; errEl.classList.add('show'); return; }
 
-  const users = getUsers();
-  if(users.find(u=>u.email===email)){ errEl.textContent='❌ Este email já está cadastrado'; errEl.classList.add('show'); return; }
+  // Verifica duplicata local (caso o usuário já exista neste dispositivo)
+  const usersLocal = getUsers();
+  if(usersLocal.find(u=>u.email===email)){ errEl.textContent='❌ Este email já está cadastrado'; errEl.classList.add('show'); return; }
 
   btn.disabled=true; btn.textContent='⏳ Criando conta...';
 
   const senhaHash = await hashSenha(senha);
+
+  // ── Tenta registrar no servidor (habilita sync entre dispositivos) ──
+  try {
+    const resp = await fetch('/api/register', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name: nome, email, password: senhaHash, avatar, color: cor })
+    });
+    const d = await resp.json();
+
+    if(resp.ok && d.token){
+      // ✅ Conta criada no servidor — sync entre dispositivos habilitado
+      AUTH_TOKEN = d.token;
+      AUTH_USER  = d.user;
+      const users2 = getUsers();
+      if(!users2.find(u=>u.email===d.user.email)){
+        users2.push({...d.user, password: senhaHash});
+        saveUsers(users2);
+      }
+      ls_save('sf_token', d.token);
+      ls_save('sf_user', JSON.stringify(d.user));
+      carregarUsuariosLogin();
+      entrarNoSistema();
+      btn.disabled=false; btn.textContent='🚀 Criar minha conta';
+      return;
+    } else {
+      // Erro do servidor (ex: email já cadastrado em outro dispositivo)
+      errEl.textContent = '❌ ' + (d.erro || 'Erro ao criar conta. Tente novamente.');
+      errEl.classList.add('show');
+      btn.disabled=false; btn.textContent='🚀 Criar minha conta';
+      return;
+    }
+  } catch(e) {
+    // Servidor indisponível — cria conta local sem sync (fallback offline)
+    console.warn('Servidor indisponível, criando conta local:', e);
+  }
+
+  // ── Fallback: conta local (sem sync entre dispositivos) ──
   const novoUser = {
     id: 'u_'+Date.now()+'_'+Math.random().toString(36).slice(2),
     name: nome, email, password: senhaHash,
@@ -7595,10 +7659,12 @@ async function criarConta(){
     isLocal: true,
     createdAt: new Date().toISOString()
   };
-  users.push(novoUser);
-  saveUsers(users);
+  const usersUpd = getUsers();
+  usersUpd.push(novoUser);
+  saveUsers(usersUpd);
 
   AUTH_USER = novoUser;
+  AUTH_TOKEN = novoUser.id;
   ls_save('sf_token', novoUser.id);
   ls_save('sf_user', JSON.stringify(novoUser));
   carregarUsuariosLogin();
@@ -7638,10 +7704,28 @@ async function fazerLogin(){
       }
     }
     if(match){
-      AUTH_USER  = users.find(u=>u.email===email); // relê após possível migração
-      AUTH_TOKEN = AUTH_USER.id;
-      ls_save('sf_token', AUTH_USER.id);
-      ls_save('sf_user', JSON.stringify(AUTH_USER));
+      const _u = users.find(u=>u.email===email); // relê após possível migração
+      // Para usuários de servidor (sem isLocal), tenta obter JWT fresco para habilitar sync
+      if(!_u.isLocal){
+        try{
+          const _r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})});
+          const _d = await _r.json();
+          if(_d.token){
+            AUTH_TOKEN = _d.token;
+            AUTH_USER  = _d.user;
+            ls_save('sf_jwt_' + _d.user.id, _d.token);
+            ls_save('sf_token', _d.token);
+            ls_save('sf_user', JSON.stringify(_d.user));
+            setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no PenseFinances'; }, 400);
+            return;
+          }
+        }catch(e){ /* servidor offline — login local sem sync */ }
+      }
+      // Usuário local (isLocal) ou servidor offline — login sem sync
+      AUTH_USER  = _u;
+      AUTH_TOKEN = _u.id;
+      ls_save('sf_token', _u.id);
+      ls_save('sf_user', JSON.stringify(_u));
       setTimeout(()=>{ entrarNoSistema(); btn.disabled=false; btn.textContent='Entrar no PenseFinances'; }, 400);
       return;
     }
@@ -9271,19 +9355,41 @@ function init(){
   setTimeout(()=>{document.getElementById('loading').style.opacity='0';setTimeout(()=>document.getElementById('loading').style.display='none',500)},2500);
 }
 
+function cleanDemoUsers(){
+  // Remove perfis de demonstração para ambiente de produção
+  const demos=['hellennn_demo','nicolas_demo'];
+  const users=getUsers();
+  const clean=users.filter(u=>!demos.includes(u.id));
+  if(clean.length!==users.length){
+    saveUsers(clean);
+    demos.forEach(did=>{
+      try{
+        Object.keys(localStorage)
+          .filter(k=>k.startsWith(`sf_${did}_`))
+          .forEach(k=>localStorage.removeItem(k));
+      }catch(e){}
+    });
+  }
+}
+
 function iniciar(){
-  seedUsers();
-  seedHellennn(); // perfil demo com dados do ano inteiro
-  seedNicolas();  // perfil demo Nicolas — Gerente TI, 12 meses completos 2026
+  cleanDemoUsers();
   const token   = ls_get('sf_token');
   const userStr = ls_get('sf_user');
   if(token && token !== '' && userStr){
     try{
       AUTH_USER  = JSON.parse(userStr);
       AUTH_TOKEN = token;
+      // Rejeita perfis de demonstração removidos
+      if(['hellennn_demo','nicolas_demo'].includes(AUTH_USER?.id)){
+        ls_save('sf_token',''); ls_save('sf_user','');
+        AUTH_USER=null; AUTH_TOKEN='';
+        mostrarLogin(); return;
+      }
       // Valida que o usuário ainda existe no banco local
       const userNoDb = getUserById(AUTH_USER.id);
       if(userNoDb){ AUTH_USER=userNoDb; } // usa dados mais recentes
+      else { mostrarLogin(); return; } // usuário não encontrado
       entrarNoSistema(); // inclui sync, carregamento de dados e UI
       return;
     }catch(e){ console.warn('Token inválido, redirecionando para login'); }
