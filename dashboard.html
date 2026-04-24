@@ -129,6 +129,7 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .tg-st{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--verde);font-weight:600;margin-left:auto}
 .tg-dot{width:5px;height:5px;background:var(--verde);border-radius:50%;animation:blink 2s infinite}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
 
 /* MAIN */
 .main{margin-left:var(--sw);min-height:100vh}
@@ -2460,6 +2461,7 @@ const CATS_PADRAO_EXTRA = Object.keys(EMOJIS).filter(n=>n!=='Salário'&&n!=='Fre
 let TODAS_TX=[], HISTORICO=[], MES_OFF=0, MES_DATA={};
 let TX_FILT=[], DEL_IDX=null;
 let FIXAS=[], DIVIDAS=[], METAS=[], INVESTIMENTOS=[], CARTOES=[], LIMS_LOCAL={}, CATS_CUSTOM=[], CATS_OCULTAS=[], RECORRENCIAS=[];
+let FATURAS_PAGAS={}, VCAL_PAGOS={};
 let FAMILIA_MEMBROS = []; // [{id, nome, avatar, cor}]
 let FAM_MEMBRO_FILTRO = null; // null = todos, '' = titular, 'id' = membro específico
 let CAT_MODEL = {};
@@ -3236,7 +3238,7 @@ function renderEvolucaoAnual(el, h, histParam){
     </div>
   </div>`;
 
-  const W=800, H=160, PL=8, PR=8, PT=14, PB=26;
+  const W=800, H=210, PL=8, PR=8, PT=14, PB=26;
   const chartW=W-PL-PR, chartH=H-PT-PB;
   const n=hist.length;
   const colW=chartW/n;
@@ -3280,19 +3282,19 @@ function renderEvolucaoAnual(el, h, histParam){
     bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${labelCor}" font-weight="${hh.atual?'800':'600'}" font-family="Cabinet Grotesk">${labelTxt}</text>`;
   });
 
-  const svgHtml=`<div style="padding:12px 16px 0;overflow-x:auto">
+  const svgHtml=`<div style="padding:4px 16px 0;overflow-x:auto">
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:280px" id="chartSvg">
       <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E8EBE4" stroke-width="1.5"/>
       ${bars}
     </svg>
   </div>`;
 
-  const legendHtml=`<div style="padding:6px 16px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  const legendHtml=`<div style="padding:6px 16px 4px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#3B6FF0"><div style="width:10px;height:10px;border-radius:3px;background:#3B6FF0"></div>Receitas</div>
     <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#ee206e"><div style="width:10px;height:10px;border-radius:3px;background:#ee206e"></div>Despesas</div>
   </div>`;
 
-  el.innerHTML=statsHtml+svgHtml+legendHtml;
+  el.innerHTML=statsHtml+legendHtml+svgHtml;
   setupChartTooltip(el);
 }
 
@@ -4020,6 +4022,24 @@ async function deletarTodasParcelas(t){
 
 async function saveTx(){
   const btn=document.getElementById('btnSvTx');btn.disabled=true;btn.textContent='⏳...';
+
+  // ── Validação obrigatória ──
+  const _valNum=parseBRL(document.getElementById('txValor').value)||parseFloat(document.getElementById('txValor').value)||0;
+  const _metVal=document.getElementById('txMetodo').value;
+  const _catVal=document.getElementById('txCat').value;
+  const _tipVal=document.getElementById('txTipo').value;
+  const _erroField=(id,msg)=>{
+    toast('⚠️ '+msg,'error');
+    const fe=document.getElementById(id);
+    if(fe){fe.style.outline='2px solid var(--verm)';fe.style.animation='shake .35s';
+      setTimeout(()=>{fe.style.outline='';fe.style.animation=''},700);}
+    btn.disabled=false;btn.textContent='💾 Salvar';
+  };
+  if(!_valNum||_valNum===0) return _erroField('txValor','Informe o valor da transação');
+  if(!_tipVal)              return _erroField('txTipo','Selecione o tipo (Gasto / Receita)');
+  if(!_catVal)              return _erroField('txCat','Selecione uma categoria');
+  if(!_metVal)              return _erroField('txMetodo','Selecione o método de pagamento');
+
   const idx=parseInt(document.getElementById('txIdx').value);
   const tipo=document.getElementById('txTipo').value;
   const valor=parseBRL(document.getElementById('txValor').value)||parseFloat(document.getElementById('txValor').value)||0;
@@ -4609,7 +4629,23 @@ function renderCartoes(){
       ? `<span style="font-size:9px;font-weight:800;background:rgba(249,115,22,.2);color:#FED7AA;padding:2px 7px;border-radius:100px">Atenção</span>`
       : '';
     const txCount = (MES_DATA.txMes||[]).filter(t=>t.cartao===c.nome&&t.valor<0).length;
-    return `<div class="credit-card" style="background:${c.cor||'#3B6FF0'};cursor:pointer;transition:transform .15s,box-shadow .15s"
+    const mesAtualKey = getMesChave();
+    const faturaKey = `${c.nome}_${mesAtualKey}`;
+    const jaPago = !!(FATURAS_PAGAS[faturaKey]?.pago);
+    const hoje2 = new Date();
+    const diaVenc = parseInt(c.venc||0);
+    const dtVenc = diaVenc ? new Date(hoje2.getFullYear(), hoje2.getMonth(), diaVenc) : null;
+    const diasVenc = dtVenc ? Math.ceil((dtVenc - hoje2) / 86400000) : null;
+    const isAtrasada = dtVenc && diasVenc < 0 && !jaPago && fatMes > 0;
+    const isProximo = dtVenc && diasVenc >= 0 && diasVenc <= 3 && !jaPago && fatMes > 0;
+    const pagoBadge = jaPago
+      ? `<span style="font-size:9px;font-weight:800;background:rgba(16,185,129,.3);color:#A7F3D0;padding:2px 7px;border-radius:100px">✅ Pago</span>`
+      : isAtrasada
+      ? `<span style="font-size:9px;font-weight:800;background:rgba(239,68,68,.35);color:#FCA5A5;padding:2px 7px;border-radius:100px">🔴 Atrasado ${Math.abs(diasVenc)}d</span>`
+      : isProximo
+      ? `<span style="font-size:9px;font-weight:800;background:rgba(245,158,11,.3);color:#FDE68A;padding:2px 7px;border-radius:100px">🔔 Vence em ${diasVenc}d</span>`
+      : '';
+    return `<div class="credit-card" style="background:${c.cor||'#3B6FF0'};cursor:pointer;transition:transform .15s,box-shadow .15s;${jaPago?'opacity:.75':''}"
         onclick="abrirDetalheCartao(${i})"
         onmouseenter="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 32px rgba(0,0,0,.25)'"
         onmouseleave="this.style.transform='';this.style.boxShadow=''">
@@ -4620,7 +4656,7 @@ function renderCartoes(){
         </div>
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
           ${c.final?`<span style="font-size:10px;opacity:.6;font-family:monospace">•••• ${esc(c.final)}</span>`:''}
-          ${statusBadge}
+          ${pagoBadge||statusBadge}
         </div>
       </div>
       <div style="font-size:10px;opacity:.6;margin-bottom:3px">Fatura ${getMesNome()}</div>
@@ -4636,10 +4672,26 @@ function renderCartoes(){
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;padding-top:8px;border-top:1px solid rgba(255,255,255,.15)">
         <span style="font-size:10px;opacity:.7">${txCount} transação(ões) este mês</span>
-        <span style="font-size:11px;font-weight:700;opacity:.9">Ver extrato →</span>
+        <button onclick="event.stopPropagation();toggleFaturaPaga('${esc(c.nome)}','${mesAtualKey}')"
+          style="font-size:10px;font-weight:800;padding:3px 10px;border-radius:100px;border:1.5px solid rgba(255,255,255,.6);background:${jaPago?'rgba(16,185,129,.35)':'rgba(255,255,255,.15)'};color:#fff;cursor:pointer;font-family:Cabinet Grotesk,sans-serif">
+          ${jaPago?'✅ Pago':'Marcar pago'}
+        </button>
       </div>
     </div>`;
   }).join('');
+}
+
+function toggleFaturaPaga(cartaoNome, mesAno){
+  const key=`${cartaoNome}_${mesAno}`;
+  if(FATURAS_PAGAS[key]?.pago){
+    delete FATURAS_PAGAS[key];
+    toast('Fatura desmarcada como paga','info');
+  } else {
+    FATURAS_PAGAS[key]={pago:true, data:new Date().toISOString()};
+    toast('✅ Fatura marcada como paga!','success');
+  }
+  saveUser('faturas_pagas', FATURAS_PAGAS);
+  renderCartoes();
 }
 
 function abrirDetalheCartao(i){
@@ -5816,7 +5868,7 @@ function renderPlan(){
     if(!meses.some(m=>m.entradas>0||m.saidas>0)){
       chartEl.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--muted)">Sem dados para ${PLAN_ANO}</div>`;
     } else {
-      const W=700,H=190,PT=12,PB=28,PL=8,PR=8;
+      const W=700,H=240,PT=12,PB=28,PL=8,PR=8;
       const CW=W-PL-PR,CH=H-PT-PB;
       const n=meses.length;
       const colW=CW/n;
@@ -5837,14 +5889,14 @@ function renderPlan(){
         const cor=h.atual?'#3B6FF0':(h.futuro?'#D1D5DB':'#6B7280');
         bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${cor}" font-weight="${h.atual?'800':'600'}" font-family="Cabinet Grotesk">${h.label.replace('.','').toUpperCase()}</text>`;
       });
-      chartEl.innerHTML=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:260px">
-        <line x1="${PL}" y1="${PT+CH}" x2="${W-PR}" y2="${PT+CH}" stroke="#E8EBE4" stroke-width="1.5"/>
-        ${bars}
-      </svg></div>
-      <div style="display:flex;gap:14px;padding:6px 12px 8px;flex-wrap:wrap">
+      chartEl.innerHTML=`<div style="display:flex;gap:14px;padding:8px 12px 4px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#3B6FF0"><div style="width:10px;height:10px;border-radius:3px;background:#3B6FF0"></div>Receitas</div>
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#ee206e"><div style="width:10px;height:10px;border-radius:3px;background:#ee206e"></div>Despesas</div>
-      </div>`;
+      </div>
+      <div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:260px">
+        <line x1="${PL}" y1="${PT+CH}" x2="${W-PR}" y2="${PT+CH}" stroke="#E8EBE4" stroke-width="1.5"/>
+        ${bars}
+      </svg></div>`;
       setupChartTooltip(chartEl);
     }
   }
@@ -7646,6 +7698,8 @@ function carregarDadosUsuario(){
   if(CATS_CUSTOM.length !== rawCats.length){ saveUser('cats', CATS_CUSTOM); } // persiste limpeza
   CATS_OCULTAS  = lsUser('cats_ocultas', []);
   RECORRENCIAS  = lsUser('recorrencias', []);
+  FATURAS_PAGAS = lsUser('faturas_pagas', {});
+  VCAL_PAGOS    = lsUser('vcal_pagos', {});
   // Migração: importa Projetos antigos como Metas tipo orcamento
   const projOld = lsUser('projetos', []);
   if(projOld.length){
@@ -8630,20 +8684,25 @@ function renderVencimentos(){
 
   el.innerHTML=`<div class="card mb">
     <div class="ch"><div><div class="ct">📅 Próximos Vencimentos</div><div class="cs">Próximos 14 dias</div></div><button class="btn bs btn-sm" onclick="go('vencimentos')">Ver tudo →</button></div>
-    <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:0">
+    <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:0" data-venc-card="1">
       ${items.map(item=>{
         const urgency = item.diff===0?'var(--verm)':item.diff<=3?'var(--lara)':item.diff<=7?'var(--amar)':'var(--muted)';
         const bgUrgency = item.diff===0?'var(--verm-l)':item.diff<=3?'var(--lara-l)':item.diff<=7?'var(--amar-l)':'var(--bg)';
         const label = item.diff===0?'HOJE':item.diff===1?'Amanhã':`Em ${item.diff} dias`;
-        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+        const vKey=`${item.tipo}_${item.nome}_${item.venc.getFullYear()}_${item.venc.getMonth()}`;
+        const vPago=!!(VCAL_PAGOS[vKey]);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);${vPago?'opacity:.55':''}">
           <div style="width:36px;height:36px;border-radius:10px;background:${bgUrgency};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${item.emoji}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:700">${esc(item.nome)}</div>
+            <div style="font-size:13px;font-weight:700;${vPago?'text-decoration:line-through':''}">${esc(item.nome)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${item.venc.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div>
           </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:800;color:var(--verm)">${fmt(item.valor)}</div>
-            <div style="font-size:10px;font-weight:800;color:${urgency};text-transform:uppercase;letter-spacing:.04em">${label}</div>
+          <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+            <div style="font-size:14px;font-weight:800;color:${vPago?'var(--verde)':'var(--verm)'}">${vPago?'✅ Pago':fmt(item.valor)}</div>
+            <button onclick="toggleVencPago('${vKey}',this.closest('[data-venc-card]'))"
+              style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px;border:1.5px solid ${vPago?'var(--verde)':'var(--border)'};background:${vPago?'var(--verde-l)':'var(--bg)'};color:${vPago?'var(--verde-d)':'var(--muted)'};cursor:pointer;font-family:Cabinet Grotesk,sans-serif">
+              ${vPago?'Desmarcar':'Marcar pago'}
+            </button>
           </div>
         </div>`;
       }).join('')}
@@ -8658,6 +8717,15 @@ let VCAL_DATE = new Date();
 
 function vcalNav(dir){ VCAL_DATE.setMonth(VCAL_DATE.getMonth()+dir); renderVencimentosCal(); }
 function vcalHoje(){ VCAL_DATE=new Date(); renderVencimentosCal(); }
+
+function toggleVencPago(key){
+  if(VCAL_PAGOS[key]) delete VCAL_PAGOS[key];
+  else VCAL_PAGOS[key]=true;
+  saveUser('vcal_pagos', VCAL_PAGOS);
+  toast(VCAL_PAGOS[key]?'✅ Marcado como pago!':'Desmarcado','info');
+  renderVencimentos();
+  renderVencimentosCal();
+}
 
 function coletarVencimentos(ano, mes){
   // mes = 0-11
@@ -8818,15 +8886,20 @@ function renderVencimentosCal(){
       const diaCorTxt={critico:'#991B1B',atencao:'#92400E',normal:'#1E40AF'}[it.urgencia];
       const emoji=EMOJITIPO[it.tipo]||'📋';
       const nomeClean=esc(it.nome.replace(/^[^ ]+ /,''));
-      html2+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;margin-bottom:6px;border-left:3px solid ${COR[it.urgencia]||'#3B6FF0'};background:var(--card)">
+      const vcKey=`${it.tipo}_${it.nome}_${ano}_${mes}`;
+      const vcPago=!!(VCAL_PAGOS[vcKey]);
+      html2+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;margin-bottom:6px;border-left:3px solid ${vcPago?'var(--verde)':COR[it.urgencia]||'#3B6FF0'};background:var(--card);${vcPago?'opacity:.6':''}">
         <div style="width:36px;height:36px;border-radius:9px;background:${COR[it.urgencia]||'#3B6FF0'}18;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${emoji}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nomeClean}${it.debitoAuto?'<span style="font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:100px;margin-left:5px">🔄 Auto</span>':''}</div>
+          <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${vcPago?'text-decoration:line-through':''}">${nomeClean}${it.debitoAuto?'<span style="font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:100px;margin-left:5px">🔄 Auto</span>':''}</div>
           <div style="font-size:10px;color:var(--muted);margin-top:1px">Dia <strong>${it.dia}</strong> · ${LABELTIPO[it.tipo]||it.tipo}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:13px;font-weight:800;color:var(--verm)">${it.valor>0?fmt(it.valor):'—'}</div>
-          <div style="font-size:10px;font-weight:700;background:${diaCorBg};color:${diaCorTxt};padding:1px 7px;border-radius:100px;margin-top:2px">${diasTxt}</div>
+        <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+          <div style="font-size:13px;font-weight:800;color:${vcPago?'var(--verde)':'var(--verm)'}">${vcPago?'✅ Pago':it.valor>0?fmt(it.valor):'—'}</div>
+          <button onclick="toggleVencPago('${vcKey}')"
+            style="font-size:9px;font-weight:800;padding:2px 9px;border-radius:100px;border:1.5px solid ${vcPago?'var(--verde)':'var(--border)'};background:${vcPago?'var(--verde-l)':'var(--bg)'};color:${vcPago?'var(--verde-d)':'var(--muted)'};cursor:pointer;font-family:Cabinet Grotesk,sans-serif">
+            ${vcPago?'Desmarcar':'✓ Pago'}
+          </button>
         </div>
       </div>`;
     });
