@@ -228,30 +228,34 @@ def verificar_token(token: str) -> dict | None:
 
 
 # ── Autenticação ──────────────────────────────────────────────────────
+def _check_password(stored: str, received: str) -> bool:
+    """Verifica senha: suporta hash-vs-hash e plaintext-vs-hash."""
+    if _is_hash(stored):
+        return stored == received or _sha256(received) == stored
+    else:
+        return stored == received or (_is_hash(received) and _sha256(stored) == received)
+
 def autenticar(email: str, password: str) -> dict | None:
     """
-    Suporta tanto senhas plaintext (usuários de env var) quanto
-    SHA-256 hasheadas (usuários registrados via API).
-    O frontend envia a senha já hasheada; env var users têm plaintext.
+    Verifica senha com prioridade para db_users (permite reset sobrescrever env var).
+    Suporta senhas plaintext (env var) e SHA-256 hasheadas (API).
     """
-    for u in get_users():
-        if u["email"].lower() == email.lower():
-            stored = u["password"]
-            if _is_hash(stored):
-                # Senha armazenada como hash — compara hash com hash
-                # Frontend envia a senha já hasheada pelo crypto.subtle
-                if stored == password:
-                    return u
-                # Caso extremo: frontend enviou plaintext — compara hash do plaintext
-                if _sha256(password) == stored:
-                    return u
-            else:
-                # Senha em plaintext (usuários de env var)
-                if stored == password:
-                    return u
-                # Frontend envia hash — compara SHA-256 do plaintext com o hash recebido
-                if _is_hash(password) and _sha256(stored) == password:
-                    return u
+    email = email.lower()
+    # db_users têm prioridade — assim o reset de senha sempre funciona
+    for u in _load_db_users():
+        if u["email"].lower() == email and _check_password(u["password"], password):
+            return u
+    # Fallback: env var users (apenas se não existe entrada em db_users)
+    db_emails = {u["email"].lower() for u in _load_db_users()}
+    raw = os.environ.get("USERS_JSON", "")
+    if raw:
+        try:
+            for u in json.loads(raw):
+                if u["email"].lower() == email and u["email"].lower() not in db_emails:
+                    if _check_password(u["password"], password):
+                        return u
+        except Exception:
+            pass
     return None
 
 
@@ -412,16 +416,16 @@ def registrar_rotas_auth(app, sheets_factory=None):
             return jsonify({"erro": "Email obrigatório"}), 400
         users = get_users()
         user  = next((u for u in users if u["email"].lower() == email), None)
-        if user:
-            token = secrets.token_urlsafe(32)
-            _RESET_TOKENS[token] = {"email": email, "expires": time.time() + _RESET_EXP}
-            base_url = _APP_URL or request.host_url.rstrip('/')
-            reset_url = f"{base_url}/?reset={token}"
-            sent = _enviar_email_reset(email, reset_url)
-            logger.info(f"Reset solicitado: {email} | email_enviado={sent}")
-            if not sent:
-                # Sem SMTP: retorna URL para o frontend exibir (dev/admin)
-                return jsonify({"ok": True, "reset_url": reset_url}), 200
+        if not user:
+            return jsonify({"erro": "Não existe uma conta cadastrada com este email"}), 404
+        token    = secrets.token_urlsafe(32)
+        _RESET_TOKENS[token] = {"email": email, "expires": time.time() + _RESET_EXP}
+        base_url  = _APP_URL or request.host_url.rstrip('/')
+        reset_url = f"{base_url}/?reset={token}"
+        sent = _enviar_email_reset(email, reset_url)
+        logger.info(f"Reset solicitado: {email} | email_enviado={sent}")
+        if not sent:
+            return jsonify({"ok": True, "reset_url": reset_url}), 200
         return jsonify({"ok": True}), 200
 
     @app.route("/api/reset-password", methods=["POST"])
@@ -445,6 +449,13 @@ def registrar_rotas_auth(app, sheets_factory=None):
                 u["password"] = pwd_hash
                 updated = True
                 break
+        if not updated:
+            # Usuário existe apenas no env var — adiciona ao db para sobrescrever
+            all_users = get_users()
+            original  = next((u for u in all_users if u["email"].lower() == email), None)
+            if original:
+                db_users.append({**original, "password": pwd_hash})
+                updated = True
         if updated:
             _save_db_users(db_users)
         del _RESET_TOKENS[token]

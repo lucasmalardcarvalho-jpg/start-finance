@@ -7591,11 +7591,10 @@ async function solicitarReset(){
     msg.style.display='block';
     if(d.ok){
       msg.style.color='#4ade80';
-      msg.textContent='✅ Se este email estiver cadastrado, você receberá o link em breve.';
+      msg.textContent='✅ Link de recuperação enviado!';
       btn.textContent='Link enviado!';
-      // Dev/test: se o servidor retornar a URL diretamente (sem SMTP configurado)
       if(d.reset_url){
-        msg.innerHTML='✅ Link gerado! <a href="'+d.reset_url+'" style="color:#60a5fa;text-decoration:underline">Clique aqui para redefinir</a>';
+        msg.innerHTML='✅ Link gerado! <a href="'+d.reset_url+'" style="color:#60a5fa;text-decoration:underline">Clique aqui para redefinir a senha</a>';
       }
     } else {
       msg.style.color='#f87171'; msg.textContent='❌ '+(d.erro||'Erro ao enviar');
