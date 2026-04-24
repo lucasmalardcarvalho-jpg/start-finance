@@ -1,8 +1,8 @@
 """
-START FINANCE — Web Server v4.0
-- Auth JWT multi-usuário
-- Todas as transações para filtro frontend
-- CRUD completo
+START FINANCE — Web Server v4.1
+- Auth JWT multi-usuário (todos os endpoints protegidos)
+- Headers de segurança HTTP
+- CORS restrito ao domínio configurado
 """
 
 import os, json, logging, threading, time
@@ -15,12 +15,35 @@ logger = logging.getLogger(__name__)
 app    = Flask(__name__)
 sheets = None
 
-# Habilita CORS
+# ── CORS e Headers de Segurança ──────────────────────────────────────
+_ALLOWED_ORIGINS = [o.strip() for o in os.environ.get(
+    "ALLOWED_ORIGINS",
+    "http://localhost:8080,http://127.0.0.1:8080"
+).split(",") if o.strip()]
+
 @app.after_request
-def add_cors(r):
-    r.headers["Access-Control-Allow-Origin"]  = "*"
+def add_security_headers(r):
+    # CORS — apenas origens permitidas (não wildcard)
+    origin = request.headers.get("Origin", "")
+    if origin in _ALLOWED_ORIGINS:
+        r.headers["Access-Control-Allow-Origin"]  = origin
+        r.headers["Vary"] = "Origin"
     r.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
     r.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS"
+
+    # Headers de segurança HTTP
+    r.headers["X-Content-Type-Options"]  = "nosniff"
+    r.headers["X-Frame-Options"]         = "DENY"
+    r.headers["Referrer-Policy"]         = "strict-origin-when-cross-origin"
+    # CSP básico — restringe execução de scripts externos
+    r.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "img-src 'self' data: https:; "
+        "connect-src 'self' https:;"
+    )
     return r
 
 @app.route("/", defaults={"path": ""}, methods=["OPTIONS"])
@@ -94,6 +117,7 @@ def dashboard():
 
 # ── GET todas as transações ─────────────────────────────────────────
 @app.route("/api/todas")
+@requer_auth
 def api_todas():
     try:
         if not sheets:
@@ -127,7 +151,6 @@ def api_todas():
                 if len(raw_row) > 14:
                     cartao_val = str(raw_row[14]).strip()
 
-            # Parcela atual (coluna J)
             try:
                 pa = int(float(str(col(row,"PARCELA","parcela_atual") or 0)))
             except:
@@ -145,8 +168,8 @@ def api_todas():
                 "localizacao":   str(col(row,"LOCALIZAÇÃO","LOCALIZACAO")).strip(),
                 "metodo":        str(col(row,"MÉTODO","METODO")).strip(),
                 "cartao":        cartao_val,
-                "parcela_atual": pa,   # coluna J
-                "parcelas":      pt,   # coluna K (total)
+                "parcela_atual": pa,
+                "parcelas":      pt,
                 "mes_ano":       str(col(row,"MÊS/ANO","MES/ANO")).strip(),
                 "emoji":         EMOJIS.get(cat,"📦"),
                 "cor":           CORES.get(cat,"#9CA3AF"),
@@ -164,6 +187,7 @@ def api_todas():
 
 # ── GET dados do mês ────────────────────────────────────────────────
 @app.route("/api/mes")
+@requer_auth
 def api_mes():
     try:
         mes = request.args.get("mes", get_mes_ano())
@@ -230,6 +254,7 @@ def api_mes():
 
 # ── POST nova transação ────────────────────────────────────────────
 @app.route("/api/transacao/nova", methods=["POST"])
+@requer_auth
 def nova_transacao():
     try:
         dados = request.json
@@ -243,6 +268,7 @@ def nova_transacao():
 
 # ── PUT editar ────────────────────────────────────────────────────
 @app.route("/api/transacao/<int:idx>", methods=["PUT"])
+@requer_auth
 def editar_transacao(idx):
     try:
         dados = request.json
@@ -278,6 +304,7 @@ def editar_transacao(idx):
 
 # ── DELETE ────────────────────────────────────────────────────────
 @app.route("/api/transacao/<int:idx>", methods=["DELETE"])
+@requer_auth
 def deletar_transacao(idx):
     try:
         linha = idx + 4
@@ -304,11 +331,13 @@ def pluggy_api_key():
         return _json.loads(res.read())["apiKey"]
 
 @app.route("/api/pluggy/status")
+@requer_auth
 def pluggy_status():
     configured = bool(PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET)
     return jsonify({"configured": configured})
 
 @app.route("/api/pluggy/token", methods=["POST"])
+@requer_auth
 def pluggy_connect_token():
     """Cria um Connect Token para o widget Pluggy."""
     if not (PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET):
@@ -331,6 +360,7 @@ def pluggy_connect_token():
         return jsonify({"erro": str(e)}), 500
 
 @app.route("/api/pluggy/sync/<item_id>", methods=["POST"])
+@requer_auth
 def pluggy_sync(item_id):
     """Busca transações de um item Pluggy e retorna para importação."""
     if not (PLUGGY_CLIENT_ID and PLUGGY_CLIENT_SECRET):
@@ -338,7 +368,6 @@ def pluggy_sync(item_id):
     try:
         import urllib.request, json as _json
         api_key = pluggy_api_key()
-        # Busca contas do item
         req = urllib.request.Request(
             f"{PLUGGY_API_BASE}/accounts?itemId={item_id}",
             headers={"X-API-KEY": api_key}
@@ -356,7 +385,6 @@ def pluggy_sync(item_id):
             with urllib.request.urlopen(req2, timeout=15) as res2:
                 txs = _json.loads(res2.read()).get("results", [])
             for t in txs:
-                # Normaliza para formato do sistema
                 from datetime import datetime as _dt
                 data_raw = t.get("date","")[:10]
                 try:
@@ -384,24 +412,23 @@ def pluggy_sync(item_id):
 
 
 # ── User Data Sync — armazena dados financeiros por usuário ──────
-# Permite sincronização entre dispositivos (desktop ↔ mobile)
 import os as _os
 
 _USER_DATA_DIR = _os.path.join(_os.path.dirname(__file__), 'userdata')
 _user_data_mem = {}  # cache em memória
 
 def _ud_path(user_id: str) -> str:
+    # Sanitiza user_id para prevenir path traversal
+    safe_id = "".join(c for c in user_id if c.isalnum() or c in "_-")
     _os.makedirs(_USER_DATA_DIR, exist_ok=True)
-    return _os.path.join(_USER_DATA_DIR, f"{user_id}.json")
+    return _os.path.join(_USER_DATA_DIR, f"{safe_id}.json")
 
 @app.route("/api/userdata", methods=["GET"])
 @requer_auth
 def get_userdata():
     user_id = request.user["sub"]
-    # Tenta memória primeiro
     if user_id in _user_data_mem:
         return jsonify(_user_data_mem[user_id])
-    # Tenta arquivo
     path = _ud_path(user_id)
     if _os.path.exists(path):
         try:
@@ -418,9 +445,7 @@ def get_userdata():
 def save_userdata():
     user_id = request.user["sub"]
     data = request.json or {}
-    # Guarda em memória (acesso rápido)
     _user_data_mem[user_id] = data
-    # Persiste em arquivo (sobrevive a restarts no mesmo volume)
     try:
         path = _ud_path(user_id)
         with open(path, 'w') as f:

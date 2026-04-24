@@ -4,14 +4,37 @@ Login multi-usuário com JWT.
 Usuários configurados via USERS_JSON (env) e/ou registrados via /api/register (arquivo persistente).
 """
 
-import os, json, hashlib, hmac, base64, time, logging, uuid
+import os, json, hashlib, hmac, base64, time, logging, uuid, re
+from collections import defaultdict
 from functools import wraps
 from flask import request, jsonify
 
 logger = logging.getLogger(__name__)
 
-JWT_SECRET = os.environ.get("JWT_SECRET", "start-finance-secret-2026")
-TOKEN_EXP   = 60 * 60 * 24 * 7  # 7 dias
+# JWT_SECRET é OBRIGATÓRIO em produção — sem fallback hardcoded
+JWT_SECRET = os.environ.get("JWT_SECRET", "")
+if not JWT_SECRET:
+    # Em desenvolvimento local, usa um segredo temporário com aviso
+    JWT_SECRET = "dev-only-" + hashlib.sha256(b"start-finance-dev").hexdigest()
+    logger.warning("⚠️  JWT_SECRET não configurado! Use variável de ambiente em produção.")
+TOKEN_EXP = 60 * 60 * 24 * 7  # 7 dias
+
+# ── Rate Limiting simples para login (sem dependência externa) ────────
+_login_attempts: dict = defaultdict(list)  # ip -> [timestamps]
+_LOGIN_MAX     = 10    # tentativas
+_LOGIN_WINDOW  = 300   # segundos (5 min)
+
+def _check_rate_limit(ip: str) -> bool:
+    """Retorna True se dentro do limite, False se bloqueado."""
+    now = time.time()
+    attempts = [t for t in _login_attempts[ip] if now - t < _LOGIN_WINDOW]
+    _login_attempts[ip] = attempts
+    if len(attempts) >= _LOGIN_MAX:
+        return False
+    _login_attempts[ip].append(now)
+    return True
+
+_EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 # ── Banco de usuários registrados (arquivo persistente) ───────────────
 _DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'users.json')
@@ -164,6 +187,11 @@ def registrar_rotas_auth(app, sheets_factory=None):
     @app.route("/api/login", methods=["POST"])
     def login():
         try:
+            # Rate limiting por IP
+            ip = request.headers.get("X-Forwarded-For", request.remote_addr or "").split(",")[0].strip()
+            if not _check_rate_limit(ip):
+                return jsonify({"erro": "Muitas tentativas. Aguarde 5 minutos."}), 429
+
             dados = request.json or {}
             email    = (dados.get("email", "") or "").strip().lower()
             password = (dados.get("password", "") or "").strip()
@@ -200,8 +228,12 @@ def registrar_rotas_auth(app, sheets_factory=None):
 
             if not nome or not email or not password:
                 return jsonify({"erro": "Nome, email e senha são obrigatórios"}), 400
+            if not _EMAIL_RE.match(email):
+                return jsonify({"erro": "Email inválido"}), 400
             if len(password) < 6 and not _is_hash(password):
                 return jsonify({"erro": "Senha deve ter pelo menos 6 caracteres"}), 400
+            # Sanitiza nome (máx 80 chars, sem HTML)
+            nome = nome[:80].replace("<","").replace(">","").replace("&","").strip()
 
             # Verifica se email já existe (env + arquivo)
             all_users = get_users()

@@ -2732,10 +2732,13 @@ let _syncInterval = null;
 let _lastSyncCount = -1;
 let _lastUdTs = 0; // timestamp do último userdata do servidor
 
+let _silentSyncRunning = false;
 async function silentSync(){
+  if(_silentSyncRunning) return; // evita execuções paralelas
+  _silentSyncRunning = true;
   try{
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
-    if(!isJWT || !AUTH_USER) return;
+    if(!isJWT || !AUTH_USER){ _silentSyncRunning=false; return; }
 
     // 1) Checa se userdata do servidor foi atualizado por outro dispositivo
     const tsRes = await Promise.race([
@@ -2784,6 +2787,7 @@ async function silentSync(){
     }
     _lastSyncCount = TODAS_TX.length;
   }catch(e){ /* silently ignore */ }
+  finally{ _silentSyncRunning = false; }
 }
 
 let _syncReady = false; // flag: não mostra toast nos primeiros syncs (carregamento inicial)
@@ -2800,6 +2804,7 @@ function startAutoSync(){
 function stopAutoSync(){
   if(_syncInterval){ clearInterval(_syncInterval); _syncInterval = null; }
   _syncReady = false;
+  _silentSyncRunning = false;
   _lastUdTs = 0;
   _lastSyncCount = -1;
 }
@@ -7037,12 +7042,12 @@ function seedUsers(){
   // Nenhum usuário padrão — segurança: não armazenar senhas hardcoded
 }
 
-// ── Perfil demo "Hellennn" com dados mockados do ano inteiro ──────────
-function seedHellennn(){
-  const DID='hellennn_demo';
+// Seed functions removed — production build
+
+function _noop_seed_1(){const DID='__removed__';
   const users=getUsers();
   if(users.find(u=>u.id===DID)) return;
-  users.push({id:DID,name:'Hellennn',email:'hellennn@pensefinances.com',password:'hellen123',avatar:'👩‍💼',color:'#EC4899',isLocal:true,createdAt:'2026-01-01T00:00:00.000Z'});
+  /* removed */
   saveUsers(users);
   const ns=k=>`sf_${DID}_${k}`;
   const E={Alimentação:"🍽️",Transporte:"🚗",Contas:"⚡",Lazer:"🎮",Saúde:"❤️",Educação:"📚",Moradia:"🏠",Beleza:"💅",Vestuário:"👗",Pet:"🐾",Tecnologia:"📱",Presentes:"🎁",Veículo:"🚘",Impostos:"🧾",Assinaturas:"📺",Salário:"💰",Freelance:"💼",Investimento:"📈",Outros:"📦"};
@@ -7170,12 +7175,10 @@ function seedHellennn(){
   }));
 }
 
-// ── Perfil demo "Nicolas" — Gerente de TI, dados completos 2026 ──
-function seedNicolas(){
-  const DID='nicolas_demo';
+function _noop_seed_2(){const DID='__removed__';
   const users=getUsers();
   if(users.find(u=>u.id===DID)) return;
-  users.push({id:DID,name:'Nicolas',email:'nicolas@pensefinances.com',password:'nicolas123',avatar:'👨‍💻',color:'#3B6FF0',isLocal:true,createdAt:'2026-01-01T00:00:00.000Z'});
+  /* removed */
   saveUsers(users);
   const ns=k=>`sf_${DID}_${k}`;
   const E={Alimentação:"🍽️",Transporte:"🚗",Contas:"⚡",Lazer:"🎮",Saúde:"❤️",Educação:"📚",Moradia:"🏠",Beleza:"💈",Vestuário:"👕",Pet:"🐾",Tecnologia:"📱",Presentes:"🎁",Veículo:"🚘",Impostos:"🧾",Assinaturas:"📺",Salário:"💰",Freelance:"💼",Investimento:"📈",Outros:"📦"};
@@ -7576,12 +7579,14 @@ function carregarUsuariosLogin(){
   }
 
   if(label) label.style.display = '';
+  const _safeColor = c => /^#[0-9a-fA-F]{6}$/.test(c||'') ? c : null;
   el.innerHTML = users.map(u => {
-    const avatar = u.avatar || '🙂';
+    const avatar = /^\p{Emoji}/u.test(u.avatar||'') ? u.avatar : '🙂';
     const nome   = esc(u.name || u.email);
     const email  = u.email.replace(/'/g,"\\'");
-    const corBg  = u.color ? u.color+'22' : 'rgba(255,255,255,.07)';
-    const corBd  = u.color ? u.color+'55' : 'rgba(255,255,255,.12)';
+    const cor    = _safeColor(u.color);
+    const corBg  = cor ? cor+'22' : 'rgba(255,255,255,.07)';
+    const corBd  = cor ? cor+'55' : 'rgba(255,255,255,.12)';
     return `<button class="login-user-btn" onclick="loginRapido('${email}')"
       style="background:${corBg};border-color:${corBd}">
       <span class="lu-av">${avatar}</span>
@@ -8376,10 +8381,11 @@ document.addEventListener('click', e=>{
 });
 
 function confirmarLogout(){
-  showConfirm(`Deseja sair da conta de <strong>${AUTH_USER?.name||'usuário'}</strong>?`, logout, '🚪', 'Sair', 'bd');
+  showConfirm(`Deseja sair da conta de <strong>${esc(AUTH_USER?.name||'usuário')}</strong>?`, logout, '🚪', 'Sair', 'bd');
 }
 function logout(){
   stopAutoSync(); // Para o polling antes de limpar estado
+  if(_reloadInterval){ clearInterval(_reloadInterval); _reloadInterval=null; }
   AUTH_TOKEN=null; AUTH_USER=null;
   ls_save('sf_token',''); ls_save('sf_user','');
   // Limpa TODO o estado financeiro em memória para não vazar dados entre sessões
@@ -9395,12 +9401,15 @@ function deletarCatCustomEdit(){
 
 // editarOrcamentoTotal definido acima (usa modal customizado)
 
+let _reloadInterval = null;
 function init(){
   // Dados já carregados em carregarDadosUsuario() antes de init()
   atualizarSelectCats();
   atualizaMesUI();
   reload();
-  setInterval(()=>reload(),180000);
+  // Previne múltiplos intervalos ao fazer login/logout repetido
+  if(_reloadInterval) clearInterval(_reloadInterval);
+  _reloadInterval = setInterval(()=>reload(),180000);
   setTimeout(()=>{document.getElementById('loading').style.opacity='0';setTimeout(()=>document.getElementById('loading').style.display='none',500)},2500);
 }
 
