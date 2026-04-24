@@ -4,12 +4,24 @@ Login multi-usuário com JWT.
 Usuários configurados via USERS_JSON (env) e/ou registrados via /api/register (arquivo persistente).
 """
 
-import os, json, hashlib, hmac, base64, time, logging, uuid, re
+import os, json, hashlib, hmac, base64, time, logging, uuid, re, threading
 from collections import defaultdict
 from functools import wraps
 from flask import request, jsonify
+import httpx
 
 logger = logging.getLogger(__name__)
+
+# ── Supabase (opcional) — persistent storage ──────────────────────────
+_SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
+_SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "")
+
+def _sb_headers() -> dict:
+    return {
+        "apikey":        _SUPABASE_KEY,
+        "Authorization": f"Bearer {_SUPABASE_KEY}",
+        "Content-Type":  "application/json",
+    }
 
 # JWT_SECRET é OBRIGATÓRIO em produção — sem fallback hardcoded
 JWT_SECRET = os.environ.get("JWT_SECRET", "")
@@ -40,7 +52,27 @@ _EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 _DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'users.json')
 
 def _load_db_users() -> list:
-    """Carrega usuários registrados do arquivo persistente."""
+    """Carrega usuários registrados: tenta Supabase primeiro, cai em arquivo."""
+    if _SUPABASE_URL and _SUPABASE_KEY:
+        try:
+            url = f"{_SUPABASE_URL}/rest/v1/sf_users?select=*"
+            resp = httpx.get(url, headers=_sb_headers(), timeout=5)
+            if resp.status_code == 200:
+                rows = resp.json()
+                # Normaliza campo created_at -> createdAt para compatibilidade interna
+                users = []
+                for r in rows:
+                    u = dict(r)
+                    if "created_at" in u and "createdAt" not in u:
+                        u["createdAt"] = u.pop("created_at")
+                    users.append(u)
+                return users
+            else:
+                logger.warning(f"Supabase _load_db_users HTTP {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"Supabase _load_db_users falhou, usando arquivo: {e}")
+
+    # Fallback: arquivo local
     try:
         os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
         if os.path.exists(_DB_PATH):
@@ -51,13 +83,34 @@ def _load_db_users() -> list:
     return []
 
 def _save_db_users(users: list) -> None:
-    """Persiste a lista de usuários registrados."""
+    """Persiste usuários em arquivo (síncrono) e, em background, no Supabase."""
+    # 1. Salva no arquivo local (rápido, síncrono)
     try:
         os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
         with open(_DB_PATH, 'w', encoding='utf-8') as f:
             json.dump(users, f, ensure_ascii=False, indent=2)
     except Exception as e:
         logger.error(f"Erro ao salvar users.json: {e}")
+
+    # 2. Upsert no Supabase em background (não bloqueia o request)
+    if _SUPABASE_URL and _SUPABASE_KEY:
+        def _upsert():
+            try:
+                url = f"{_SUPABASE_URL}/rest/v1/sf_users"
+                headers = {**_sb_headers(), "Prefer": "resolution=merge-duplicates"}
+                # Mapeia createdAt -> created_at para o schema Supabase
+                rows = []
+                for u in users:
+                    row = dict(u)
+                    if "createdAt" in row:
+                        row["created_at"] = row.pop("createdAt")
+                    rows.append(row)
+                resp = httpx.post(url, headers=headers, json=rows, timeout=10)
+                if resp.status_code not in (200, 201):
+                    logger.warning(f"Supabase _save_db_users HTTP {resp.status_code}: {resp.text[:200]}")
+            except Exception as e:
+                logger.warning(f"Supabase _save_db_users falhou: {e}")
+        threading.Thread(target=_upsert, daemon=True).start()
 
 
 # ── Usuários ──────────────────────────────────────────────────────────

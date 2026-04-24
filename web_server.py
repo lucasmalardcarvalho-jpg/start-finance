@@ -8,6 +8,7 @@ START FINANCE — Web Server v4.1
 import os, json, logging, threading, time
 from datetime import datetime
 from flask import Flask, jsonify, request, send_file
+import httpx
 from sheets_manager import SheetsManager, get_mes_ano, MESES_PT, parsear_valor
 from auth import registrar_rotas_auth, requer_auth
 
@@ -415,7 +416,19 @@ def pluggy_sync(item_id):
 import os as _os
 
 _USER_DATA_DIR = _os.path.join(_os.path.dirname(__file__), 'userdata')
-_user_data_mem = {}  # cache em memória
+_user_data_mem = {}  # cache em memória: {user_id: data}
+_user_data_ts  = {}  # cache de timestamps: {user_id: int (ms)}
+
+# Supabase (opcional) — lido aqui para não depender de auth.py
+_SB_URL = os.environ.get("SUPABASE_URL", "")
+_SB_KEY = os.environ.get("SUPABASE_KEY", "")
+
+def _sb_ud_headers() -> dict:
+    return {
+        "apikey":        _SB_KEY,
+        "Authorization": f"Bearer {_SB_KEY}",
+        "Content-Type":  "application/json",
+    }
 
 def _ud_path(user_id: str) -> str:
     # Sanitiza user_id para prevenir path traversal
@@ -427,8 +440,30 @@ def _ud_path(user_id: str) -> str:
 @requer_auth
 def get_userdata():
     user_id = request.user["sub"]
+
+    # 1. Cache em memória (mais rápido)
     if user_id in _user_data_mem:
         return jsonify(_user_data_mem[user_id])
+
+    # 2. Tenta Supabase
+    if _SB_URL and _SB_KEY:
+        try:
+            url = f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{user_id}&select=data,updated_at"
+            resp = httpx.get(url, headers=_sb_ud_headers(), timeout=5)
+            if resp.status_code == 200:
+                rows = resp.json()
+                if rows:
+                    data = rows[0].get("data", {})
+                    ts   = rows[0].get("updated_at", 0)
+                    _user_data_mem[user_id] = data
+                    _user_data_ts[user_id]  = int(ts)
+                    return jsonify(data)
+            else:
+                logger.warning(f"Supabase get_userdata HTTP {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"Supabase get_userdata falhou, usando arquivo: {e}")
+
+    # 3. Fallback: arquivo local
     path = _ud_path(user_id)
     if _os.path.exists(path):
         try:
@@ -445,13 +480,34 @@ def get_userdata():
 def save_userdata():
     user_id = request.user["sub"]
     data = request.json or {}
+    now_ms = int(time.time() * 1000)
+
+    # 1. Atualiza cache em memória
     _user_data_mem[user_id] = data
+    _user_data_ts[user_id]  = now_ms
+
+    # 2. Salva em arquivo local (síncrono)
     try:
         path = _ud_path(user_id)
         with open(path, 'w') as f:
             json.dump(data, f)
     except Exception as e:
         logger.warning(f"userdata write error: {e}")
+
+    # 3. Upsert no Supabase em background
+    if _SB_URL and _SB_KEY:
+        def _upsert():
+            try:
+                url = f"{_SB_URL}/rest/v1/sf_userdata"
+                headers = {**_sb_ud_headers(), "Prefer": "resolution=merge-duplicates"}
+                payload = {"user_id": user_id, "data": data, "updated_at": now_ms}
+                resp = httpx.post(url, headers=headers, json=payload, timeout=10)
+                if resp.status_code not in (200, 201):
+                    logger.warning(f"Supabase save_userdata HTTP {resp.status_code}: {resp.text[:200]}")
+            except Exception as e:
+                logger.warning(f"Supabase save_userdata falhou: {e}")
+        threading.Thread(target=_upsert, daemon=True).start()
+
     return jsonify({"ok": True})
 
 @app.route("/api/userdata/ts", methods=["GET"])
@@ -459,12 +515,32 @@ def save_userdata():
 def get_userdata_ts():
     """Retorna apenas o timestamp da última atualização (leve, para polling)."""
     user_id = request.user["sub"]
+
+    # 1. Cache de timestamp em memória
+    if user_id in _user_data_ts:
+        return jsonify({"ts": _user_data_ts[user_id], "user_id": user_id})
+
+    # 2. Tenta Supabase (só o campo updated_at — leve)
+    if _SB_URL and _SB_KEY:
+        try:
+            url = f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{user_id}&select=updated_at"
+            resp = httpx.get(url, headers=_sb_ud_headers(), timeout=5)
+            if resp.status_code == 200:
+                rows = resp.json()
+                if rows:
+                    ts = int(rows[0].get("updated_at", 0))
+                    _user_data_ts[user_id] = ts
+                    return jsonify({"ts": ts, "user_id": user_id})
+            else:
+                logger.warning(f"Supabase get_userdata_ts HTTP {resp.status_code}: {resp.text[:200]}")
+        except Exception as e:
+            logger.warning(f"Supabase get_userdata_ts falhou, usando arquivo: {e}")
+
+    # 3. Fallback: mtime do arquivo local
     path = _ud_path(user_id)
     ts = 0
     if _os.path.exists(path):
         ts = int(_os.path.getmtime(path) * 1000)
-    elif user_id in _user_data_mem:
-        ts = int(time.time() * 1000)
     return jsonify({"ts": ts, "user_id": user_id})
 
 
