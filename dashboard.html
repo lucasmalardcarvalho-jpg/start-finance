@@ -2751,32 +2751,35 @@ async function silentSync(){
     }
 
     // 2) Sync de transações via Google Sheets
-    const res = await Promise.race([
-      fetch('/api/todas', {headers: apiHeaders()}),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-    ]);
-    if(!res.ok) return;
-    const d = await res.json();
-    if(d.erro) return;
-    if(d.user_id && d.user_id !== AUTH_USER?.id) return;
-    const txs = d.transacoes||[];
-    if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) return;
+    // Só importa do Sheets se o usuário JÁ tem transações locais salvas neste dispositivo.
+    // Isso evita que novos usuários ou outros perfis recebam dados de outro usuário do Sheets.
     const _localTxs = lsUser('txs', []);
-    // Aplica txs do Sheets se diferente do local
-    const txsChanged = txs.length !== _localTxs.length;
-    if(txs.length > 0 && (txsChanged || _lastSyncCount === -1)){
-      TODAS_TX = txs;
-      salvarTxsLocal();
-      HISTORICO = buildHistoricoLocal();
-      calcularMes();
-      if(_syncReady && txsChanged){
-        renderDash();
-        const cur2 = document.querySelector('.page.active')?.id?.replace('page-','');
-        if(cur2 && cur2 !== 'dashboard'){
-          const fns2={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
-          if(fns2[cur2]) fns2[cur2]();
+    if(_localTxs.length > 0){
+      const res = await Promise.race([
+        fetch('/api/todas', {headers: apiHeaders()}),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
+      ]);
+      if(res.ok){
+        const d = await res.json();
+        if(!d.erro){
+          const txs = d.transacoes||[];
+          const txsChanged = txs.length !== _localTxs.length;
+          if(txs.length > 0 && txsChanged){
+            TODAS_TX = txs;
+            salvarTxsLocal();
+            HISTORICO = buildHistoricoLocal();
+            calcularMes();
+            if(_syncReady){
+              renderDash();
+              const cur2 = document.querySelector('.page.active')?.id?.replace('page-','');
+              if(cur2 && cur2 !== 'dashboard'){
+                const fns2={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+                if(fns2[cur2]) fns2[cur2]();
+              }
+              toast('🔄 Transações atualizadas!','info');
+            }
+          }
         }
-        toast('🔄 Transações atualizadas!','info');
       }
     }
     _lastSyncCount = TODAS_TX.length;
@@ -7558,35 +7561,81 @@ function selCorLogin(el, cor){
   document.getElementById('regCor').value = cor;
 }
 
-// ── Acesso rápido (mostra usuários cadastrados) ──
+// ── Acesso rápido (mostra usuários deste dispositivo) ──
 function carregarUsuariosLogin(){
-  // Acesso rápido desativado — cada usuário deve fazer login com email+senha
-  // Isso garante que perfis de outros usuários não apareçam na tela de login
-  const el = document.getElementById('loginUserBtns');
-  if(el) el.innerHTML = '';
+  const el    = document.getElementById('loginUserBtns');
+  const label = document.querySelector('#formLogin > div:first-child'); // "Acesso rápido"
+  if(!el) return;
+
+  const users = getUsers().filter(u => !['hellennn_demo','nicolas_demo'].includes(u.id));
+
+  if(!users.length){
+    el.innerHTML = '';
+    if(label) label.style.display = 'none';
+    return;
+  }
+
+  if(label) label.style.display = '';
+  el.innerHTML = users.map(u => {
+    const avatar = u.avatar || '🙂';
+    const nome   = esc(u.name || u.email);
+    const email  = u.email.replace(/'/g,"\\'");
+    const corBg  = u.color ? u.color+'22' : 'rgba(255,255,255,.07)';
+    const corBd  = u.color ? u.color+'55' : 'rgba(255,255,255,.12)';
+    return `<button class="login-user-btn" onclick="loginRapido('${email}')"
+      style="background:${corBg};border-color:${corBd}">
+      <span class="lu-av">${avatar}</span>
+      <span class="lu-nm">${nome}</span>
+    </button>`;
+  }).join('');
+}
+
+// Verifica se um JWT ainda está dentro do prazo de validade (client-side)
+function isJWTValid(token){
+  try{
+    if(!token || token.split('.').length !== 3) return false;
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+    return payload.exp && payload.exp > Date.now()/1000;
+  }catch{ return false; }
 }
 
 function loginRapido(email){
   const users = getUsers();
-  const user = users.find(u => u.email === email);
-  if(user){
-    AUTH_USER = user;
-    if(user.isLocal){
-      // Usuário local: token é o próprio ID (sem acesso à API)
-      AUTH_TOKEN = user.id;
-    } else {
-      // Usuário de servidor: restaura JWT salvo para manter acesso à API
-      AUTH_TOKEN = ls_get('sf_jwt_' + user.id) || user.id;
-    }
+  const user  = users.find(u => u.email === email);
+
+  if(!user){
+    // Usuário não está mais no cache local — preenche email e pede senha
+    mostrarTab('login');
+    document.getElementById('loginEmail').value = email;
+    setTimeout(()=>document.getElementById('loginSenha').focus(), 50);
+    return;
+  }
+
+  if(user.isLocal){
+    // Conta offline — entra direto (sem JWT)
+    AUTH_USER  = user;
+    AUTH_TOKEN = user.id;
     ls_save('sf_token', AUTH_TOKEN);
     ls_save('sf_user', JSON.stringify(AUTH_USER));
     entrarNoSistema();
     return;
   }
-  // Usuário de servidor sem cache local — preenche email e pede senha
-  document.getElementById('loginEmail').value = email;
-  document.getElementById('loginSenha').value = '';
-  document.getElementById('loginSenha').focus();
+
+  // Conta de servidor — tenta usar JWT salvo
+  const jwt = ls_get('sf_jwt_' + user.id) || '';
+  if(isJWTValid(jwt)){
+    AUTH_USER  = user;
+    AUTH_TOKEN = jwt;
+    ls_save('sf_token', jwt);
+    ls_save('sf_user', JSON.stringify(AUTH_USER));
+    entrarNoSistema();
+  } else {
+    // JWT expirado ou ausente — preenche email e pede senha
+    mostrarTab('login');
+    document.getElementById('loginEmail').value = email;
+    setTimeout(()=>document.getElementById('loginSenha').focus(), 50);
+    toast('🔒 Sessão expirada, entre com sua senha','info');
+  }
 }
 
 // ── Criar conta ────────────────────────────────
