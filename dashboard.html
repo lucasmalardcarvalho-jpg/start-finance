@@ -972,6 +972,20 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div></div>
 
+<!-- Modal Vencimentos do Dia -->
+<div class="ov" id="ovVencDia">
+<div class="modal" style="max-width:460px">
+  <div class="mh">
+    <div class="mt" id="vdTitle">📅 Vencimentos do dia</div>
+    <button class="mc" onclick="CM('ovVencDia')">✕</button>
+  </div>
+  <div id="vdBody" style="padding:10px 18px 4px;max-height:72vh;overflow-y:auto"></div>
+  <div class="mf" style="padding-top:8px">
+    <button class="btn bp" onclick="CM('ovVencDia')">Fechar</button>
+  </div>
+</div>
+</div>
+
 <!-- Modal Recorrência -->
 <div class="ov" id="ovRecorrencia">
 <div class="modal" style="max-width:420px;text-align:center">
@@ -8692,17 +8706,14 @@ function renderVencimentos(){
         const vKey=`${item.tipo}_${item.nome}_${item.venc.getFullYear()}_${item.venc.getMonth()}`;
         const vPago=!!(VCAL_PAGOS[vKey]);
         return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);${vPago?'opacity:.55':''}">
-          <div style="width:36px;height:36px;border-radius:10px;background:${bgUrgency};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${item.emoji}</div>
+          <div style="width:36px;height:36px;border-radius:10px;background:${vPago?'var(--verde-l)':bgUrgency};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${vPago?'✅':item.emoji}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:13px;font-weight:700;${vPago?'text-decoration:line-through':''}">${esc(item.nome)}</div>
+            <div style="font-size:13px;font-weight:700;${vPago?'text-decoration:line-through;color:var(--muted)':''}">${esc(item.nome)}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${item.venc.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div>
           </div>
-          <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-            <div style="font-size:14px;font-weight:800;color:${vPago?'var(--verde)':'var(--verm)'}">${vPago?'✅ Pago':fmt(item.valor)}</div>
-            <button onclick="toggleVencPago('${vKey}',this.closest('[data-venc-card]'))"
-              style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:100px;border:1.5px solid ${vPago?'var(--verde)':'var(--border)'};background:${vPago?'var(--verde-l)':'var(--bg)'};color:${vPago?'var(--verde-d)':'var(--muted)'};cursor:pointer;font-family:Cabinet Grotesk,sans-serif">
-              ${vPago?'Desmarcar':'Marcar pago'}
-            </button>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:14px;font-weight:800;color:${vPago?'var(--verde)':'var(--verm)'}">${vPago?'Pago':fmt(item.valor)}</div>
+            <div style="font-size:10px;font-weight:800;color:${vPago?'var(--verde)':urgency};text-transform:uppercase;letter-spacing:.04em">${vPago?'—':label}</div>
           </div>
         </div>`;
       }).join('')}
@@ -8830,22 +8841,27 @@ function renderVencimentosCal(){
     const cor=urgMax?COR[urgMax]:'';
     const totalDia=vens.reduce((s,v)=>s+(parseFloat(v.valor)||0),0);
 
+    const todosPagos = vens.length > 0 && vens.every(v=>{
+      const k=`${v.tipo}_${v.nome}_${ano}_${mes}`;
+      return !!VCAL_PAGOS[k];
+    });
     if(isHoje){
       html+=`<div onclick="${vens.length?`vcalSelDia(${d},${ano},${mes})`:''}"
         style="aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-          background:var(--azul);color:#fff;font-weight:900;font-size:12px;
-          border:2px solid var(--azul);cursor:${vens.length?'pointer':'default'};box-shadow:0 2px 6px var(--azul)44">
+          background:${todosPagos?'var(--verde)':'var(--azul)'};color:#fff;font-weight:900;font-size:12px;
+          border:2px solid ${todosPagos?'var(--verde)':'var(--azul)'};cursor:${vens.length?'pointer':'default'};box-shadow:0 2px 6px ${todosPagos?'var(--verde)':'var(--azul)'}44">
         ${d}
-        ${vens.length?`<div style="font-size:7px;font-weight:700;margin-top:1px;opacity:.9">${vens.length}×</div>`:''}
+        ${vens.length?`<div style="font-size:7px;font-weight:700;margin-top:1px;opacity:.9">${todosPagos?'✓':vens.length+'×'}</div>`:''}
       </div>`;
     } else if(urgMax){
+      const corCel = todosPagos ? 'var(--verde)' : cor;
       html+=`<div onclick="vcalSelDia(${d},${ano},${mes})"
         style="aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-          background:${cor}15;color:${cor};font-weight:700;font-size:11px;
-          border:1.5px solid ${cor}44;cursor:pointer;transition:all .15s"
-        onmouseover="this.style.background='${cor}28'" onmouseout="this.style.background='${cor}15'">
+          background:${todosPagos?'#D1FAE5':cor+'15'};color:${corCel};font-weight:700;font-size:11px;
+          border:1.5px solid ${corCel}44;cursor:pointer;transition:all .15s"
+        onmouseover="this.style.opacity='.8'" onmouseout="this.style.opacity='1'">
         ${d}
-        <div style="font-size:7px;margin-top:1px;font-weight:800">${vens.length>1?vens.length+'×':'●'}</div>
+        <div style="font-size:7px;margin-top:1px;font-weight:800">${todosPagos?'✓':vens.length>1?vens.length+'×':'●'}</div>
       </div>`;
     } else {
       html+=`<div style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;
@@ -8888,18 +8904,15 @@ function renderVencimentosCal(){
       const nomeClean=esc(it.nome.replace(/^[^ ]+ /,''));
       const vcKey=`${it.tipo}_${it.nome}_${ano}_${mes}`;
       const vcPago=!!(VCAL_PAGOS[vcKey]);
-      html2+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;margin-bottom:6px;border-left:3px solid ${vcPago?'var(--verde)':COR[it.urgencia]||'#3B6FF0'};background:var(--card);${vcPago?'opacity:.6':''}">
-        <div style="width:36px;height:36px;border-radius:9px;background:${COR[it.urgencia]||'#3B6FF0'}18;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${emoji}</div>
+      html2+=`<div onclick="vcalSelDia(${it.dia},${ano},${mes})" style="display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;margin-bottom:6px;border-left:3px solid ${vcPago?'var(--verde)':COR[it.urgencia]||'#3B6FF0'};background:var(--card);${vcPago?'opacity:.6':''}cursor:pointer" title="Clique para ver detalhes e marcar como pago">
+        <div style="width:36px;height:36px;border-radius:9px;background:${vcPago?'var(--verde-l)':COR[it.urgencia]||'#3B6FF0'}18;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0">${vcPago?'✅':emoji}</div>
         <div style="flex:1;min-width:0">
           <div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;${vcPago?'text-decoration:line-through':''}">${nomeClean}${it.debitoAuto?'<span style="font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:100px;margin-left:5px">🔄 Auto</span>':''}</div>
           <div style="font-size:10px;color:var(--muted);margin-top:1px">Dia <strong>${it.dia}</strong> · ${LABELTIPO[it.tipo]||it.tipo}</div>
         </div>
-        <div style="text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        <div style="text-align:right;flex-shrink:0">
           <div style="font-size:13px;font-weight:800;color:${vcPago?'var(--verde)':'var(--verm)'}">${vcPago?'✅ Pago':it.valor>0?fmt(it.valor):'—'}</div>
-          <button onclick="toggleVencPago('${vcKey}')"
-            style="font-size:9px;font-weight:800;padding:2px 9px;border-radius:100px;border:1.5px solid ${vcPago?'var(--verde)':'var(--border)'};background:${vcPago?'var(--verde-l)':'var(--bg)'};color:${vcPago?'var(--verde-d)':'var(--muted)'};cursor:pointer;font-family:Cabinet Grotesk,sans-serif">
-            ${vcPago?'Desmarcar':'✓ Pago'}
-          </button>
+          <div style="font-size:9px;color:var(--muted);margin-top:2px">${vcPago?'pago':'toque →'}</div>
         </div>
       </div>`;
     });
@@ -8908,38 +8921,69 @@ function renderVencimentosCal(){
 }
 
 function vcalSelDia(dia, ano, mes){
+  const el=document.getElementById('vdTitle');
+  if(el) el.textContent=`📅 ${String(dia).padStart(2,'0')} de ${MESES_NM[mes]} ${ano}`;
+  renderVcalDia(dia,ano,mes);
+  OM('ovVencDia');
+}
+
+function renderVcalDia(dia, ano, mes){
+  const el=document.getElementById('vdBody');
+  if(!el) return;
   const items=coletarVencimentos(ano,mes).filter(i=>i.dia===dia);
-  if(!items.length) return;
+  if(!items.length){ el.innerHTML=''; return; }
+
   const EMOJITIPO={cartao:'💳',fixa:'📌',divida:'⛓️'};
   const LABELTIPO={cartao:'Cartão de crédito',fixa:'Despesa fixa',divida:'Parcela de dívida'};
   const COR={critico:'#EF4444',atencao:'#F59E0B',normal:'#3B6FF0'};
-  const diasTxtFn=d=>d<0?`${Math.abs(d)} dias atrasado`:d===0?'Vence hoje!':d===1?'Amanhã':`${d} dias`;
+  const totalDia=items.reduce((s,i)=>s+(parseFloat(i.valor)||0),0);
+  const todosPagos=items.every(it=>VCAL_PAGOS[`${it.tipo}_${it.nome}_${ano}_${mes}`]);
 
-  const cards=items.map(it=>{
+  let html='';
+  // Cabeçalho resumo
+  if(items.length>1){
+    html+=`<div style="display:flex;justify-content:space-between;align-items:center;background:${todosPagos?'var(--verde-l)':'var(--bg)'};border-radius:var(--r-sm);padding:10px 14px;margin-bottom:12px">
+      <span style="font-size:11px;font-weight:700;color:var(--txt2)">${items.length} vencimentos${todosPagos?' · todos pagos':''}</span>
+      <span style="font-size:15px;font-weight:900;color:${todosPagos?'var(--verde)':'var(--verm)'}">Total: ${fmt(totalDia)}</span>
+    </div>`;
+  }
+
+  items.forEach(it=>{
+    const key=`${it.tipo}_${it.nome}_${ano}_${mes}`;
+    const pago=!!VCAL_PAGOS[key];
     const cor=COR[it.urgencia]||'#3B6FF0';
-    const diasTxt=diasTxtFn(it.diasAte);
     const nomeClean=esc(it.nome.replace(/^[^ ]+ /,''));
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--bg);border-left:3px solid ${cor};margin-bottom:8px">
-      <div style="width:40px;height:40px;border-radius:10px;background:${cor}18;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${EMOJITIPO[it.tipo]||'📋'}</div>
+    const diasTxt=it.diasAte<0?`${Math.abs(it.diasAte)} dias atrasado`:it.diasAte===0?'Vence hoje!':it.diasAte===1?'Amanhã':`${it.diasAte} dias`;
+    html+=`<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;background:var(--bg);border-left:4px solid ${pago?'var(--verde)':cor};margin-bottom:8px;transition:all .2s;${pago?'opacity:.65':''}">
+      <div style="width:42px;height:42px;border-radius:10px;background:${pago?'#D1FAE5':cor+'18'};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${pago?'✅':EMOJITIPO[it.tipo]||'📋'}</div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:13px;font-weight:700">${nomeClean}</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:2px">${LABELTIPO[it.tipo]||it.tipo}${it.debitoAuto?' · 🔄 Débito automático':''}</div>
+        <div style="font-size:13px;font-weight:700;${pago?'text-decoration:line-through;color:var(--muted)':''}">${nomeClean}${it.debitoAuto?'<span style="font-size:9px;font-weight:700;background:#D1FAE5;color:#065F46;padding:1px 5px;border-radius:100px;margin-left:5px">🔄 Auto</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">${LABELTIPO[it.tipo]||it.tipo}</div>
+        <div style="font-size:10px;font-weight:700;color:${pago?'var(--verde)':cor};margin-top:2px">${pago?'✅ Pago':diasTxt}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:14px;font-weight:900;color:${cor}">${it.valor>0?fmt(it.valor):'—'}</div>
-        <div style="font-size:10px;font-weight:700;color:${cor};margin-top:2px">${diasTxt}</div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0">
+        <div style="font-size:16px;font-weight:900;color:${pago?'var(--verde)':cor}">${it.valor>0?fmt(it.valor):'—'}</div>
+        <button onclick="vcalPagarToggle('${key.replace(/'/g,"\\'")}',${dia},${ano},${mes})"
+          style="font-size:10px;font-weight:800;padding:6px 16px;border-radius:100px;border:2px solid ${pago?'var(--verde)':'var(--azul)'};background:${pago?'var(--verde)':'var(--azul)'};color:#fff;cursor:pointer;font-family:Cabinet Grotesk,sans-serif;white-space:nowrap;transition:all .15s">
+          ${pago?'↩ Desfazer':'✓ Marcar pago'}
+        </button>
       </div>
     </div>`;
-  }).join('');
+  });
+  el.innerHTML=html;
+}
 
-  const totalDia=items.reduce((s,i)=>s+(parseFloat(i.valor)||0),0);
-  const html=`<div style="text-align:center;margin-bottom:14px">
-    <div style="font-size:28px;font-weight:900;color:var(--azul)">${dia}</div>
-    <div style="font-size:13px;font-weight:600;color:var(--muted)">${MESES_NM[mes]} ${ano}</div>
-    ${items.length>1?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${items.length} vencimentos · Total: <strong style="color:var(--verm)">${fmt(totalDia)}</strong></div>`:''}
-  </div>
-  ${cards}`;
-  showConfirm(html,()=>{}, '📅','Fechar','bp');
+function vcalPagarToggle(key, dia, ano, mes){
+  if(VCAL_PAGOS[key]) delete VCAL_PAGOS[key];
+  else VCAL_PAGOS[key]=true;
+  saveUser('vcal_pagos', VCAL_PAGOS);
+  const msg=VCAL_PAGOS[key]?'✅ Marcado como pago!':'↩ Desmarcado';
+  toast(msg,'success');
+  // Re-renderiza modal em tempo real
+  renderVcalDia(dia,ano,mes);
+  // Atualiza calendário, lista lateral e dashboard — tudo em tempo real
+  renderVencimentosCal();
+  renderVencimentos();
 }
 
 function renderDicaDia(){
