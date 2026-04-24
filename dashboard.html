@@ -720,9 +720,11 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     top:76px!important;
     transform:translateX(-50%);
   }
-  .cal-day{height:32px;aspect-ratio:unset}
+  .cal-day{height:32px;aspect-ratio:unset!important;min-height:unset!important}
+  /* ── Calendário filtro transações ── */
+  #calGrid > div{aspect-ratio:unset!important;height:32px!important;min-height:unset!important;max-height:32px!important}
   /* ── Calendário vencimentos ── */
-  #vcalGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important}
+  #vcalGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important;max-height:36px!important}
   #page-vencimentos > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
 }
 @media(max-width:340px){
@@ -8938,10 +8940,12 @@ function renderVencimentosCal(){
   });
 
   // ── KPIs urgência ──
-  const criticos=items.filter(i=>i.urgencia==='critico');
-  const atencao=items.filter(i=>i.urgencia==='atencao');
-  const normais=items.filter(i=>i.urgencia==='normal');
-  const totalVenc=items.reduce((s,i)=>s+(parseFloat(i.valor)||0),0);
+  const pagoKey=it=>`${it.tipo}_${it.nome}_${ano}_${mes}`;
+  const itemsNaoPagos=items.filter(i=>!VCAL_PAGOS[pagoKey(i)]);
+  const criticos=itemsNaoPagos.filter(i=>i.urgencia==='critico');
+  const atencao=itemsNaoPagos.filter(i=>i.urgencia==='atencao');
+  const normais=itemsNaoPagos.filter(i=>i.urgencia==='normal');
+  const totalVenc=itemsNaoPagos.reduce((s,i)=>s+(parseFloat(i.valor)||0),0);
   const kpis=document.getElementById('vcalKpis');
   if(kpis){
     kpis.innerHTML=`
@@ -8957,7 +8961,7 @@ function renderVencimentosCal(){
       </div>
       <div class="kpi" style="cursor:default;border-left:3px solid var(--azul)">
         <div class="kpi-top"><div class="kpi-ic">📋</div></div>
-        <div class="kpi-v">${items.length}</div>
+        <div class="kpi-v">${itemsNaoPagos.length}</div>
         <div class="kpi-l">Total de vencimentos</div>
       </div>
       <div class="kpi" style="cursor:default;border-left:3px solid var(--verm)">
