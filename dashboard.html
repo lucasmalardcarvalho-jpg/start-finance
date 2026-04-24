@@ -711,6 +711,19 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     max-width:100%!important;
     overflow:visible;
   }
+  /* ── Calendário filtro (popup) ── */
+  #calPop{
+    position:fixed!important;
+    width:288px!important;
+    left:50%!important;
+    right:auto!important;
+    top:76px!important;
+    transform:translateX(-50%);
+  }
+  .cal-day{height:32px;aspect-ratio:unset}
+  /* ── Calendário vencimentos ── */
+  #vcalGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important}
+  #page-vencimentos > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
 }
 @media(max-width:340px){
   .kg{grid-template-columns:1fr!important}
@@ -1398,6 +1411,12 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="md-bot">
     <button onclick="toggleDarkMode()" style="width:100%;display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;cursor:pointer;color:#fff;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:600;margin-bottom:8px">
       <span>🌙 Modo escuro</span><span id="drawerDarkLabel" style="font-size:11px;color:rgba(255,255,255,.4)">Ativar</span>
+    </button>
+    <button onclick="closeMobileDrawer();confirmarResetDados()" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:10px 12px;cursor:pointer;color:#EF4444;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;min-height:44px;margin-bottom:6px">
+      🗑️ Limpar dados financeiros
+    </button>
+    <button onclick="closeMobileDrawer();confirmarExcluirConta()" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.18);border-radius:8px;padding:10px 12px;cursor:pointer;color:#EF4444;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;min-height:44px;margin-bottom:6px">
+      ❌ Excluir minha conta
     </button>
     <button onclick="confirmarLogout()" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(238,32,110,.1);border:1px solid rgba(238,32,110,.2);border-radius:8px;padding:10px 12px;cursor:pointer;color:#ee206e;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:700;min-height:44px">
       🚪 Sair da conta
