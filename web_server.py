@@ -563,73 +563,147 @@ def _detectar_banco_txt(txt: str) -> str | None:
         if bid.group(1) in codes:
             return codes[bid.group(1)]
     if 'nu pagamentos' in t or 'nubank' in t: return 'Nubank'
-    if 'banco inter' in t or 'inter s.a' in t or 'inter bank' in t: return 'Inter'
+    if 'instituição: banco inter' in t or 'banco inter' in t or 'inter s.a' in t: return 'Inter'
     if 'bradesco' in t: return 'Bradesco'
     if 'itaú' in t or 'itau' in t: return 'Itaú'
     if 'santander' in t: return 'Santander'
     if 'caixa econômica' in t or ' cef ' in t: return 'Caixa'
     if 'banco do brasil' in t: return 'Banco do Brasil'
-    if 'c6 bank' in t or 'c6bank' in t: return 'C6 Bank'
+    if 'c6 bank' in t or 'c6bank' in t or 'banco c6' in t: return 'C6 Bank'
     if 'neon' in t: return 'Neon'
     if 'mercado pago' in t: return 'Mercado Pago'
     return None
 
+# Months in Portuguese for date headers like "25 de Março de 2026"
+_MESES_PT = {
+    'janeiro':'01','fevereiro':'02','março':'03','marco':'03',
+    'abril':'04','maio':'05','junho':'06','julho':'07',
+    'agosto':'08','setembro':'09','outubro':'10',
+    'novembro':'11','dezembro':'12'
+}
+
 def _parse_pdf_rows(txt: str) -> list:
+    """Parse bank statement PDF text.
+    Supports:
+    - Inter / Brazilian banks: date headers 'DD de Mês de YYYY' + transaction lines
+    - Generic: lines starting with DD/MM/YYYY date
+    """
     rows = []
     seen = set()
-    lines = txt.splitlines()
-    date_re = _re.compile(r'^(\d{2}[/\-]\d{2}[/\-](?:\d{4}|\d{2}))\s+(.+)')
-    amt_re  = _re.compile(r'([-−]?\s*R?\$?\s*\d{1,3}(?:[.,]\d{3})*[.,]\d{2})')
+    lines = [l.strip() for l in txt.splitlines()]
 
-    for idx, line in enumerate(lines):
-        line = line.strip()
+    # Regex patterns
+    date_header_re = _re.compile(
+        r'\b(\d{1,2})\s+de\s+([a-z\u00e1\u00e0\u00e2\u00e3\u00e9\u00ea\u00ed\u00f3\u00f4\u00f5\u00fa\u00e7]+)\s+de\s+(\d{4})\b',
+        _re.I
+    )
+    date_iso_re = _re.compile(r'^(\d{2}[/\-]\d{2}[/\-](?:\d{4}|\d{2}))\s+(.+)')
+    # Monetary amount: -R$ 1.234,56 or R$ 1.234,56
+    amt_re = _re.compile(r'-?R\$\s*[\d.]+,\d{2}', _re.I)
+    tx_keywords = [
+        'compra no debito','compra no crédito','compra no credito',
+        'pix recebido','pix enviado','pagamento efetuado',
+        'deposito','depósito','saque','transferencia','transferência',
+        'rendimento','iof','tarifa','ted recebido','ted enviado',
+        'doc recebido','doc enviado','estorno','reembolso','resgate',
+    ]
+
+    current_date = None
+    i = 0
+    while i < len(lines):
+        line = lines[i]; i += 1
         if not line:
             continue
-        m = date_re.match(line)
-        if not m:
-            continue
-        raw_date = m.group(1).replace('-', '/')
-        parts = raw_date.split('/')
-        if len(parts) == 3:
-            d, mo, y = parts
-            if len(y) == 2:
-                y = '20' + y
-            data = f"{d}/{mo}/{y}"
-        else:
+
+        # ── Date header (Inter/extended format): "25 de Março de 2026" ──
+        dhm = date_header_re.search(line)
+        if dhm and ('saldo' in line.lower() or 'dia' in line.lower()):
+            day = dhm.group(1).zfill(2)
+            m_raw = dhm.group(2).lower()
+            mo = _MESES_PT.get(m_raw)
+            if not mo:
+                # try removing accents for lookup
+                norm = m_raw.replace('ç','c').replace('ã','a').replace('ê','e').replace('é','e').replace('ô','o').replace('ó','o')
+                mo = _MESES_PT.get(norm)
+            if mo:
+                current_date = f"{day}/{mo}/{dhm.group(3)}"
             continue
 
-        rest = m.group(2)
-        amounts = list(amt_re.finditer(rest))
-        if not amounts:
-            # try next line
-            if idx + 1 < len(lines):
-                amounts = list(amt_re.finditer(lines[idx + 1]))
+        # ── Generic date line: DD/MM/YYYY ... ──
+        gm = date_iso_re.match(line)
+        if gm:
+            raw = gm.group(1).replace('-','/')
+            p = raw.split('/')
+            if len(p) == 3:
+                d, mo, y = p
+                if len(y) == 2: y = '20' + y
+                current_date = f"{d}/{mo}/{y}"
+                rest = gm.group(2)
+                amounts = amt_re.findall(rest)
+                if not amounts and i < len(lines):
+                    rest = rest + ' ' + lines[i]; i += 1
+                    amounts = amt_re.findall(rest)
                 if amounts:
-                    rest = lines[idx + 1].strip()
+                    tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                    negative = tx_str.startswith('-')
+                    num = tx_str.replace('-','').replace('R$','').replace(' ','').replace('.','').replace(',','.')
+                    try:
+                        valor = float(num)
+                    except ValueError:
+                        continue
+                    if valor == 0: continue
+                    first_m = amt_re.search(rest)
+                    desc = (rest[:first_m.start()] if first_m else rest).strip()
+                    desc = _re.sub(r'^["\']|["\']$', '', desc).strip()[:60]
+                    key = f"{current_date}|{desc[:30]}|{valor}"
+                    if key not in seen:
+                        seen.add(key)
+                        rows.append({'data':current_date,'descricao':desc,'valor':valor,'tipo':'gasto' if negative else 'receita'})
+            continue
+
+        # ── Transaction line under a date header ──
+        if not current_date:
+            continue
+        low = line.lower()
+        if not any(low.startswith(k) for k in tx_keywords):
+            continue
+
+        # Possibly merge with next line if no amount yet
+        full = line
+        if not amt_re.search(full) and i < len(lines):
+            full = full + ' ' + lines[i]; i += 1
+
+        amounts = amt_re.findall(full)
         if not amounts:
             continue
 
-        last = amounts[-1]
-        descricao = rest[:last.start()].strip() or rest
-        descricao = descricao[:60]
-        val_str = last.group(1).replace('R$','').replace('$','').replace(' ','').replace('−','-').replace('\u2212','-').replace('.','').replace(',','.')
+        # Second-to-last = transaction value; last = running balance
+        tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+        negative = tx_str.startswith('-')
+        num = tx_str.replace('-','').replace('R$','').replace(' ','').replace('.','').replace(',','.')
         try:
-            valor = float(val_str)
+            valor = float(num)
         except ValueError:
             continue
         if valor == 0:
             continue
 
-        key = f"{data}|{descricao}|{abs(valor)}"
+        # Extract description: everything before the first amount
+        first_m = amt_re.search(full)
+        desc = (full[:first_m.start()] if first_m else full).strip()
+        # Clean: remove 'Type: "' prefix pattern, surrounding quotes
+        desc = _re.sub(r'^[^:]+:\s*"?', '', desc).strip('"').strip()
+        desc = _re.sub(r'^No estabelecimento\s+', '', desc, flags=_re.I).strip()
+        if not desc:
+            desc = low.split(':')[0].title()
+        desc = desc[:60]
+
+        key = f"{current_date}|{desc[:30]}|{valor}"
         if key in seen:
             continue
         seen.add(key)
-        rows.append({
-            'data': data,
-            'descricao': descricao,
-            'valor': abs(valor),
-            'tipo': 'gasto' if valor < 0 else 'receita',
-        })
+        rows.append({'data':current_date,'descricao':desc,'valor':valor,'tipo':'gasto' if negative else 'receita'})
+
     return rows
 
 @app.route("/api/parse-pdf", methods=["POST"])
