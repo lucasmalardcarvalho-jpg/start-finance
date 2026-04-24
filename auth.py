@@ -4,7 +4,9 @@ Login multi-usuário com JWT.
 Usuários configurados via USERS_JSON (env) e/ou registrados via /api/register (arquivo persistente).
 """
 
-import os, json, hashlib, hmac, base64, time, logging, uuid, re, threading
+import os, json, hashlib, hmac, base64, time, logging, uuid, re, threading, secrets, smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from collections import defaultdict
 from functools import wraps
 from flask import request, jsonify
@@ -30,6 +32,42 @@ if not JWT_SECRET:
     JWT_SECRET = "dev-only-" + hashlib.sha256(b"start-finance-dev").hexdigest()
     logger.warning("⚠️  JWT_SECRET não configurado! Use variável de ambiente em produção.")
 TOKEN_EXP = 60 * 60 * 24 * 7  # 7 dias
+
+# ── SMTP para recuperação de senha (opcional) ─────────────────────────
+_SMTP_HOST = os.environ.get("SMTP_HOST", "")
+_SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
+_SMTP_USER = os.environ.get("SMTP_USER", "")
+_SMTP_PASS = os.environ.get("SMTP_PASS", "")
+_SMTP_FROM = os.environ.get("SMTP_FROM", "") or _SMTP_USER
+_APP_URL   = os.environ.get("APP_URL", "")
+
+_RESET_TOKENS: dict = {}  # token -> {email, expires}
+_RESET_EXP = 60 * 60  # 1 hora
+
+def _enviar_email_reset(to_email: str, reset_url: str) -> bool:
+    if not (_SMTP_HOST and _SMTP_USER and _SMTP_PASS):
+        return False
+    try:
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = 'Redefinir sua senha — PenseFinances'
+        msg['From']    = _SMTP_FROM
+        msg['To']      = to_email
+        texto = f"Clique no link para redefinir sua senha:\n{reset_url}\n\nVálido por 1 hora. Se não foi você, ignore."
+        html  = f"""<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px">
+          <h2 style="color:#3B6FF0">PenseFinances</h2>
+          <p>Recebemos uma solicitação para redefinir a senha da conta <b>{to_email}</b>.</p>
+          <a href="{reset_url}" style="display:inline-block;background:#3B6FF0;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;margin:16px 0">Redefinir senha</a>
+          <p style="color:#888;font-size:12px">Link válido por 1 hora. Se não foi você, ignore este email.</p>
+        </div>"""
+        msg.attach(MIMEText(texto, 'plain'))
+        msg.attach(MIMEText(html,  'html'))
+        with smtplib.SMTP(_SMTP_HOST, _SMTP_PORT) as s:
+            s.ehlo(); s.starttls(); s.login(_SMTP_USER, _SMTP_PASS)
+            s.sendmail(_SMTP_FROM, to_email, msg.as_string())
+        return True
+    except Exception as e:
+        logger.error(f"Email reset falhou: {e}")
+        return False
 
 # ── Rate Limiting simples para login (sem dependência externa) ────────
 _login_attempts: dict = defaultdict(list)  # ip -> [timestamps]
@@ -365,3 +403,50 @@ def registrar_rotas_auth(app, sheets_factory=None):
             return jsonify({"erro": "Não autorizado"}), 401
         users = [{"id":u["id"],"name":u["name"],"email":u["email"],"avatar":u.get("avatar"),"color":u.get("color")} for u in get_users()]
         return jsonify({"users": users})
+
+    @app.route("/api/forgot-password", methods=["POST"])
+    def forgot_password():
+        dados = request.json or {}
+        email = (dados.get("email", "") or "").strip().lower()
+        if not email:
+            return jsonify({"erro": "Email obrigatório"}), 400
+        users = get_users()
+        user  = next((u for u in users if u["email"].lower() == email), None)
+        if user:
+            token = secrets.token_urlsafe(32)
+            _RESET_TOKENS[token] = {"email": email, "expires": time.time() + _RESET_EXP}
+            base_url = _APP_URL or request.host_url.rstrip('/')
+            reset_url = f"{base_url}/?reset={token}"
+            sent = _enviar_email_reset(email, reset_url)
+            logger.info(f"Reset solicitado: {email} | email_enviado={sent}")
+            if not sent:
+                # Sem SMTP: retorna URL para o frontend exibir (dev/admin)
+                return jsonify({"ok": True, "reset_url": reset_url}), 200
+        return jsonify({"ok": True}), 200
+
+    @app.route("/api/reset-password", methods=["POST"])
+    def reset_password():
+        dados    = request.json or {}
+        token    = (dados.get("token", "") or "").strip()
+        password = (dados.get("password", "") or "").strip()
+        if not token or not password:
+            return jsonify({"erro": "Token e senha obrigatórios"}), 400
+        if len(password) < 6 and not _is_hash(password):
+            return jsonify({"erro": "Senha deve ter pelo menos 6 caracteres"}), 400
+        td = _RESET_TOKENS.get(token)
+        if not td or td["expires"] < time.time():
+            return jsonify({"erro": "Link inválido ou expirado"}), 400
+        email    = td["email"]
+        pwd_hash = password if _is_hash(password) else _sha256(password)
+        db_users = _load_db_users()
+        updated  = False
+        for u in db_users:
+            if u["email"].lower() == email:
+                u["password"] = pwd_hash
+                updated = True
+                break
+        if updated:
+            _save_db_users(db_users)
+        del _RESET_TOKENS[token]
+        logger.info(f"Senha redefinida: {email}")
+        return jsonify({"ok": True}), 200

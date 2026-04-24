@@ -720,11 +720,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     top:76px!important;
     transform:translateX(-50%);
   }
-  .cal-day{height:32px;aspect-ratio:unset!important;min-height:unset!important}
+  .cal-day{height:32px;aspect-ratio:unset!important;min-height:unset!important;max-height:32px!important}
   /* ── Calendário filtro transações ── */
-  #calGrid > div{aspect-ratio:unset!important;height:32px!important;min-height:unset!important;max-height:32px!important}
+  #calGrid{grid-auto-rows:32px!important}
+  #calGrid > div{aspect-ratio:unset!important;height:32px!important;min-height:unset!important;max-height:32px!important;overflow:hidden}
   /* ── Calendário vencimentos ── */
-  #vcalGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important;max-height:36px!important}
+  #vcalGrid{grid-auto-rows:36px!important}
+  #vcalGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important;max-height:36px!important;overflow:hidden}
   #page-vencimentos > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
 }
 @media(max-width:340px){
@@ -799,10 +801,50 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <button class="login-btn" id="loginBtn" onclick="fazerLogin()">Entrar no PenseFinances</button>
       <div class="login-err" id="loginErr"></div>
-      <div style="text-align:center;margin-top:14px">
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="mostrarEsqueceuSenha()" style="background:none;border:none;color:rgba(255,255,255,.5);font-size:12px;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif;text-decoration:underline">Esqueceu a senha?</button>
+      </div>
+      <div style="text-align:center;margin-top:8px">
         <span style="font-size:12px;color:rgba(255,255,255,.45)">Não tem conta? </span>
         <button onclick="mostrarTab('cadastro')" style="background:none;border:none;color:rgba(255,255,255,.75);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;font-family:'Cabinet Grotesk',sans-serif">Criar conta grátis</button>
       </div>
+    </div>
+
+    <!-- ── FORM ESQUECEU SENHA ── -->
+    <div id="formEsqueceu" style="display:none">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:32px;margin-bottom:8px">🔑</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Recuperar senha</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55)">Digite seu email e enviaremos um link para criar uma nova senha</div>
+      </div>
+      <div class="login-field">
+        <label class="login-label">Email da sua conta</label>
+        <input class="login-input" type="email" id="esqueceuEmail" placeholder="seu@email.com" onkeydown="if(event.key==='Enter')solicitarReset()">
+      </div>
+      <button class="login-btn" id="esqueceuBtn" onclick="solicitarReset()">Enviar link de recuperação</button>
+      <div class="login-err" id="esqueceuMsg" style="display:none;text-align:center;font-size:13px;margin-top:12px"></div>
+      <div style="text-align:center;margin-top:14px">
+        <button onclick="mostrarTab('login')" style="background:none;border:none;color:rgba(255,255,255,.55);font-size:12px;cursor:pointer;font-family:'Cabinet Grotesk',sans-serif">← Voltar ao login</button>
+      </div>
+    </div>
+
+    <!-- ── FORM REDEFINIR SENHA ── -->
+    <div id="formResetSenha" style="display:none">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:32px;margin-bottom:8px">🔒</div>
+        <div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:6px">Nova senha</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55)">Escolha uma nova senha para sua conta</div>
+      </div>
+      <div class="login-field">
+        <label class="login-label">Nova senha</label>
+        <input class="login-input" type="password" id="resetSenha1" placeholder="Mínimo 6 caracteres">
+      </div>
+      <div class="login-field">
+        <label class="login-label">Confirmar nova senha</label>
+        <input class="login-input" type="password" id="resetSenha2" placeholder="Repita a senha" onkeydown="if(event.key==='Enter')redefinirSenha()">
+      </div>
+      <button class="login-btn" id="resetBtn" onclick="redefinirSenha()">Salvar nova senha</button>
+      <div class="login-err" id="resetMsg" style="display:none;text-align:center;font-size:13px;margin-top:12px"></div>
     </div>
 
     <!-- ── FORM CADASTRO ── -->
@@ -3716,15 +3758,19 @@ document.addEventListener('DOMContentLoaded',()=>{
       if(document.getElementById('txIsParc')?.checked) atualizarValorParc();
     });
   }
-  // Apply value masks to all money inputs
   mascaraValorInit('.valor-input');
-  // Aplica dark mode salvo
   applyDarkMode(localStorage.getItem('sf_darkMode') === 'true');
-  // Registra Service Worker (PWA)
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('/sw.js', {scope:'/'})
       .then(reg => console.log('✅ SW registrado:', reg.scope))
       .catch(err => console.warn('SW falhou:', err));
+  }
+  // Verifica se URL tem token de reset de senha
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _resetToken = _urlParams.get('reset');
+  if(_resetToken){
+    window._resetToken = _resetToken;
+    mostrarTab('reset');
   }
 });
 
@@ -7515,14 +7561,77 @@ function saveUser(k, v){
 // ── Interface: tabs login/cadastro ─────────────
 function mostrarTab(tab){
   const isLogin = tab==='login';
-  document.getElementById('formLogin').style.display   = isLogin?'':'none';
-  document.getElementById('formCadastro').style.display = isLogin?'none':'';
+  document.getElementById('formLogin').style.display    = isLogin ? '' : 'none';
+  document.getElementById('formCadastro').style.display = tab==='cadastro' ? '' : 'none';
+  document.getElementById('formEsqueceu').style.display  = tab==='esqueceu' ? '' : 'none';
+  document.getElementById('formResetSenha').style.display= tab==='reset' ? '' : 'none';
   const tL = document.getElementById('tabLogin');
   const tC = document.getElementById('tabCadastro');
-  if(tL) { tL.style.background = isLogin?'rgba(255,255,255,.15)':'none'; tL.style.color=isLogin?'#fff':'rgba(255,255,255,.5)'; }
-  if(tC) { tC.style.background = !isLogin?'rgba(255,255,255,.15)':'none'; tC.style.color=!isLogin?'#fff':'rgba(255,255,255,.5)'; }
-  // Limpa erros
+  const showTabs = tab==='login'||tab==='cadastro';
+  if(tL) { tL.style.display=showTabs?'':'none'; tL.style.background=isLogin?'rgba(255,255,255,.15)':'none'; tL.style.color=isLogin?'#fff':'rgba(255,255,255,.5)'; }
+  if(tC) { tC.style.display=showTabs?'':'none'; tC.style.background=tab==='cadastro'?'rgba(255,255,255,.15)':'none'; tC.style.color=tab==='cadastro'?'#fff':'rgba(255,255,255,.5)'; }
   ['loginErr','regErr'].forEach(id=>{ const el=document.getElementById(id); if(el){el.textContent='';el.classList.remove('show');} });
+}
+
+function mostrarEsqueceuSenha(){
+  mostrarTab('esqueceu');
+  setTimeout(()=>document.getElementById('esqueceuEmail').focus(),100);
+}
+
+async function solicitarReset(){
+  const btn = document.getElementById('esqueceuBtn');
+  const msg = document.getElementById('esqueceuMsg');
+  const email = (document.getElementById('esqueceuEmail').value||'').trim().toLowerCase();
+  if(!email){ msg.style.display='block'; msg.style.color='#f87171'; msg.textContent='Digite seu email'; return; }
+  btn.disabled=true; btn.textContent='Enviando...';
+  msg.style.display='none';
+  try{
+    const r = await fetch('/api/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const d = await r.json();
+    msg.style.display='block';
+    if(d.ok){
+      msg.style.color='#4ade80';
+      msg.textContent='✅ Se este email estiver cadastrado, você receberá o link em breve.';
+      btn.textContent='Link enviado!';
+      // Dev/test: se o servidor retornar a URL diretamente (sem SMTP configurado)
+      if(d.reset_url){
+        msg.innerHTML='✅ Link gerado! <a href="'+d.reset_url+'" style="color:#60a5fa;text-decoration:underline">Clique aqui para redefinir</a>';
+      }
+    } else {
+      msg.style.color='#f87171'; msg.textContent='❌ '+(d.erro||'Erro ao enviar');
+      btn.disabled=false; btn.textContent='Enviar link de recuperação';
+    }
+  }catch(e){
+    msg.style.display='block'; msg.style.color='#f87171'; msg.textContent='❌ Sem conexão com o servidor';
+    btn.disabled=false; btn.textContent='Enviar link de recuperação';
+  }
+}
+
+async function redefinirSenha(){
+  const btn  = document.getElementById('resetBtn');
+  const msg  = document.getElementById('resetMsg');
+  const s1   = document.getElementById('resetSenha1').value;
+  const s2   = document.getElementById('resetSenha2').value;
+  const token= window._resetToken||'';
+  if(!s1||s1.length<6){ msg.style.display='block'; msg.style.color='#f87171'; msg.textContent='Senha deve ter pelo menos 6 caracteres'; return; }
+  if(s1!==s2){ msg.style.display='block'; msg.style.color='#f87171'; msg.textContent='As senhas não coincidem'; return; }
+  btn.disabled=true; btn.textContent='Salvando...';
+  try{
+    const pwHash = await hashSenha(s1);
+    const r = await fetch('/api/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token,password:pwHash})});
+    const d = await r.json();
+    msg.style.display='block';
+    if(d.ok){
+      msg.style.color='#4ade80'; msg.textContent='✅ Senha alterada com sucesso!';
+      setTimeout(()=>{ history.replaceState({},'','/'); mostrarTab('login'); },2000);
+    } else {
+      msg.style.color='#f87171'; msg.textContent='❌ '+(d.erro||'Link inválido ou expirado');
+      btn.disabled=false; btn.textContent='Salvar nova senha';
+    }
+  }catch(e){
+    msg.style.display='block'; msg.style.color='#f87171'; msg.textContent='❌ Sem conexão com o servidor';
+    btn.disabled=false; btn.textContent='Salvar nova senha';
+  }
 }
 
 function selAvatar(el, emoji){
@@ -9105,7 +9214,7 @@ function renderVcalDia(dia, ano, mes){
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0">
         <div style="font-size:16px;font-weight:900;color:${pago?'var(--verde)':cor}">${it.valor>0?fmt(it.valor):'—'}</div>
-        <button onclick="vcalPagarToggle('${key.replace(/'/g,"\\'")}',${dia},${ano},${mes})"
+        <button onclick="vcalPagarToggle(${JSON.stringify(key).replace(/"/g,'&quot;')},${dia},${ano},${mes})"
           style="font-size:10px;font-weight:800;padding:6px 16px;border-radius:100px;border:2px solid ${pago?'var(--verde)':'var(--azul)'};background:${pago?'var(--verde)':'var(--azul)'};color:#fff;cursor:pointer;font-family:Cabinet Grotesk,sans-serif;white-space:nowrap;transition:all .15s">
           ${pago?'↩ Desfazer':'✓ Marcar pago'}
         </button>
