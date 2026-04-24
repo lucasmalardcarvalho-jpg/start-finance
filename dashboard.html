@@ -387,6 +387,19 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 .cpb:hover{background:var(--bg);color:var(--txt)}
 .cpb.active{background:var(--azul);color:#fff;border-color:var(--azul)}
 
+/* ════ PLAN FILTERS ════ */
+.plan-mode-toggle{display:flex;align-items:center;gap:6px;background:var(--bg);border-radius:100px;padding:3px;border:1px solid var(--border)}
+.plan-mode-btn{padding:5px 14px;border-radius:100px;font-size:12px;font-weight:700;border:none;background:none;cursor:pointer;color:var(--muted);transition:all .15s;font-family:'Cabinet Grotesk',sans-serif}
+.plan-mode-btn.active{background:var(--card);color:var(--txt);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+.plan-year-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border-radius:100px;border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:800;cursor:pointer;color:var(--txt);font-family:'Cabinet Grotesk',sans-serif;position:relative;transition:all .15s}
+.plan-year-btn:hover{border-color:var(--azul);color:var(--azul)}
+.plan-year-drop{position:absolute;top:calc(100% + 6px);right:0;background:var(--card);border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:0 8px 24px rgba(0,0,0,.15);z-index:200;padding:10px;display:none;width:220px}
+.plan-year-drop.open{display:block}
+.plan-year-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.plan-year-opt{padding:7px 4px;border-radius:8px;border:1px solid transparent;background:none;font-size:13px;font-weight:700;cursor:pointer;text-align:center;color:var(--txt);font-family:'Cabinet Grotesk',sans-serif;transition:all .15s}
+.plan-year-opt:hover{background:var(--bg);border-color:var(--border)}
+.plan-year-opt.sel{background:var(--azul);color:#fff;border-color:var(--azul)}
+
 /* ════ KPI IMPROVEMENTS ════ */
 .kpi-arrow{font-size:12px;font-weight:800}
 .kpi-arrow.up{color:var(--verde)}.kpi-arrow.dn{color:var(--verm)}
@@ -1470,8 +1483,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
   </div>
 
-  <!-- ── LINHA 3: Donut + Minha Carteira + Resumo do Mês (3 colunas juntas) ── -->
-  <div style="display:grid;grid-template-columns:0.9fr 1.1fr 1.4fr;gap:15px;margin-bottom:15px;align-items:start">
+  <!-- ── LINHA 3: Donut + Minha Carteira + Resumo do Mês (3 colunas) ── -->
+  <div style="display:grid;grid-template-columns:1fr 1.1fr 1.3fr;gap:15px;margin-bottom:15px;align-items:start">
 
     <!-- Donut / Por Categoria -->
     <div class="card" onclick="go('categorias')" style="cursor:pointer;display:flex;flex-direction:column">
@@ -1818,7 +1831,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- ═══ PLANEJAMENTO ═══ -->
 <div class="page" id="page-planejamento">
-  <div class="ph"><div><h1>🗓️ Planejamento Anual</h1><p>Visão completa do ano — receitas, gastos e saldo mês a mês</p></div></div>
+  <div class="ph"><div><h1>🗓️ Planejamento Anual</h1><p>Visão completa do ano — receitas, gastos e saldo mês a mês</p></div>
+  <div class="pa" id="planControls"></div></div>
   <div class="g4 mb" id="planKpis"></div>
   <div class="g2e mb">
     <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="padding:12px 0"></div></div>
@@ -2455,6 +2469,8 @@ let TX_PARC_SEL = 0;     // parcelas selecionadas no modal
 let DEL_MODO = 'so_esta'; // modo de exclusão: 'so_esta' | 'todas'
 let CAT_FILTRO = 'todas'; // filtro ativo da aba categorias
 let CAT_TAB = 'cats';     // tab interna (legado, mantido por compatibilidade)
+let PLAN_ANO = new Date().getFullYear(); // ano selecionado no planejamento
+let PLAN_MODE = 'anual';  // 'anual' | 'mensal'
 let DP_DATE = new Date(); // data selecionada no date picker
 let DP_VIEW = new Date(); // mês em exibição no date picker
 
@@ -3192,10 +3208,6 @@ function renderEvolucaoAnual(el, h, histParam){
   el.style.height='auto';
   el.style.padding='0';
 
-  const showE  = CHART_LAYERS.entradas !== false;
-  const showS  = CHART_LAYERS.saidas   !== false;
-  const showSd = CHART_LAYERS.saldo    !== false;
-
   // Totais (só meses passados/atual)
   const comDados = hist.filter(hh=>!hh.futuro);
   const totE = comDados.reduce((s,hh)=>s+hh.entradas,0);
@@ -3203,17 +3215,19 @@ function renderEvolucaoAnual(el, h, histParam){
   const melhorList = comDados.filter(hh=>hh.entradas>0||hh.saidas>0);
   const melhor = melhorList.length ? melhorList.reduce((b,hh)=>hh.saldo>b.saldo?hh:b, melhorList[0]) : {saldo:0,label:'—'};
 
+  const anoLabel = hist.length && hist[0].chave ? hist[0].chave.split('/')[1] : new Date().getFullYear();
+
   const statsHtml = `<div style="display:flex;gap:0;padding:8px 18px 8px;border-bottom:1px solid var(--border)">
-    <div style="flex:1;padding:6px 10px;border-left:3px solid var(--verde);margin-right:10px;background:var(--verde-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
-      <div style="font-size:9px;font-weight:800;color:var(--verde);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Receitas ${new Date().getFullYear()}</div>
-      <div style="font-size:13px;font-weight:900;color:var(--verde)">${fmt(totE)}</div>
+    <div style="flex:1;padding:6px 10px;border-left:3px solid #8BC34A;margin-right:10px;background:#f1f8e9;border-radius:0 var(--r-sm) var(--r-sm) 0">
+      <div style="font-size:9px;font-weight:800;color:#558B2F;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Receitas ${anoLabel}</div>
+      <div style="font-size:13px;font-weight:900;color:#558B2F">${fmt(totE)}</div>
     </div>
-    <div style="flex:1;padding:6px 10px;border-left:3px solid var(--verm);margin-right:10px;background:var(--verm-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
-      <div style="font-size:9px;font-weight:800;color:var(--verm);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Gastos ${new Date().getFullYear()}</div>
-      <div style="font-size:13px;font-weight:900;color:var(--verm)">− ${fmt(totS)}</div>
+    <div style="flex:1;padding:6px 10px;border-left:3px solid #FF69B4;margin-right:10px;background:#fff0f6;border-radius:0 var(--r-sm) var(--r-sm) 0">
+      <div style="font-size:9px;font-weight:800;color:#C2185B;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Gastos ${anoLabel}</div>
+      <div style="font-size:13px;font-weight:900;color:#C2185B">− ${fmt(totS)}</div>
     </div>
     <div style="flex:1;padding:6px 10px;border-left:3px solid var(--azul);margin-right:10px;background:var(--azul-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
-      <div style="font-size:9px;font-weight:800;color:var(--azul);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Saldo ${new Date().getFullYear()}</div>
+      <div style="font-size:9px;font-weight:800;color:var(--azul);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Saldo ${anoLabel}</div>
       <div style="font-size:13px;font-weight:900;color:${totE-totS>=0?'var(--verde)':'var(--verm)'}">${totE-totS<0?'− ':''}${fmt(Math.abs(totE-totS))}</div>
     </div>
     <div style="flex:1;padding:6px 10px;border-left:3px solid var(--amar);background:var(--amar-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
@@ -3222,90 +3236,52 @@ function renderEvolucaoAnual(el, h, histParam){
     </div>
   </div>`;
 
-  const W=800, H=155, PL=8, PR=8, PT=16, PB=24;
+  const W=800, H=160, PL=8, PR=8, PT=14, PB=26;
   const chartW=W-PL-PR, chartH=H-PT-PB;
   const n=hist.length;
   const colW=chartW/n;
-  const barW=Math.max(colW*0.32, 6);
-  const gap=barW*0.4;
+  const barW=Math.max(colW*0.30, 5);
+  const gap=3;
 
-  // Max val considers only visible layers
-  const vals=[];
-  hist.forEach(hh=>{
-    if(showE) vals.push(hh.entradas);
-    if(showS) vals.push(hh.saidas);
-    if(showSd) vals.push(Math.abs(hh.saldo));
-  });
-  const maxVal=Math.max(...vals.filter(v=>v>0),1);
+  const maxVal=Math.max(...hist.map(hh=>Math.max(hh.entradas,hh.saidas)).filter(v=>v>0),1);
 
-  const guides=[0.25,0.5,0.75,1.0].map(pct=>{
-    const y=PT+chartH-chartH*pct;
-    return `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="#E5E9EF" stroke-width="1"/>
-            <text x="${PL}" y="${y-3}" font-size="8" fill="#9CA3AF" font-family="Cabinet Grotesk">${fmtSm(maxVal*pct)}</text>`;
-  }).join('');
-
-  const gradDefs=`<defs>
-    <linearGradient id="gradE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#10B981"/><stop offset="100%" stop-color="#10B98166"/></linearGradient>
-    <linearGradient id="gradEAt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2451C7"/><stop offset="100%" stop-color="#2451C766"/></linearGradient>
-    <linearGradient id="gradS" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#EF4444"/><stop offset="100%" stop-color="#EF444466"/></linearGradient>
-    <linearGradient id="gradSAt" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3B6FF0"/><stop offset="100%" stop-color="#3B6FF066"/></linearGradient>
-  </defs>`;
-
-  let bars='', saldoPoints='', projPoints='';
+  let bars='';
   hist.forEach((hh,i)=>{
     const cx=PL+i*colW+colW/2;
-    const opacity=hh.futuro?0.25:1;
+    const opacity=hh.futuro?0.3:1;
     const isFut=hh.futuro;
 
-    if(showE && hh.entradas>0){
-      const bh=(hh.entradas/maxVal)*chartH;
-      const by=PT+chartH-bh;
-      const fill=hh.atual?'url(#gradEAt)':'url(#gradE)';
-      bars+=`<rect x="${cx-barW-gap/2}" y="${by}" width="${barW}" height="${bh}" rx="3" fill="${fill}" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
-    }
-    if(showS && hh.saidas>0){
-      const bh=(hh.saidas/maxVal)*chartH;
-      const by=PT+chartH-bh;
-      const fill=hh.atual?'url(#gradSAt)':'url(#gradS)';
-      bars+=`<rect x="${cx+gap/2}" y="${by}" width="${barW}" height="${bh}" rx="3" fill="${fill}" opacity="${opacity*0.85}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
-    }
-    if(isFut && (showE||showS)){
-      const projVal=hh.entradas||hh.saidas||0;
-      if(projVal>0){
-        const by=PT+chartH-Math.min((projVal/maxVal)*chartH,chartH-2);
-        bars+=`<text x="${cx}" y="${by-4}" text-anchor="middle" font-size="7" fill="#9CA3AF" font-family="Cabinet Grotesk">~${fmtSm(projVal)}</text>`;
-      }
-    }
-
-    // Current month: small rect behind label
+    // Highlight mês atual
     if(hh.atual){
-      bars+=`<rect x="${cx-14}" y="${H-18}" width="28" height="14" rx="4" fill="#3B6FF022"/>`;
+      bars+=`<rect x="${(cx-colW/2+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${chartH}" rx="6" fill="#8BC34A" opacity="0.06"/>`;
     }
-    const labelCor=hh.atual?'#3B6FF0':(hh.futuro?'#D1D5DB':'#6B7280');
-    bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="9" fill="${labelCor}" font-weight="${hh.atual?'bold':'normal'}" font-family="Cabinet Grotesk">${hh.label}</text>`;
 
-    if(showSd && !hh.futuro && (hh.entradas>0||hh.saidas>0)){
-      const saldoNorm=Math.max(hh.saldo,0);
-      const sy=PT+chartH-(saldoNorm/maxVal)*chartH;
-      saldoPoints+=`${cx},${Math.min(Math.max(sy,PT),PT+chartH)} `;
+    if(hh.entradas>0){
+      const bh=Math.max((hh.entradas/maxVal)*chartH, 3);
+      const by=PT+chartH-bh;
+      bars+=`<rect x="${(cx-barW-gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#8BC34A" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
     }
+    if(hh.saidas>0){
+      const bh=Math.max((hh.saidas/maxVal)*chartH, 3);
+      const by=PT+chartH-bh;
+      bars+=`<rect x="${(cx+gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#FF69B4" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
+    }
+
+    const labelCor=hh.atual?'#558B2F':(hh.futuro?'#D1D5DB':'#6B7280');
+    const labelTxt=hh.label.replace('.','').toUpperCase();
+    bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${labelCor}" font-weight="${hh.atual?'800':'600'}" font-family="Cabinet Grotesk">${labelTxt}</text>`;
   });
 
-  const saldoLine=showSd&&saldoPoints?`<polyline points="${saldoPoints.trim()}" fill="none" stroke="#3B6FF0" stroke-width="2.5" stroke-dasharray="5,3" opacity="0.85"/>`:'' ;
-
-  const svgHtml=`<div style="padding:12px 18px 0;overflow-x:auto">
-    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:320px" id="chartSvg">
-      ${gradDefs}${guides}${saldoLine}${bars}
-      <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E5E9EF" stroke-width="1.5"/>
+  const svgHtml=`<div style="padding:12px 16px 0;overflow-x:auto">
+    <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:280px" id="chartSvg">
+      <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E8EBE4" stroke-width="1.5"/>
+      ${bars}
     </svg>
   </div>`;
 
-  const legendHtml=`<div style="padding:6px 18px 8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);opacity:${showE?1:.4}"><div style="width:10px;height:10px;border-radius:2px;background:#10B981"></div>Entradas</div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted);opacity:${showS?1:.4}"><div style="width:10px;height:10px;border-radius:2px;background:#EF4444;opacity:.85"></div>Saídas</div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--azul);opacity:${showSd?1:.4}"><div style="width:18px;height:2px;background:#3B6FF0;border-radius:1px"></div>Saldo</div>
-    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--muted)"><div style="width:10px;height:10px;border-radius:2px;background:#2451C7"></div>Mês atual</div>
-    <div style="margin-left:auto;font-size:11px;color:var(--muted);font-style:italic">Passe o mouse nas barras</div>
+  const legendHtml=`<div style="padding:6px 16px 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#558B2F"><div style="width:10px;height:10px;border-radius:3px;background:#8BC34A"></div>Receitas</div>
+    <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#C2185B"><div style="width:10px;height:10px;border-radius:3px;background:#FF69B4"></div>Despesas</div>
   </div>`;
 
   el.innerHTML=statsHtml+svgHtml+legendHtml;
@@ -3392,29 +3368,32 @@ function renderDonut(elId,cats){
   leg+=`</div>`;
   document.getElementById(elId).innerHTML=`<div class="dw">${svg}${leg}</div>`;
 
-  // Lista COMPLETA de todas as categorias no dashboard (não só as extras)
+  // Top categorias no dashboard (max 6 para manter altura balanceada)
   if(barsEl){
     if(cats.length === 0){ barsEl.innerHTML=''; return; }
     const maxGasto = cats[0].gasto || 1;
+    const visible = cats.slice(0,6);
+    const hidden  = cats.length - visible.length;
     barsEl.innerHTML = `<div style="border-top:1px solid var(--border);padding-top:10px">
-      <div style="font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Todas as categorias</div>
-      ${cats.map(c=>{
+      <div style="font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Top categorias</div>
+      ${visible.map(c=>{
         const pct=Math.round(c.gasto/totAll*100);
         const barW=Math.max(c.gasto/maxGasto*100,2);
         return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border)">
           <div style="font-size:14px;flex-shrink:0">${c.emoji}</div>
           <div style="flex:1;min-width:0">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">
-              <span style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:110px">${esc(c.nome)}</span>
+              <span style="font-size:11px;font-weight:700;color:var(--txt2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">${esc(c.nome)}</span>
               <span style="font-size:10px;color:var(--muted);flex-shrink:0;margin-left:4px">${pct}%</span>
             </div>
             <div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden">
               <div style="height:100%;width:${barW.toFixed(0)}%;background:${c.cor};border-radius:100px"></div>
             </div>
           </div>
-          <div style="font-size:11px;font-weight:800;color:var(--verm);flex-shrink:0;min-width:64px;text-align:right">${fmt(c.gasto)}</div>
+          <div style="font-size:11px;font-weight:800;color:var(--verm);flex-shrink:0;min-width:60px;text-align:right">${fmt(c.gasto)}</div>
         </div>`;
       }).join('')}
+      ${hidden>0?`<div style="text-align:center;padding:8px 0 2px;font-size:11px;color:var(--azul);font-weight:700;cursor:pointer" onclick="go('categorias')">+ ${hidden} mais categorias →</div>`:''}
     </div>`;
   }
 }
@@ -5735,28 +5714,222 @@ function renderInv(){
 }
 
 // ════════════════════════════════════════════════
+// PLANEJAMENTO ANUAL — helpers
+// ════════════════════════════════════════════════
+function buildPlanHist(ano){
+  const hoje=new Date();
+  const hist=[];
+  for(let m=0;m<12;m++){
+    const d=new Date(ano,m,1);
+    const chave=`${MESES_PT[m]}/${ano}`;
+    const label=MESES_PT[m].replace('.','');
+    const txMes=TODAS_TX.filter(t=>t.mes_ano===chave);
+    let e=0,s=0;
+    txMes.forEach(t=>{const v=parseFloat(t.valor)||0;if(v>0)e+=v;else s+=Math.abs(v);});
+    const isMesAtual=(d.getMonth()===hoje.getMonth()&&d.getFullYear()===hoje.getFullYear());
+    const isFuturo=(ano>hoje.getFullYear())||(ano===hoje.getFullYear()&&m>hoje.getMonth());
+    hist.push({label,chave,entradas:Math.round(e*100)/100,saidas:Math.round(s*100)/100,saldo:Math.round((e-s)*100)/100,atual:isMesAtual,futuro:isFuturo});
+  }
+  return hist;
+}
+
+function renderPlanControls(){
+  const el=document.getElementById('planControls');
+  if(!el)return;
+  const anoBase=new Date().getFullYear();
+  const anos=[];
+  for(let y=anoBase-4;y<=anoBase+7;y++)anos.push(y);
+  el.innerHTML=`
+    <div class="plan-mode-toggle">
+      <button class="plan-mode-btn${PLAN_MODE==='mensal'?' active':''}" onclick="setPlanMode('mensal')">Mensal</button>
+      <button class="plan-mode-btn${PLAN_MODE==='anual'?' active':''}" onclick="setPlanMode('anual')">Anual</button>
+    </div>
+    <div style="position:relative">
+      <button class="plan-year-btn" onclick="togglePlanYearDrop(event)" id="planYearBtn">
+        ${PLAN_ANO} <span style="font-size:9px;opacity:.6">▾</span>
+      </button>
+      <div class="plan-year-drop" id="planYearDrop">
+        <div class="plan-year-grid">
+          ${anos.map(y=>`<button class="plan-year-opt${y===PLAN_ANO?' sel':''}" onclick="setPlanAno(${y})">${y}</button>`).join('')}
+        </div>
+      </div>
+    </div>`;
+}
+
+function togglePlanYearDrop(e){
+  if(e)e.stopPropagation();
+  const drop=document.getElementById('planYearDrop');
+  if(!drop)return;
+  const wasOpen=drop.classList.contains('open');
+  drop.classList.toggle('open');
+  if(!wasOpen){
+    setTimeout(()=>{
+      const close=(ev)=>{if(!ev.target.closest('#planYearDrop')&&!ev.target.closest('#planYearBtn')){drop.classList.remove('open');document.removeEventListener('click',close);}};
+      document.addEventListener('click',close);
+    },50);
+  }
+}
+
+function setPlanAno(ano){
+  PLAN_ANO=ano;
+  const drop=document.getElementById('planYearDrop');
+  if(drop)drop.classList.remove('open');
+  renderPlan();
+}
+
+function setPlanMode(mode){
+  PLAN_MODE=mode;
+  renderPlan();
+}
+
+// ════════════════════════════════════════════════
 // PLANEJAMENTO ANUAL
 // ════════════════════════════════════════════════
 function renderPlan(){
-  const hist = HISTORICO;
+  const planHist=buildPlanHist(PLAN_ANO);
+  renderPlanControls();
 
-  const comDados = hist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0));
-  const totE = comDados.reduce((s,h)=>s+h.entradas,0);
-  const totS = comDados.reduce((s,h)=>s+h.saidas,0);
-  const saldoAcum = totE - totS;
-  const mediaS = comDados.length ? totS/comDados.length : 0;
-  const mediaE = comDados.length ? totE/comDados.length : 0;
-  const melhorMes = comDados.length ? comDados.reduce((b,h)=>h.saldo>b.saldo?h:b, comDados[0]) : null;
+  const comDados=planHist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0));
+  const totE=comDados.reduce((s,h)=>s+h.entradas,0);
+  const totS=comDados.reduce((s,h)=>s+h.saidas,0);
+  const saldoAcum=totE-totS;
+  const melhorMes=comDados.length?comDados.reduce((b,h)=>h.saldo>b.saldo?h:b,comDados[0]):null;
 
   document.getElementById('planKpis').innerHTML=`
     <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v" style="color:var(--verde)">${fmt(totE)}</div><div class="kpi-l">Total recebido (${comDados.length} meses)</div></div>
     <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💸</div></div><div class="kpi-v" style="color:var(--verm)">− ${fmt(totS)}</div><div class="kpi-l">Total gasto (${comDados.length} meses)</div></div>
-    <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⚖️</div></div><div class="kpi-v" style="color:${saldoAcum>=0?'var(--verde)':'var(--verm)'}">${saldoAcum>=0?'':' − '}${fmt(Math.abs(saldoAcum))}</div><div class="kpi-l">Saldo acumulado</div></div>
-    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🏆</div></div><div class="kpi-v" style="color:var(--verde)">${melhorMes?melhorMes.label:'—'}</div><div class="kpi-l">Melhor mês${melhorMes?' · '+fmt(melhorMes.saldo):''}</div></div>
-  `;
+    <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⚖️</div></div><div class="kpi-v" style="color:${saldoAcum>=0?'var(--verde)':'var(--verm)'}">${saldoAcum>=0?'':'− '}${fmt(Math.abs(saldoAcum))}</div><div class="kpi-l">Saldo acumulado ${PLAN_ANO}</div></div>
+    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🏆</div></div><div class="kpi-v" style="color:var(--verde)">${melhorMes?melhorMes.label:'—'}</div><div class="kpi-l">Melhor mês${melhorMes?' · '+fmt(melhorMes.saldo):''}</div></div>`;
 
-  // ── Gráfico SVG — apenas meses com dados ──
-  const chartEl = document.getElementById('planChart');
+  // ── Gráfico — novo estilo limpo ──
+  const chartEl=document.getElementById('planChart');
+  if(chartEl){
+    const meses=PLAN_MODE==='anual'?planHist:planHist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0||h.atual));
+    if(!meses.some(m=>m.entradas>0||m.saidas>0)){
+      chartEl.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--muted)">Sem dados para ${PLAN_ANO}</div>`;
+    } else {
+      const W=700,H=190,PT=12,PB=28,PL=8,PR=8;
+      const CW=W-PL-PR,CH=H-PT-PB;
+      const n=meses.length;
+      const colW=CW/n;
+      const barW=Math.min(Math.max(colW*0.30,4),26);
+      const gap=3;
+      const maxVal=Math.max(...meses.map(h=>Math.max(h.entradas,h.saidas)),1);
+      const baseline=PT+CH;
+      let bars='';
+      meses.forEach((h,i)=>{
+        const cx=(PL+i*colW+colW/2).toFixed(1);
+        const xN=PL+i*colW+colW/2;
+        const op=h.futuro?0.3:1;
+        const isFut=h.futuro;
+        if(h.atual) bars+=`<rect x="${(PL+i*colW+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${CH}" rx="6" fill="#8BC34A" opacity="0.06"/>`;
+        if(h.entradas>0){const bh=Math.max((h.entradas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN-barW-gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#8BC34A" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
+        if(h.saidas>0){const bh=Math.max((h.saidas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN+gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#FF69B4" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
+        const cor=h.atual?'#558B2F':(h.futuro?'#D1D5DB':'#6B7280');
+        bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${cor}" font-weight="${h.atual?'800':'600'}" font-family="Cabinet Grotesk">${h.label.replace('.','').toUpperCase()}</text>`;
+      });
+      chartEl.innerHTML=`<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:260px">
+        <line x1="${PL}" y1="${PT+CH}" x2="${W-PR}" y2="${PT+CH}" stroke="#E8EBE4" stroke-width="1.5"/>
+        ${bars}
+      </svg></div>
+      <div style="display:flex;gap:14px;padding:6px 12px 8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#558B2F"><div style="width:10px;height:10px;border-radius:3px;background:#8BC34A"></div>Receitas</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#C2185B"><div style="width:10px;height:10px;border-radius:3px;background:#FF69B4"></div>Despesas</div>
+      </div>`;
+      setupChartTooltip(chartEl);
+    }
+  }
+
+  // ── Top categorias do período ──
+  const txAno=TODAS_TX.filter(t=>t.mes_ano&&t.mes_ano.endsWith('/'+PLAN_ANO)&&t.valor<0);
+  const gastosCat={};
+  txAno.forEach(t=>{const cat=t.categoria||'Outros';gastosCat[cat]=(gastosCat[cat]||0)+Math.abs(t.valor);});
+  const topCats=Object.entries(gastosCat).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const maxCat=topCats.length?topCats[0][1]:1;
+  const tcEl=document.getElementById('planTopCats');
+  if(tcEl){
+    const EMOJIS={Alimentação:'🍽️',Transporte:'🚗',Contas:'⚡',Lazer:'🎮',Saúde:'❤️',Educação:'📚',Moradia:'🏠',Beleza:'💅',Vestuário:'👗',Pet:'🐾',Tecnologia:'📱',Filhos:'👶',Presentes:'🎁',Veículo:'🚘',Impostos:'🧾',Assinaturas:'📺',Salário:'💰',Freelance:'💼',Investimento:'📈',Outros:'📦'};
+    tcEl.innerHTML=topCats.length
+      ?topCats.map(([cat,val],i)=>{
+          const pct=(val/maxCat*100).toFixed(0);
+          const medals=['🥇','🥈','🥉','4º','5º'];
+          return `<div style="padding:10px 0;border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+              <div style="display:flex;align-items:center;gap:8px"><span>${medals[i]||'📦'}</span><span style="font-size:13px;font-weight:600">${EMOJIS[cat]||'📦'} ${cat}</span></div>
+              <span style="font-size:13px;font-weight:800;color:var(--verm)">${fmt(val)}</span>
+            </div>
+            <div style="background:var(--bg);border-radius:4px;height:5px;overflow:hidden"><div style="background:#FF69B4;height:100%;width:${pct}%;border-radius:4px;transition:width .4s"></div></div>
+          </div>`;
+        }).join('')
+      :`<div style="color:var(--muted);text-align:center;padding:20px">Sem dados para ${PLAN_ANO}</div>`;
+  }
+
+  // ── Tabela ──
+  const tEl=document.getElementById('planTable');
+  if(!tEl)return;
+
+  if(PLAN_MODE==='mensal'){
+    const mc=planHist.filter(h=>h.entradas>0||h.saidas>0||h.atual);
+    tEl.innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:16px">
+      ${mc.map(h=>{
+        const taxa=h.entradas>0?((h.saldo/h.entradas)*100).toFixed(1):null;
+        const corS=h.saldo>=0?'var(--verde)':'var(--verm)';
+        const corT=taxa>=20?'var(--verde)':taxa>=0?'var(--amar)':'var(--verm)';
+        const bg=h.atual?'var(--azul-l)':'var(--card)';
+        const bdr=h.atual?'2px solid var(--azul)':'1px solid var(--border)';
+        return `<div style="background:${bg};border:${bdr};border-radius:var(--r);padding:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:800;color:${h.atual?'var(--azul)':'var(--txt)'}">${h.label.replace('.','').toUpperCase()}${h.futuro?' ·proj.':''}</span>
+            ${taxa!==null?`<span style="font-size:11px;font-weight:700;color:${corT}">${taxa}%</span>`:''}
+          </div>
+          <div style="display:flex;gap:6px;margin-bottom:8px">
+            <div style="flex:1;background:#f1f8e9;border-radius:8px;padding:7px;text-align:center">
+              <div style="font-size:9px;font-weight:700;color:#558B2F;text-transform:uppercase;margin-bottom:1px">Rec.</div>
+              <div style="font-size:12px;font-weight:800;color:#558B2F">${h.entradas>0?fmtSm(h.entradas):'—'}</div>
+            </div>
+            <div style="flex:1;background:#fff0f6;border-radius:8px;padding:7px;text-align:center">
+              <div style="font-size:9px;font-weight:700;color:#C2185B;text-transform:uppercase;margin-bottom:1px">Desp.</div>
+              <div style="font-size:12px;font-weight:800;color:#C2185B">${h.saidas>0?fmtSm(h.saidas):'—'}</div>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:13px;font-weight:800;color:${corS};background:var(--bg);border-radius:8px;padding:5px">
+            ${h.entradas>0||h.saidas>0?(h.saldo>=0?'+':'')+fmtSm(h.saldo):'—'}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } else {
+    const atualArr=planHist.filter(h=>h.atual);
+    const passados=planHist.filter(h=>!h.atual&&!h.futuro).reverse();
+    const futuros=planHist.filter(h=>h.futuro);
+    const ordenado=[...atualArr,...passados,...futuros];
+    tEl.innerHTML=`<div class="card"><div class="ch"><div class="ct">📋 Resumo por Mês — ${PLAN_ANO}</div><div class="cs">${comDados.length} meses com movimentação</div></div>
+    <div class="tw"><table class="st">
+      <thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th><th style="text-align:center">Taxa de Poupança</th><th style="text-align:center">Situação</th></tr></thead>
+      <tbody>${ordenado.map(h=>{
+        const td=h.entradas>0||h.saidas>0;
+        const taxa=h.entradas>0?((h.saldo/h.entradas)*100).toFixed(1):null;
+        const taxaCor=taxa>=20?'var(--verde)':taxa>=0?'var(--amar)':'var(--verm)';
+        return `<tr style="${h.atual?'background:var(--azul-l);':h.futuro?'opacity:.55;':''}">
+          <td><div style="display:flex;align-items:center;gap:6px">${h.atual?'<span>📍</span>':''}<span style="font-weight:${h.atual?'800':'600'};color:${h.atual?'var(--azul)':h.futuro?'var(--muted)':'var(--txt)'}">${h.label.replace('.','').toUpperCase()}${h.futuro?' (proj.)':''}</span></div></td>
+          <td style="color:var(--verde);font-weight:700">${td&&h.entradas>0?fmt(h.entradas):'<span style="color:var(--muted)">—</span>'}</td>
+          <td style="color:var(--verm);font-weight:700">${td&&h.saidas>0?fmt(h.saidas):'<span style="color:var(--muted)">—</span>'}</td>
+          <td style="font-weight:800">${td?`<span style="color:${h.saldo>=0?'var(--verde)':'var(--verm)'}">${h.saldo>=0?'+':''}${fmt(h.saldo)}</span>`:'<span style="color:var(--muted)">—</span>'}</td>
+          <td style="text-align:center">${taxa!==null?`<span style="font-size:12px;font-weight:700;color:${taxaCor}">${taxa}%</span>`:'<span style="color:var(--muted);font-size:11px">—</span>'}</td>
+          <td style="text-align:center">${h.futuro?'<span style="background:var(--bg);color:var(--muted);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600">Projeção</span>':!td?'<span style="color:var(--muted);font-size:11px">Sem dados</span>':h.saldo>=0?'<span style="background:#D1FAE5;color:#065F46;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700">✅ Positivo</span>':'<span style="background:#FEE2E2;color:#991B1B;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700">🔴 Negativo</span>'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+  }
+
+  const tblEl=document.getElementById('planTabela');
+  if(tblEl)tblEl.innerHTML='';
+
+} // end renderPlan
+
+// ─── dead code tombstone (never executed) ─────────────────────────────────────
+if(false){
+  const chartEl = document.getElementById('_dummy_');
   if(chartEl){
     // Filtra apenas meses com dados reais (e inclui mês atual mesmo que parcial)
     const meses = hist.filter(h => !h.futuro && (h.entradas>0||h.saidas>0||h.atual));
