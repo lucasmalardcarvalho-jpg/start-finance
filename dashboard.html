@@ -2686,32 +2686,13 @@ async function reload(manual=false){
   const btn=document.getElementById('btnReload');
   if(btn){btn.disabled=true;btn.textContent='⏳...'}
   try{
-    // Só chama a API com JWT real — usuários locais (isLocal) usam só localStorage
+    // Puxa do servidor (userdata isolado por usuário) se JWT disponível
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
-    if(!AUTH_TOKEN || !isJWT){ carregarTxsLocal(); throw new Error('sem token'); }
-    const res=await Promise.race([
-      fetch('/api/todas', {headers: apiHeaders()}),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),3000))
-    ]);
-    const d=await res.json();
-    if(d.erro)throw new Error(d.erro);
-    // Valida que a resposta pertence ao usuário atual antes de sobrescrever
-    if(d.user_id && d.user_id !== AUTH_USER?.id) throw new Error('user_mismatch');
-    // Valida pelas transações: se a primeira tem user_id e não é nosso, rejeita
-    const txs = d.transacoes||[];
-    if(txs.length > 0 && txs[0].user_id && txs[0].user_id !== AUTH_USER?.id) throw new Error('user_mismatch');
-    // Merge: localStorage é fonte de verdade — não sobrescreve se tiver mais dados locais
-    const _localTxs = lsUser('txs', []);
-    if(txs.length >= _localTxs.length){
-      TODAS_TX = txs;
-      salvarTxsLocal(); // só sobrescreve se API tem >= txs
-    } else {
-      // local tem mais transações — mantém local, ignora API (sync pendente)
-      TODAS_TX = _localTxs.map((t,i)=>({...t, idx:t.idx!==undefined?t.idx:i}));
+    if(isJWT && AUTH_USER){
+      await pullDataFromServer();
     }
-    HISTORICO = d.historico || buildHistoricoLocal();
+    carregarTxsLocal();
   }catch(e){
-    // Fallback: carrega do localStorage
     carregarTxsLocal();
   }
   calcularMes();
@@ -2753,38 +2734,6 @@ async function silentSync(){
       }
     }
 
-    // 2) Sync de transações via Google Sheets
-    // Só importa do Sheets se o usuário JÁ tem transações locais salvas neste dispositivo.
-    // Isso evita que novos usuários ou outros perfis recebam dados de outro usuário do Sheets.
-    const _localTxs = lsUser('txs', []);
-    if(_localTxs.length > 0){
-      const res = await Promise.race([
-        fetch('/api/todas', {headers: apiHeaders()}),
-        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),5000))
-      ]);
-      if(res.ok){
-        const d = await res.json();
-        if(!d.erro){
-          const txs = d.transacoes||[];
-          const txsChanged = txs.length !== _localTxs.length;
-          if(txs.length > 0 && txsChanged){
-            TODAS_TX = txs;
-            salvarTxsLocal();
-            HISTORICO = buildHistoricoLocal();
-            calcularMes();
-            if(_syncReady){
-              renderDash();
-              const cur2 = document.querySelector('.page.active')?.id?.replace('page-','');
-              if(cur2 && cur2 !== 'dashboard'){
-                const fns2={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
-                if(fns2[cur2]) fns2[cur2]();
-              }
-              toast('🔄 Transações atualizadas!','info');
-            }
-          }
-        }
-      }
-    }
     _lastSyncCount = TODAS_TX.length;
   }catch(e){ /* silently ignore */ }
   finally{ _silentSyncRunning = false; }
