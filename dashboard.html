@@ -9023,6 +9023,21 @@ function coletarVencimentos(ano, mes){
     if(dtV>=new Date(ano,mes,1)) items.push({dia:vDia,tipo:'divida',nome:`⛓️ ${d.nome}`,valor:d.mensal,desc:'Parcela dívida',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal'});
   });
 
+  // 4) Transações avulsas (Gasto, não cartão crédito) do mês visualizado
+  TODAS_TX.forEach(t=>{
+    if(t.tipo!=='Gasto' || t.valor>=0) return;
+    if((t.metodo||'')==='Cartão crédito') return; // já contabilizado na fatura
+    const pts=t.data.split('/');
+    if(pts.length!==3) return;
+    const tDia=parseInt(pts[0]), tMes=parseInt(pts[1])-1, tAno=parseInt(pts[2]);
+    if(tAno!==ano||tMes!==mes) return;
+    const dtT=new Date(tAno,tMes,tDia);
+    const diasAte=Math.ceil((dtT-hoje)/(86400000));
+    const nome=`📝 ${t.descricao||t.categoria||'Despesa'}`;
+    const chave=`tx_${t.data}_${(t.descricao||t.categoria||'').replace(/[^a-zA-Z0-9]/g,'')}_${Math.round(Math.abs(t.valor))}`;
+    items.push({dia:tDia,tipo:'tx',nome,valor:Math.abs(t.valor),desc:'Despesa avulsa',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal',_txKey:chave});
+  });
+
   return items.sort((a,b)=>a.dia-b.dia);
 }
 
@@ -9135,9 +9150,9 @@ function renderVencimentosCal(){
   // Agrupa por urgência para mostrar críticos primeiro
   const urgOrdem=['critico','atencao','normal'];
   const grupos={critico:items.filter(i=>i.urgencia==='critico'),atencao:items.filter(i=>i.urgencia==='atencao'),normal:items.filter(i=>i.urgencia==='normal')};
-  const EMOJITIPO={cartao:'💳',fixa:'📌',divida:'⛓️'};
-  const LABELTIPO={cartao:'Cartão',fixa:'Despesa fixa',divida:'Parcela dívida'};
-  const CORTIPO={cartao:'#3B6FF0',fixa:'#F97316',divida:'#EF4444'};
+  const EMOJITIPO={cartao:'💳',fixa:'📌',divida:'⛓️',tx:'📝'};
+  const LABELTIPO={cartao:'Cartão',fixa:'Despesa fixa',divida:'Parcela dívida',tx:'Despesa avulsa'};
+  const CORTIPO={cartao:'#3B6FF0',fixa:'#F97316',divida:'#EF4444',tx:'#8B5CF6'};
 
   let html2='';
   urgOrdem.forEach(urg=>{
@@ -9183,8 +9198,8 @@ function renderVcalDia(dia, ano, mes){
   const items=coletarVencimentos(ano,mes).filter(i=>i.dia===dia);
   if(!items.length){ el.innerHTML=''; return; }
 
-  const EMOJITIPO={cartao:'💳',fixa:'📌',divida:'⛓️'};
-  const LABELTIPO={cartao:'Cartão de crédito',fixa:'Despesa fixa',divida:'Parcela de dívida'};
+  const EMOJITIPO={cartao:'💳',fixa:'📌',divida:'⛓️',tx:'📝'};
+  const LABELTIPO={cartao:'Cartão de crédito',fixa:'Despesa fixa',divida:'Parcela de dívida',tx:'Despesa avulsa'};
   const COR={critico:'#EF4444',atencao:'#F59E0B',normal:'#3B6FF0'};
   const totalDia=items.reduce((s,i)=>s+(parseFloat(i.valor)||0),0);
   const todosPagos=items.every(it=>VCAL_PAGOS[`${it.tipo}_${it.nome}_${ano}_${mes}`]);
