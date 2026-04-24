@@ -9872,9 +9872,13 @@ function importHandleFile(file){
 async function parsePDFExtrato(file){
   const formData = new FormData();
   formData.append('file', file);
+  // Não usar apiHeaders() aqui — Content-Type deve ser definido pelo browser (multipart boundary)
+  const h = {};
+  if(AUTH_TOKEN) h['Authorization'] = 'Bearer ' + AUTH_TOKEN;
+  if(AUTH_USER?.id) h['X-User-Id'] = AUTH_USER.id;
   const res = await fetch('/api/parse-pdf', {
     method: 'POST',
-    headers: apiHeaders(),
+    headers: h,
     body: formData
   });
   if(!res.ok){
