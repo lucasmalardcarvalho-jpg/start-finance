@@ -8574,12 +8574,13 @@ function confirmarResetDados(){
 }
 
 function resetDadosUsuario(){
-  // Remove todas as chaves namespaced deste usuário
-  const keys = ['txs','fixas','dividas','metas','inv','cartoes','cats','limites','orcTotal','cats_ocultas'];
+  const keys = ['txs','fixas','dividas','metas','inv','cartoes','cats','limites','orcTotal','cats_ocultas','recorrencias','familia','faturas_pagas','vcal_pagos','cat_model'];
   keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
-  // Limpa memória
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
+  // Envia estado vazio ao servidor para que o sync não restaure os dados na próxima atualização
+  clearTimeout(_pushDebounce); _pushDebounce = null;
+  pushDataToServer();
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
