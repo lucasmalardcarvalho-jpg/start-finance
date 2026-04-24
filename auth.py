@@ -158,6 +158,9 @@ def autenticar(email: str, password: str) -> dict | None:
                 # Senha em plaintext (usuários de env var)
                 if stored == password:
                     return u
+                # Frontend envia hash — compara SHA-256 do plaintext com o hash recebido
+                if _is_hash(password) and _sha256(stored) == password:
+                    return u
     return None
 
 

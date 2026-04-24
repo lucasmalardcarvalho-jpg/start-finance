@@ -7732,7 +7732,7 @@ async function fazerLogin(){
       // Para usuários de servidor (sem isLocal), tenta obter JWT fresco para habilitar sync
       if(!_u.isLocal){
         try{
-          const _r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})});
+          const _r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:await hashSenha(senha)})});
           const _d = await _r.json();
           if(_d.token){
             AUTH_TOKEN = _d.token;
@@ -7755,31 +7755,33 @@ async function fazerLogin(){
     }
   }
 
-  // Tenta API remota (sem expor senha em cache local)
-  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senha})})
-    .then(r=>r.json())
-    .then(async d=>{
-      if(d.token){
+  // Tenta API remota — envia senha hasheada (igual ao registro)
+  const senhaHashLogin = await hashSenha(senha);
+  fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password:senhaHashLogin})})
+    .then(async r=>{
+      const d = await r.json().catch(()=>({}));
+      if(r.status===401||r.status===400){
+        errEl.textContent='❌ '+(d.erro||'Email ou senha incorretos');
+        errEl.classList.add('show');
+      } else if(!r.ok){
+        errEl.textContent='❌ Servidor com instabilidade. Tente novamente em instantes.';
+        errEl.classList.add('show');
+      } else if(d.token){
         AUTH_TOKEN = d.token;
         AUTH_USER  = d.user;
-        // Guarda JWT por usuário para restaurar no acesso rápido
         ls_save('sf_jwt_' + d.user.id, d.token);
         const users2 = getUsers();
         if(!users2.find(u=>u.email===d.user.email)){
-          const senhaHash = await hashSenha(senha);
-          users2.push({...d.user, password: senhaHash}); // isLocal ausente = usuário de servidor
+          users2.push({...d.user, password: senhaHashLogin});
           saveUsers(users2);
         }
         ls_save('sf_token', d.token);
         ls_save('sf_user', JSON.stringify(d.user));
         entrarNoSistema();
-      } else {
-        errEl.textContent='❌ Email ou senha incorretos';
-        errEl.classList.add('show');
       }
     })
     .catch(()=>{
-      errEl.textContent='❌ Email ou senha incorretos';
+      errEl.textContent='❌ Sem conexão com o servidor. Verifique sua internet.';
       errEl.classList.add('show');
     })
     .finally(()=>{ btn.disabled=false; btn.textContent='Entrar no PenseFinances'; });
