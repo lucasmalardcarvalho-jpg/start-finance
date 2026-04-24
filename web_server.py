@@ -496,11 +496,12 @@ def save_userdata():
 
     # 3. Upsert no Supabase em background
     if _SB_URL and _SB_KEY:
+        dt_iso = datetime.utcnow().isoformat() + "Z"
         def _upsert():
             try:
                 url = f"{_SB_URL}/rest/v1/sf_userdata"
                 headers = {**_sb_ud_headers(), "Prefer": "resolution=merge-duplicates"}
-                payload = {"user_id": user_id, "data": data, "updated_at": now_ms}
+                payload = {"user_id": user_id, "data": data, "updated_at": dt_iso}
                 resp = httpx.post(url, headers=headers, json=payload, timeout=10)
                 if resp.status_code not in (200, 201):
                     logger.warning(f"Supabase save_userdata HTTP {resp.status_code}: {resp.text[:200]}")
@@ -528,7 +529,11 @@ def get_userdata_ts():
             if resp.status_code == 200:
                 rows = resp.json()
                 if rows:
-                    ts = int(rows[0].get("updated_at", 0))
+                    raw_ts = rows[0].get("updated_at", "")
+                    try:
+                        ts = int(datetime.fromisoformat(str(raw_ts).replace("Z","+00:00")).timestamp() * 1000)
+                    except Exception:
+                        ts = 0
                     _user_data_ts[user_id] = ts
                     return jsonify({"ts": ts, "user_id": user_id})
             else:
@@ -542,6 +547,115 @@ def get_userdata_ts():
     if _os.path.exists(path):
         ts = int(_os.path.getmtime(path) * 1000)
     return jsonify({"ts": ts, "user_id": user_id})
+
+
+# ── PDF Import Parser ────────────────────────────────────────────────
+import re as _re
+import io as _io
+
+def _detectar_banco_txt(txt: str) -> str | None:
+    t = txt.lower()
+    bid = _re.search(r'<bankid>0*(\d+)', txt, _re.I)
+    if bid:
+        codes = {'341':'Itaú','237':'Bradesco','001':'Banco do Brasil','033':'Santander',
+                 '260':'Nubank','077':'Inter','104':'Caixa','336':'C6 Bank',
+                 '655':'Neon','290':'PagSeguro','323':'Mercado Pago','212':'Banco Original'}
+        if bid.group(1) in codes:
+            return codes[bid.group(1)]
+    if 'nu pagamentos' in t or 'nubank' in t: return 'Nubank'
+    if 'banco inter' in t or 'inter s.a' in t or 'inter bank' in t: return 'Inter'
+    if 'bradesco' in t: return 'Bradesco'
+    if 'itaú' in t or 'itau' in t: return 'Itaú'
+    if 'santander' in t: return 'Santander'
+    if 'caixa econômica' in t or ' cef ' in t: return 'Caixa'
+    if 'banco do brasil' in t: return 'Banco do Brasil'
+    if 'c6 bank' in t or 'c6bank' in t: return 'C6 Bank'
+    if 'neon' in t: return 'Neon'
+    if 'mercado pago' in t: return 'Mercado Pago'
+    return None
+
+def _parse_pdf_rows(txt: str) -> list:
+    rows = []
+    seen = set()
+    lines = txt.splitlines()
+    date_re = _re.compile(r'^(\d{2}[/\-]\d{2}[/\-](?:\d{4}|\d{2}))\s+(.+)')
+    amt_re  = _re.compile(r'([-−]?\s*R?\$?\s*\d{1,3}(?:[.,]\d{3})*[.,]\d{2})')
+
+    for idx, line in enumerate(lines):
+        line = line.strip()
+        if not line:
+            continue
+        m = date_re.match(line)
+        if not m:
+            continue
+        raw_date = m.group(1).replace('-', '/')
+        parts = raw_date.split('/')
+        if len(parts) == 3:
+            d, mo, y = parts
+            if len(y) == 2:
+                y = '20' + y
+            data = f"{d}/{mo}/{y}"
+        else:
+            continue
+
+        rest = m.group(2)
+        amounts = list(amt_re.finditer(rest))
+        if not amounts:
+            # try next line
+            if idx + 1 < len(lines):
+                amounts = list(amt_re.finditer(lines[idx + 1]))
+                if amounts:
+                    rest = lines[idx + 1].strip()
+        if not amounts:
+            continue
+
+        last = amounts[-1]
+        descricao = rest[:last.start()].strip() or rest
+        descricao = descricao[:60]
+        val_str = last.group(1).replace('R$','').replace('$','').replace(' ','').replace('−','-').replace('\u2212','-').replace('.','').replace(',','.')
+        try:
+            valor = float(val_str)
+        except ValueError:
+            continue
+        if valor == 0:
+            continue
+
+        key = f"{data}|{descricao}|{abs(valor)}"
+        if key in seen:
+            continue
+        seen.add(key)
+        rows.append({
+            'data': data,
+            'descricao': descricao,
+            'valor': abs(valor),
+            'tipo': 'gasto' if valor < 0 else 'receita',
+        })
+    return rows
+
+@app.route("/api/parse-pdf", methods=["POST"])
+@requer_auth
+def parse_pdf():
+    if 'file' not in request.files:
+        return jsonify({"erro": "Nenhum arquivo enviado"}), 400
+    f = request.files['file']
+    try:
+        import pdfplumber
+        pdf_bytes = f.read()
+        full_text = []
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                txt = page.extract_text(x_tolerance=3, y_tolerance=3)
+                if txt:
+                    full_text.append(txt)
+        combined = '\n'.join(full_text)
+        banco = _detectar_banco_txt(combined)
+        rows = _parse_pdf_rows(combined)
+        return jsonify({"banco": banco, "rows": rows, "total": len(rows)})
+    except ImportError:
+        return jsonify({"erro": "pdfplumber não instalado no servidor"}), 500
+    except Exception as e:
+        logger.error(f"parse_pdf error: {e}")
+        return jsonify({"erro": f"Erro ao ler PDF: {str(e)}"}), 500
 
 
 # ── Health ────────────────────────────────────────────────────────
