@@ -2517,7 +2517,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
   <div class="mf">
     <button class="btn bg" onclick="CM('ovRecorr2')">Cancelar</button>
-    <button class="btn bd btn-sm" id="rcDelBtn" style="display:none" onclick="delRecorr()">🗑️</button>
+    <button class="btn bd btn-sm" id="rcDelBtn" style="display:none" onclick="delRecorr()">🗑️ Excluir</button>
     <button class="btn bp" onclick="saveRecorr()">💾 Salvar regra</button>
   </div>
 </div></div>
@@ -8515,8 +8515,9 @@ function saveRecorr(){
 function delRecorr(){
   const i = parseInt(document.getElementById('rcIdx').value);
   if(i < 0) return;
+  CM('ovRecorr2'); // fecha modal pai antes para evitar conflito de z-index no mobile
   showConfirm('Remover esta regra recorrente?', ()=>{
-    RECORRENCIAS.splice(i,1); salvarRecorrencias(); CM('ovRecorr2'); renderRecorr();
+    RECORRENCIAS.splice(i,1); salvarRecorrencias(); renderRecorr();
     toast('🗑️ Regra removida','info');
   },'🔄','Remover','bd');
 }
@@ -9619,6 +9620,7 @@ function deletarCatCustomEdit(){
   const isCustom = document.getElementById('editCatIsCustom').value === '1';
   const displayNome = document.getElementById('editCatPreviewNome').textContent;
   const displayEmoji = document.getElementById('editCatPreviewEmoji').textContent;
+  CM('ovEditCat'); // fecha modal pai antes para evitar conflito de z-index no mobile
   showConfirm(`Excluir a categoria <strong>${displayEmoji} ${esc(displayNome)}</strong>?<br><span style="font-size:12px;color:var(--muted)">Limite e personalizações serão removidos.</span>`, ()=>{
     delete LIMS_LOCAL[nome];
     salvarLimsLocal();
