@@ -625,7 +625,10 @@ def _normalizar_mes(s: str) -> str:
            'ô':'o','ó':'o','ú':'u','ü':'u','í':'i','î':'i'}
     return ''.join(rep.get(c,c) for c in s.lower())
 
-_parcela_re = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
+_parcela_re  = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
+_parc_kw_re  = _re.compile(r'\bPARC(?:ELA)?\s*[. ]*(\d{1,3})[/\- ]+(\d{1,3})\b', _re.I)
+_parc_XY_re  = _re.compile(r'\b(\d{1,3})[/](\d{2,3})\s*$')
+_parc_xN_re  = _re.compile(r'\b(\d{1,2})[Xx]\b\s*$')
 
 # ── Helpers de parsing ───────────────────────────────────────────────────────
 _AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})', _re.I)
@@ -662,6 +665,28 @@ def _resolve_mes(s: str):
     s = s.lower().strip().rstrip('.')
     return _MESES_PT.get(s) or _MESES_PT.get(_normalizar_mes(s)) or _MESES_PT.get(s[:3])
 
+def _detectar_parcelas(desc: str):
+    """Detecta padrões de parcelamento em descrições de cartão. Retorna (pa, pt)."""
+    # Formato verbose: "(Parcela 1 de 12)"
+    m = _parcela_re.search(desc)
+    if m: return int(m.group(1)), int(m.group(2))
+    # Formato keyword: "PARC 01/12" ou "PARCELA 01/12"
+    m = _parc_kw_re.search(desc)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        if 1 <= a <= b and 1 < b <= 72: return a, b
+    # Formato "01/12" no fim da descrição (Itaú, Bradesco, Santander)
+    m = _parc_XY_re.search(desc)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        if 1 <= a <= b and 1 < b <= 72: return a, b
+    # Formato "12X" ou "12x" no fim (Nubank, quantidade total de parcelas)
+    m = _parc_xN_re.search(desc)
+    if m:
+        n = int(m.group(1))
+        if 2 <= n <= 72: return 1, n
+    return 1, 1
+
 def _add_row(rows, seen, data, desc, valor, tipo, pa=1, pt=1):
     if not data or valor <= 0: return
     desc = _re.sub(r'\s+', ' ', str(desc).strip())[:80]
@@ -669,8 +694,7 @@ def _add_row(rows, seen, data, desc, valor, tipo, pa=1, pt=1):
     key = f"{data}|{desc[:28]}|{round(valor,2)}"
     if key in seen: return
     seen.add(key)
-    pm = _parcela_re.search(desc)
-    if pm: pa, pt = int(pm.group(1)), int(pm.group(2))
+    pa, pt = _detectar_parcelas(desc)
     rows.append({'data': data, 'descricao': desc, 'valor': round(valor, 2),
                  'tipo': tipo, 'parcela_atual': pa, 'parcelas': pt})
 
