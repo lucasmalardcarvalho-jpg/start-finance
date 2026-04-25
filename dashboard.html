@@ -8234,15 +8234,16 @@ function verificarAlertasVencimento(){
     const venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
     if(venc < hoje) venc.setMonth(venc.getMonth()+1); // próximo mês
     const diff = Math.round((venc - hoje)/(1000*60*60*24));
-    if(diff === 0)      alertas.push({title:'📌 Vence HOJE!', body:`${f.nome} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${f.nome}-${hojeStr}`});
-    else if(diff === 1) alertas.push({title:'📌 Vence amanhã', body:`${f.nome} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${f.nome}-${hojeStr}`});
-    else if(diff === 2) alertas.push({title:'📌 Vence em 2 dias', body:`${f.nome} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${f.nome}-${hojeStr}`});
+    const _fn = f.desc||f.nome||'Fixa';
+    if(diff === 0)      alertas.push({title:'📌 Vence HOJE!', body:`${_fn} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${_fn}-${hojeStr}`});
+    else if(diff === 1) alertas.push({title:'📌 Vence amanhã', body:`${_fn} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${_fn}-${hojeStr}`});
+    else if(diff === 2) alertas.push({title:'📌 Vence em 2 dias', body:`${_fn} — ${fmt(parseFloat(f.valor||0))}`, tag:`fixa-${_fn}-${hojeStr}`});
   });
 
   // 2) Cartões com fatura próxima
   CARTOES.forEach(c => {
-    const diaFech = parseInt(c.fechamento) || 0;
-    const diasPagar = parseInt(c.vencimento) || 0;
+    const diaFech = parseInt(c.fech||c.fechamento) || 0;
+    const diasPagar = parseInt(c.venc||c.vencimento) || 0;
     if(!diaFech || !diasPagar) return;
     const venc = new Date(hoje.getFullYear(), hoje.getMonth(), diasPagar);
     if(venc < hoje) venc.setMonth(venc.getMonth()+1);

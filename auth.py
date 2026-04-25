@@ -427,9 +427,10 @@ def registrar_rotas_auth(app, sheets_factory=None):
         base_url  = _APP_URL or request.host_url.rstrip('/')
         reset_url = f"{base_url}/?reset={token}"
         sent = _enviar_email_reset(email, reset_url)
-        logger.info(f"Reset solicitado: {email} | email_enviado={sent}")
         if not sent:
-            return jsonify({"ok": True, "reset_url": reset_url}), 200
+            logger.warning(f"Reset solicitado: {email} | SMTP não configurado | URL: {reset_url}")
+        else:
+            logger.info(f"Reset solicitado: {email} | email enviado")
         return jsonify({"ok": True}), 200
 
     @app.route("/api/reset-password", methods=["POST"])
