@@ -791,6 +791,12 @@ def health():
 
 def start(port=8080):
     init_sheets()
+    # Seed de perfil de demonstração (roda em background, idempotente)
+    try:
+        from seed_test_user import run_seed_background
+        run_seed_background()
+    except Exception as _e:
+        logger.warning(f"Seed import falhou: {_e}")
     t = threading.Thread(
         target=lambda: app.run(host="0.0.0.0", port=port, debug=False, use_reloader=False),
         daemon=True
