@@ -2952,7 +2952,7 @@ function _collectAllUserData(){
     limites:          lsUser('limites', {}),
     cats:             lsUser('cats', []),
     recorrencias:     lsUser('recorrencias', []),
-    familia:          lsUser('familia', []),
+    familia_membros:  lsUser('familia_membros', []),
     faturas_pagas:    lsUser('faturas_pagas', {}),
     vcal_pagos:       lsUser('vcal_pagos', {}),
     recorr_geradas:   lsUser('recorr_geradas', {}),
@@ -3046,7 +3046,7 @@ async function pullDataFromServer(){
 
     // Aplica TODOS os dados do servidor — ele é fonte da verdade quando ts mudou
     _cloudSyncActive = true;
-    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia','faturas_pagas','vcal_pagos','recorr_geradas','recorr_ultimo_mes'];
+    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia_membros','faturas_pagas','vcal_pagos','recorr_geradas','recorr_ultimo_mes'];
     keys.forEach(k=>{ if(data[k]!==undefined) saveUser(k, data[k]); });
     _cloudSyncActive = false;
 

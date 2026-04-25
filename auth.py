@@ -338,10 +338,14 @@ def registrar_rotas_auth(app, sheets_factory=None):
             all_users = get_users()
             existing = next((u for u in all_users if u["email"].lower() == email), None)
             if existing:
-                # Re-registro silencioso: client_id bate com ID existente ou é o mesmo email
-                # Retorna token sem criar duplicata
+                # Email já cadastrado — verifica se a senha bate antes de emitir token
+                incoming_hash = password if _is_hash(password) else _sha256(password)
+                stored_hash   = existing.get("password", "")
+                if not stored_hash or incoming_hash != stored_hash:
+                    return jsonify({"erro": "Email já cadastrado. Use a tela de login."}), 409
+                # Senha correta — re-registro silencioso (ex: novo dispositivo)
                 token = gerar_token(existing)
-                logger.info(f"↩️ Re-registro silencioso: {email}")
+                logger.info(f"↩️ Re-registro silencioso (senha ok): {email}")
                 return jsonify({
                     "token": token,
                     "user": {

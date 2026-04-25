@@ -1,6 +1,7 @@
 """
-START FINANCE — Bot v7.0
+START FINANCE — Bot v7.1
 Bot Telegram completo: todas as funções do sistema web via API local.
+Campos alinhados com o frontend (dashboard.html).
 """
 
 import os
@@ -128,6 +129,57 @@ def parse_dia(s: str) -> int | None:
     except Exception:
         return None
 
+def _nome_item(item: dict, idx: int) -> str:
+    """Retorna o nome/descrição de um item de qualquer tipo."""
+    return item.get("nome", item.get("desc", f"Item {idx + 1}"))
+
+def _is_divida_paga(d: dict) -> bool:
+    """Verifica se dívida está quitada (suporta campo legado 'paga' e novo 'pagas')."""
+    if d.get("pago", d.get("paga", False)):
+        return True
+    pagas    = int(d.get("pagas", 0) or 0)
+    parcelas = int(d.get("parcelas", d.get("total_parcelas", 0)) or 0)
+    return parcelas > 0 and pagas >= parcelas
+
+def _fixa_ativa(f: dict) -> bool:
+    """Retorna True se a despesa fixa está ativa (suporta 'status' e legado 'ativa')."""
+    status = f.get("status", f.get("ativa", True))
+    if isinstance(status, bool):
+        return status
+    return str(status).lower() not in ("false", "0", "inativa", "pausada")
+
+def _fixa_venc(f: dict):
+    """Retorna dia de vencimento da fixa (suporta 'venc' e legado 'dia_vencimento')."""
+    return f.get("venc", f.get("dia_vencimento"))
+
+def _fixa_desc(f: dict) -> str:
+    """Retorna descrição/nome da fixa (suporta 'desc' e legado 'nome')."""
+    return f.get("desc", f.get("nome", "?"))
+
+def _cartao_fech(c: dict):
+    return c.get("fech", c.get("fechamento", c.get("dia_fechamento", "?")))
+
+def _cartao_venc(c: dict):
+    return c.get("venc", c.get("vencimento", c.get("dia_vencimento")))
+
+def _divida_total(d: dict) -> float:
+    return float(d.get("total", d.get("valor_total", d.get("valor", 0))) or 0)
+
+def _divida_mensal(d: dict) -> float:
+    return float(d.get("mensal", d.get("valor_parcela", d.get("valor", _divida_total(d)))) or 0)
+
+def _divida_pagas(d: dict) -> int:
+    return int(d.get("pagas", d.get("parcela_atual", 0)) or 0)
+
+def _divida_parcelas(d: dict) -> int:
+    return int(d.get("parcelas", d.get("total_parcelas", 0)) or 0)
+
+def _meta_total(m: dict) -> float:
+    return float(m.get("total", m.get("valor_alvo", m.get("alvo", 0))) or 0)
+
+def _meta_atual(m: dict) -> float:
+    return float(m.get("atual", m.get("valor_atual", 0)) or 0)
+
 # ── Teclados ──────────────────────────────────────────────────────────
 def menu_principal_kb() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
@@ -203,10 +255,10 @@ def _build_resumo_text(data: dict) -> str:
         if t.get("tipo","").lower() == "gasto" and t.get("mes_ano") == mes:
             cats[t.get("categoria", "Outros")] += abs(t.get("valor", 0))
 
-    total_fixas = sum(f.get("valor", 0) for f in data.get("fixas", []) if f.get("ativa", True))
+    total_fixas = sum(f.get("valor", 0) for f in data.get("fixas", []) if _fixa_ativa(f))
     total_inv   = sum(i.get("valor", 0) for i in data.get("inv",   []))
-    dividas_at  = [d for d in data.get("dividas", []) if not d.get("paga", False)]
-    total_div   = sum(d.get("valor_total", d.get("valor", 0)) for d in dividas_at)
+    dividas_at  = [d for d in data.get("dividas", []) if not _is_divida_paga(d)]
+    total_div   = sum(_divida_total(d) for d in dividas_at)
     n_tx        = sum(1 for t in txs if t.get("mes_ano") == mes)
     emoji_saldo = "💚" if saldo >= 0 else "🔴"
 
@@ -280,15 +332,16 @@ async def _menu_fixas(query, context):
         await query.edit_message_text("❌ Erro ao buscar dados.")
         return
     fixas  = data.get("fixas", [])
-    total  = sum(f.get("valor", 0) for f in fixas if f.get("ativa", True))
+    total  = sum(f.get("valor", 0) for f in fixas if _fixa_ativa(f))
     txt    = f"📌 *Despesas Fixas*\n\nTotal mensal: *{fmt_brl(total)}*\n\n"
     if not fixas:
         txt += "_Nenhuma despesa fixa cadastrada._\n"
     else:
         for i, f in enumerate(fixas):
-            status = "✅" if f.get("ativa", True) else "⏸️"
-            dia    = f" | dia {f['dia_vencimento']}" if f.get("dia_vencimento") else ""
-            txt   += f"{i+1}. {status} *{f.get('nome','?')}* — {fmt_brl(f.get('valor',0))}{dia}\n"
+            status = "✅" if _fixa_ativa(f) else "⏸️"
+            dia    = _fixa_venc(f)
+            dia_str = f" | dia {dia}" if dia else ""
+            txt   += f"{i+1}. {status} *{_fixa_desc(f)}* — {fmt_brl(f.get('valor',0))}{dia_str}\n"
 
     buttons = [[InlineKeyboardButton("➕ Adicionar Fixa", callback_data="fixa_add")]]
     if fixas:
@@ -303,18 +356,17 @@ async def _menu_dividas(query, context):
         await query.edit_message_text("❌ Erro ao buscar dados.")
         return
     dividas = data.get("dividas", [])
-    ativas  = [d for d in dividas if not d.get("paga", False)]
-    total   = sum(d.get("valor_total", d.get("valor", 0)) for d in ativas)
+    ativas  = [d for d in dividas if not _is_divida_paga(d)]
+    total   = sum(_divida_total(d) for d in ativas)
     txt     = f"💳 *Dívidas*\n\nTotal: *{fmt_brl(total)}*\n\n"
     if not ativas:
         txt += "✅ _Nenhuma dívida ativa!_\n"
     else:
         for i, d in enumerate(ativas):
-            pa = d.get("parcela_atual", 0)
-            pt = d.get("total_parcelas", d.get("parcelas", 0))
-            parc = f" ({pa}/{pt}x)" if pt and int(pt) > 0 else ""
-            val_p = d.get("valor_parcela", d.get("valor", d.get("valor_total", 0)))
-            txt += f"{i+1}. 💳 *{d.get('nome','?')}*{parc} — {fmt_brl(val_p)}/mês\n"
+            pa  = _divida_pagas(d)
+            pt  = _divida_parcelas(d)
+            parc = f" ({pa}/{pt}x)" if pt > 0 else ""
+            txt += f"{i+1}. 💳 *{d.get('nome','?')}*{parc} — {fmt_brl(_divida_mensal(d))}/mês\n"
 
     buttons = [[InlineKeyboardButton("➕ Adicionar Dívida", callback_data="divida_add")]]
     if ativas:
@@ -335,8 +387,8 @@ async def _menu_metas(query, context):
         txt += "_Nenhuma meta cadastrada._\n"
     else:
         for i, m in enumerate(metas):
-            alvo  = float(m.get("valor_alvo", m.get("alvo", 0)) or 0)
-            atual = float(m.get("valor_atual", m.get("atual", 0)) or 0)
+            alvo  = _meta_total(m)
+            atual = _meta_atual(m)
             pct   = (atual / alvo * 100) if alvo > 0 else 0
             blocos = int(pct / 10)
             bar   = "█" * blocos + "░" * (10 - blocos)
@@ -362,10 +414,10 @@ async def _menu_inv(query, context):
         txt += "_Nenhum investimento cadastrado._\n"
     else:
         for i, item in enumerate(inv):
-            rend     = item.get("rendimento", item.get("rendimento_anual", 0))
-            rend_str = f" | {rend}% aa" if rend else ""
+            rent     = item.get("rent", item.get("rendimento", item.get("rendimento_anual", 0)))
+            rent_str = f" | {rent}% aa" if rent else ""
             tipo_str = f" [{item.get('tipo','')}]" if item.get("tipo") else ""
-            txt += f"{i+1}. 📈 *{item.get('nome','?')}*{tipo_str} — {fmt_brl(item.get('valor',0))}{rend_str}\n"
+            txt += f"{i+1}. 📈 *{item.get('nome','?')}*{tipo_str} — {fmt_brl(item.get('valor',0))}{rent_str}\n"
 
     buttons = [[InlineKeyboardButton("➕ Adicionar Investimento", callback_data="inv_add")]]
     if inv:
@@ -385,8 +437,8 @@ async def _menu_cartoes(query, context):
         txt += "_Nenhum cartão cadastrado._\n"
     else:
         for i, c in enumerate(cartoes):
-            fech = c.get("fechamento", c.get("dia_fechamento", "?"))
-            venc = c.get("vencimento",  c.get("dia_vencimento", "?"))
+            fech = _cartao_fech(c)
+            venc = _cartao_venc(c)
             txt += (f"{i+1}. 💳 *{c.get('nome','?')}* | "
                     f"Lim: {fmt_brl(c.get('limite',0))} | "
                     f"Fecha d.{fech} | Vence d.{venc}\n")
@@ -409,8 +461,11 @@ async def _menu_recorr(query, context):
         txt += "_Nenhuma regra cadastrada._\n"
     else:
         for i, r in enumerate(recorr):
-            freq = r.get("frequencia", r.get("tipo", "mensal"))
-            txt += f"{i+1}. 🔄 *{r.get('nome','?')}* — {fmt_brl(r.get('valor',0))} ({freq})\n"
+            tipo = r.get("tipo", "gasto")
+            tipo_emoji = "💰" if str(tipo).lower() == "receita" else "💸"
+            ativo = r.get("ativo", True)
+            status_str = "" if ativo else " ⏸️"
+            txt += f"{i+1}. {tipo_emoji} *{r.get('nome','?')}* — {fmt_brl(r.get('valor',0))}{status_str}\n"
 
     buttons = [[InlineKeyboardButton("➕ Adicionar Regra", callback_data="recorr_add")]]
     if recorr:
@@ -429,26 +484,26 @@ async def _menu_vcal(query, context):
     items: list[tuple[int, str]] = []
 
     for f in data.get("fixas", []):
-        if not f.get("ativa", True):
+        if not _fixa_ativa(f):
             continue
-        dia = f.get("dia_vencimento")
+        dia = _fixa_venc(f)
         if dia:
             try:
                 diff = int(dia) - dia_hoje
                 if diff < 0:
                     diff += 30
-                items.append((diff, f"📌 *{f['nome']}* — {fmt_brl(f.get('valor',0))} (dia {dia})"))
+                items.append((diff, f"📌 *{_fixa_desc(f)}* — {fmt_brl(f.get('valor',0))} (dia {dia})"))
             except Exception:
                 pass
 
     for c in data.get("cartoes", []):
-        dia = c.get("vencimento", c.get("dia_vencimento"))
+        dia = _cartao_venc(c)
         if dia:
             try:
                 diff = int(dia) - dia_hoje
                 if diff < 0:
                     diff += 30
-                items.append((diff, f"💳 *{c['nome']}* — fatura (dia {dia})"))
+                items.append((diff, f"💳 *{c.get('nome','?')}* — fatura (dia {dia})"))
             except Exception:
                 pass
 
@@ -462,7 +517,7 @@ async def _menu_vcal(query, context):
                     diff = int(dia) - dia_hoje
                     if diff < 0:
                         continue
-                    nome = item_v.get("nome", "Vencimento")
+                    nome  = item_v.get("nome", "Vencimento")
                     valor = item_v.get("valor", 0)
                     items.append((diff, f"📅 *{nome}* — {fmt_brl(valor)} (dia {dia})"))
                 except Exception:
@@ -517,7 +572,7 @@ async def _sel_deletar(query, tipo: str):
         return
     buttons = []
     for i, item in enumerate(items):
-        nome = item.get("nome", f"Item {i+1}")
+        nome = _nome_item(item, i)
         buttons.append([InlineKeyboardButton(f"🗑️ {nome}", callback_data=f"del_{tipo}_{i}")])
     buttons.append([InlineKeyboardButton("⬅️ Voltar", callback_data=_BACK.get(tipo, "menu_principal"))])
     await query.edit_message_text("🗑️ *Qual item deseja excluir?*", parse_mode="Markdown",
@@ -533,7 +588,7 @@ async def _exec_deletar(query, tipo: str, idx: int):
     if idx >= len(items):
         await query.edit_message_text("❌ Item não encontrado.")
         return
-    nome = items[idx].get("nome", "Item")
+    nome = _nome_item(items[idx], idx)
     items.pop(idx)
     data_obj[key] = items
     ok = api.save_data(data_obj)
@@ -703,9 +758,17 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         data_obj = api.get_data()
         if data_obj is None:
             await query.edit_message_text("❌ Erro ao acessar dados."); return
+
+        # Normaliza campos da transação para o formato do frontend
         dados["id"]      = make_id()
-        dados["mes_ano"] = dados.get("mes_ano") or mes_ano_de_data(dados.get("data",""))
-        dados["metodo"]  = dados.get("metodo", dados.get("metodo_pagamento",""))
+        dados["mes_ano"] = dados.get("mes_ano") or mes_ano_de_data(dados.get("data", ""))
+        dados["metodo"]  = dados.get("metodo", dados.get("metodo_pagamento", ""))
+        # Normaliza parcelas: AI retorna total_parcelas, frontend usa parcelas
+        if "total_parcelas" in dados and "parcelas" not in dados:
+            dados["parcelas"] = dados.pop("total_parcelas")
+        elif "parcelas" not in dados:
+            dados["parcelas"] = 0
+
         txs = data_obj.get("txs", [])
         txs.append(dados)
         data_obj["txs"] = txs
@@ -720,8 +783,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 msg_ok += f"\n📍 {dados['localizacao']}"
             if dados.get("metodo_pagamento"):
                 msg_ok += f"\n💳 {dados['metodo_pagamento']}"
-            pt = dados.get("total_parcelas", 0)
-            if pt and int(pt) > 1:
+            pt = int(dados.get("parcelas", 0) or 0)
+            if pt > 1:
                 msg_ok += f"\n🔢 Parcelado em *{pt}x*"
             dica = _gerar_dica(dados)
             if dica:
@@ -758,7 +821,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if not data_obj:
             await query.edit_message_text("❌ Erro."); return
         ativas = [(i, dv) for i, dv in enumerate(data_obj.get("dividas", []))
-                  if not dv.get("paga", False)]
+                  if not _is_divida_paga(dv)]
         if not ativas:
             await query.edit_message_text("✅ Nenhuma dívida ativa!",
                                           reply_markup=voltar_menu_kb("menu_dividas")); return
@@ -822,8 +885,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if data_obj:
             dividas = data_obj.get("dividas", [])
             if idx < len(dividas):
-                dividas[idx]["paga"]            = True
-                dividas[idx]["data_pagamento"]  = hoje()
+                parcelas = _divida_parcelas(dividas[idx])
+                # Marca como paga: atualiza pagas para igual ao total de parcelas
+                dividas[idx]["pagas"] = parcelas if parcelas > 0 else 1
+                dividas[idx]["pago"]  = True  # campo legado para compatibilidade
                 data_obj["dividas"] = dividas
                 if api.save_data(data_obj):
                     nome = dividas[idx].get("nome", "Dívida")
@@ -849,10 +914,10 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await _salvar_inv(query, context, edit=True)
         return
 
-    if d.startswith("recorr_freq_"):
-        freqs = {1: "mensal", 2: "semanal", 3: "quinzenal", 4: "anual"}
-        num   = int(d.split("_")[-1])
-        context.user_data["flow_data"]["frequencia"] = freqs.get(num, "mensal")
+    # Recorrência: seleciona tipo receita/gasto
+    if d.startswith("recorr_tipo_"):
+        tipo_dir = "receita" if d.endswith("receita") else "gasto"
+        context.user_data["flow_data"]["tipo_dir"] = tipo_dir
         await _salvar_recorr(query, context, edit=True)
         return
 
@@ -929,9 +994,8 @@ async def _process_flow(msg, context: ContextTypes.DEFAULT_TYPE, texto: str):
             parcelas = max(0, int(texto.strip()))
         except Exception:
             await msg.reply_text("❌ Número inválido. Ex: *12* ou *0*", parse_mode="Markdown"); return
-        fd["total_parcelas"] = parcelas
-        fd["parcelas"]       = parcelas
-        fd["valor_parcela"]  = round(fd["valor_total"] / parcelas, 2) if parcelas > 0 else fd["valor_total"]
+        fd["num_parcelas"] = parcelas
+        fd["valor_parcela"] = round(fd["valor_total"] / parcelas, 2) if parcelas > 0 else fd["valor_total"]
         await _salvar_divida(msg, context); return
 
     # ── Metas ──────────────────────────────────────────────────────
@@ -944,7 +1008,6 @@ async def _process_flow(msg, context: ContextTypes.DEFAULT_TYPE, texto: str):
         if v is None:
             await msg.reply_text("❌ Valor inválido. Ex: *10000*", parse_mode="Markdown"); return
         fd["valor_alvo"] = v
-        fd["alvo"]       = v
         await _set_state(msg, context, "meta_atual"); return
 
     if state == "meta_atual":
@@ -952,7 +1015,6 @@ async def _process_flow(msg, context: ContextTypes.DEFAULT_TYPE, texto: str):
         if v is None:
             await msg.reply_text("❌ Valor inválido. Ex: *1500* ou *0*", parse_mode="Markdown"); return
         fd["valor_atual"] = v
-        fd["atual"]       = v
         await _salvar_meta(msg, context); return
 
     # ── Meta progresso ─────────────────────────────────────────────
@@ -965,12 +1027,11 @@ async def _process_flow(msg, context: ContextTypes.DEFAULT_TYPE, texto: str):
         if data_obj:
             metas = data_obj.get("metas", [])
             if idx < len(metas):
-                metas[idx]["valor_atual"] = v
-                metas[idx]["atual"]       = v
+                metas[idx]["atual"] = v
                 data_obj["metas"] = metas
                 if api.save_data(data_obj):
-                    nome = metas[idx].get("nome","Meta")
-                    alvo = float(metas[idx].get("valor_alvo", metas[idx].get("alvo", 0)) or 0)
+                    nome = metas[idx].get("nome", "Meta")
+                    alvo = _meta_total(metas[idx])
                     pct  = (v / alvo * 100) if alvo > 0 else 0
                     context.user_data.clear()
                     await msg.reply_text(
@@ -1019,15 +1080,13 @@ async def _process_flow(msg, context: ContextTypes.DEFAULT_TYPE, texto: str):
         if not dia or dia < 1:
             await msg.reply_text("❌ Dia inválido (1-31)."); return
         fd["fechamento"] = dia
-        fd["dia_fechamento"] = dia
         await _set_state(msg, context, "cartao_venc"); return
 
     if state == "cartao_venc":
         dia = parse_dia(texto)
         if not dia or dia < 1:
             await msg.reply_text("❌ Dia inválido (1-31)."); return
-        fd["vencimento"]     = dia
-        fd["dia_vencimento"] = dia
+        fd["vencimento"] = dia
         await _salvar_cartao(msg, context); return
 
     # ── Recorrências ───────────────────────────────────────────────
@@ -1040,15 +1099,13 @@ async def _process_flow(msg, context: ContextTypes.DEFAULT_TYPE, texto: str):
         if v is None:
             await msg.reply_text("❌ Valor inválido. Ex: *500*", parse_mode="Markdown"); return
         fd["valor"] = v
-        context.user_data["state"] = "recorr_freq_sel"
+        context.user_data["state"] = "recorr_tipo_sel"
         kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("1️⃣ Mensal",    callback_data="recorr_freq_1"),
-             InlineKeyboardButton("2️⃣ Semanal",   callback_data="recorr_freq_2")],
-            [InlineKeyboardButton("3️⃣ Quinzenal", callback_data="recorr_freq_3"),
-             InlineKeyboardButton("4️⃣ Anual",     callback_data="recorr_freq_4")],
-            [InlineKeyboardButton("❌ Cancelar",   callback_data="cancelar_flow")],
+            [InlineKeyboardButton("💰 Receita (entrada)", callback_data="recorr_tipo_receita"),
+             InlineKeyboardButton("💸 Gasto (saída)",     callback_data="recorr_tipo_gasto")],
+            [InlineKeyboardButton("❌ Cancelar",          callback_data="cancelar_flow")],
         ])
-        await msg.reply_text("🔄 Qual a frequência?", reply_markup=kb); return
+        await msg.reply_text("🔄 É uma receita ou um gasto?", reply_markup=kb); return
 
     # Estado desconhecido → fallback para AI
     await _extrair_tx_from_msg(msg, context, texto)
@@ -1074,61 +1131,83 @@ async def _extrair_tx_from_msg(msg, context, texto: str):
 # ── Salvadores ────────────────────────────────────────────────────────
 async def _salvar_fixa(msg, context):
     fd   = context.user_data.get("flow_data", {})
+    # Campos alinhados com frontend: {desc, valor, cat, venc, status, obs}
     item = {
-        "id":              make_id(),
-        "nome":            fd.get("nome", ""),
-        "valor":           fd.get("valor", 0),
-        "dia_vencimento":  fd.get("dia_vencimento"),
-        "categoria":       "Contas",
-        "ativa":           True,
+        "id":     make_id(),
+        "desc":   fd.get("nome", ""),
+        "valor":  fd.get("valor", 0),
+        "cat":    "Contas",
+        "venc":   fd.get("dia_vencimento"),
+        "status": True,
+        "obs":    "",
     }
     await _save_item(msg, context, "fixas", item, "menu_fixas",
-                     f"✅ *{item['nome']}* adicionada!\n{fmt_brl(item['valor'])}/mês")
+                     f"✅ *{item['desc']}* adicionada!\n{fmt_brl(item['valor'])}/mês")
 
 async def _salvar_divida(msg, context):
-    fd   = context.user_data.get("flow_data", {})
+    fd       = context.user_data.get("flow_data", {})
+    v_total  = fd.get("valor_total", 0)
+    parcelas = fd.get("num_parcelas", 0)
+    mensal   = fd.get("valor_parcela", v_total)
+    # Campos alinhados com frontend: {nome, credor, total, parcelas, mensal, pagas, venc, tabela, taxa, indexador}
     item = {
-        "id":              make_id(),
-        "nome":            fd.get("nome", ""),
-        "valor_total":     fd.get("valor_total", 0),
-        "valor":           fd.get("valor_total", 0),
-        "total_parcelas":  fd.get("total_parcelas", 0),
-        "parcelas":        fd.get("parcelas", 0),
-        "parcela_atual":   1,
-        "valor_parcela":   fd.get("valor_parcela", fd.get("valor_total", 0)),
-        "paga":            False,
-        "data_inicio":     hoje(),
+        "id":        make_id(),
+        "nome":      fd.get("nome", ""),
+        "credor":    "",
+        "total":     v_total,
+        "parcelas":  parcelas,
+        "mensal":    mensal,
+        "pagas":     0,
+        "venc":      None,
+        "tabela":    "PRICE",
+        "taxa":      0,
+        "indexador": "",
     }
-    pt   = item["total_parcelas"]
-    parc = f" em {pt}x" if pt > 0 else ""
+    parc_str = f" em {parcelas}x" if parcelas > 0 else ""
     await _save_item(msg, context, "dividas", item, "menu_dividas",
-                     f"✅ *{item['nome']}* adicionada!\n{fmt_brl(item['valor_total'])}{parc}")
+                     f"✅ *{item['nome']}* adicionada!\n{fmt_brl(v_total)}{parc_str}")
 
 async def _salvar_meta(msg, context):
     fd   = context.user_data.get("flow_data", {})
     alvo = fd.get("valor_alvo", 0)
     at   = fd.get("valor_atual", 0)
     pct  = (at / alvo * 100) if alvo > 0 else 0
+    # Campos alinhados com frontend: {id, tipo, nome, emoji, total, orcamento, atual, mensal, inicio, desc}
     item = {
-        "id":          make_id(),
-        "nome":        fd.get("nome", ""),
-        "valor_alvo":  alvo,
-        "alvo":        alvo,
-        "valor_atual": at,
-        "atual":       at,
-        "categoria":   "Geral",
+        "id":       make_id(),
+        "tipo":     "economia",
+        "nome":     fd.get("nome", ""),
+        "emoji":    "🎯",
+        "total":    alvo,
+        "orcamento": 0,
+        "atual":    at,
+        "mensal":   0,
+        "inicio":   hoje(),
+        "desc":     "",
     }
     await _save_item(msg, context, "metas", item, "menu_metas",
                      f"✅ Meta *{item['nome']}* criada!\n{fmt_brl(at)} / {fmt_brl(alvo)} ({pct:.0f}%)")
 
 async def _salvar_inv(target, context, edit: bool = False):
     fd   = context.user_data.get("flow_data", {})
+    # Campos alinhados com frontend: {nome, tipo, subtipo, ticker, corretora, objetivo, valor, atual, rent, dataEntrada, ...}
     item = {
         "id":          make_id(),
         "nome":        fd.get("nome", ""),
-        "valor":       fd.get("valor", 0),
         "tipo":        fd.get("tipo", "Outro"),
-        "data_inicio": hoje(),
+        "subtipo":     "",
+        "ticker":      "",
+        "corretora":   "",
+        "objetivo":    "",
+        "valor":       fd.get("valor", 0),
+        "atual":       fd.get("valor", 0),
+        "rent":        0,
+        "dataEntrada": hoje(),
+        "dataVenc":    "",
+        "indexador":   "",
+        "liquidez":    "",
+        "risco":       "",
+        "notas":       "",
     }
     await _save_item(target, context, "inv", item, "menu_inv",
                      f"✅ *{item['nome']}* adicionado!\n{fmt_brl(item['valor'])} — {item['tipo']}",
@@ -1136,32 +1215,40 @@ async def _salvar_inv(target, context, edit: bool = False):
 
 async def _salvar_cartao(msg, context):
     fd   = context.user_data.get("flow_data", {})
-    item = {
-        "id":              make_id(),
-        "nome":            fd.get("nome", ""),
-        "limite":          fd.get("limite", 0),
-        "fechamento":      fd.get("fechamento", 1),
-        "dia_fechamento":  fd.get("dia_fechamento", 1),
-        "vencimento":      fd.get("vencimento", 10),
-        "dia_vencimento":  fd.get("dia_vencimento", 10),
-        "cor":             "#3B6FF0",
-    }
-    await _save_item(msg, context, "cartoes", item, "menu_cartoes",
-                     f"✅ Cartão *{item['nome']}* adicionado!\n"
-                     f"Lim: {fmt_brl(item['limite'])} | Fecha d.{item['fechamento']} | Vence d.{item['vencimento']}")
-
-async def _salvar_recorr(target, context, edit: bool = False):
-    fd   = context.user_data.get("flow_data", {})
+    # Campos alinhados com frontend: {nome, bandeira, banco, limite, fech, venc, cor, final, debitoAuto}
     item = {
         "id":         make_id(),
         "nome":       fd.get("nome", ""),
-        "valor":      fd.get("valor", 0),
-        "frequencia": fd.get("frequencia", "mensal"),
-        "tipo":       fd.get("frequencia", "mensal"),
-        "categoria":  "Receita",
+        "bandeira":   "",
+        "banco":      "",
+        "limite":     fd.get("limite", 0),
+        "fech":       fd.get("fechamento", 1),
+        "venc":       fd.get("vencimento", 10),
+        "cor":        "#3B6FF0",
+        "final":      "",
+        "debitoAuto": False,
     }
+    await _save_item(msg, context, "cartoes", item, "menu_cartoes",
+                     f"✅ Cartão *{item['nome']}* adicionado!\n"
+                     f"Lim: {fmt_brl(item['limite'])} | Fecha d.{item['fech']} | Vence d.{item['venc']}")
+
+async def _salvar_recorr(target, context, edit: bool = False):
+    fd       = context.user_data.get("flow_data", {})
+    tipo_dir = fd.get("tipo_dir", "gasto")
+    # Campos alinhados com frontend: {id, nome, tipo (receita/gasto), categoria, valor, dia, metodo, ativo}
+    item = {
+        "id":        make_id(),
+        "nome":      fd.get("nome", ""),
+        "tipo":      tipo_dir,
+        "categoria": "Outros",
+        "valor":     fd.get("valor", 0),
+        "dia":       1,
+        "metodo":    "",
+        "ativo":     True,
+    }
+    tipo_label = "Receita" if tipo_dir == "receita" else "Gasto"
     await _save_item(target, context, "recorrencias", item, "menu_recorr",
-                     f"✅ *{item['nome']}* adicionada!\n{fmt_brl(item['valor'])} — {item['frequencia']}",
+                     f"✅ *{item['nome']}* adicionada!\n{fmt_brl(item['valor'])} — {tipo_label}",
                      edit=edit)
 
 # ── Confirmação de transação ──────────────────────────────────────────
@@ -1180,10 +1267,10 @@ async def _pedir_confirmacao_msg(msg, context, dados: dict):
         txt += f"\n📍 {dados['localizacao']}"
     if dados.get("metodo_pagamento"):
         txt += f"\n💳 {dados['metodo_pagamento']}"
-    pt = dados.get("total_parcelas", 0)
-    if pt and int(pt) > 1:
+    pt = int(dados.get("parcelas", dados.get("total_parcelas", 0)) or 0)
+    if pt > 1:
         txt += f"\n🔢 Parcelado em *{pt}x*"
-    txt += f"\n📅 {dados.get('data',hoje())} às {dados.get('hora','00:00')}"
+    txt += f"\n📅 {dados.get('data', hoje())} às {dados.get('hora','00:00')}"
 
     context.user_data["pendente"] = dados
     kb = InlineKeyboardMarkup([[
@@ -1246,7 +1333,7 @@ def main():
     port = int(os.environ.get("PORT", "8080"))
     web_server.start(port=port)
 
-    logger.info("🚀 Start Finance Bot v7.0 iniciando...")
+    logger.info("🚀 Start Finance Bot v7.1 iniciando...")
     app = Application.builder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start",  cmd_start))
@@ -1257,7 +1344,7 @@ def main():
     app.add_handler(MessageHandler(filters.VOICE | filters.AUDIO,   handle_audio))
     app.add_handler(CallbackQueryHandler(handle_callback))
 
-    logger.info("✅ Bot v7.0 rodando!")
+    logger.info("✅ Bot v7.1 rodando!")
     app.run_polling(drop_pending_updates=True)
 
 
