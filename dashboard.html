@@ -546,6 +546,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   #page-investimentos .ph > div:first-child,
   #page-categorias .ph > div:first-child,
   #page-relatorios .ph > div:first-child { display:none!important; }
+  /* Oculta CSV e PDF no mobile (mantém seletor de mês + reload) */
+  #page-relatorios .pa > button:nth-child(n+3){display:none!important}
   /* Cards */
   .card{border-radius:12px;margin:0 10px 10px;overflow:hidden}
   .ch{padding:12px 14px 10px}
@@ -564,7 +566,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Buttons */
   .btn{font-size:12px;padding:9px 12px;min-height:44px}
   .btn-sm{padding:6px 10px;font-size:11px;min-height:36px}
-  .pa .btn{flex:1;min-width:0}
+  .pa .btn{flex:0 0 auto}
   /* Filters toolbar */
   .tb{flex-wrap:wrap;gap:6px}
   .sf-s,.sf-f{width:100%!important;font-size:13px;padding:9px 10px}
@@ -646,6 +648,10 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Category grid */
   #catsGrid{grid-template-columns:repeat(2,1fr)!important;gap:8px}
   .cat-card-item{padding:10px 8px}
+  /* Filtros de categorias — ordenar vai pra linha própria */
+  #catFiltroBarra{padding:0 10px 2px;gap:6px}
+  #catFiltroBarra > div:last-child{flex:0 0 100%;margin-left:0!important;margin-top:4px}
+  #catFiltroBarra > div:last-child .sf-f{flex:1;width:auto!important}
   /* Cards específicos */
   .dv-card,.meta-card,.inv-card{padding:12px}
   .credit-card{padding:16px}
@@ -732,10 +738,31 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     min-width:0!important;
   }
   /* Garante que charts SVG não vazem */
-  #dashChart svg, #relEvolChart svg{
+  #dashChart svg, #relEvolChart svg, #planChart svg{
     width:100%!important;
     max-width:100%!important;
     overflow:visible;
+  }
+  /* planChart stats bar — mesmo comportamento do dashboard */
+  #planChart > div:first-child{
+    flex-wrap:wrap!important;
+    padding:6px 10px 2px!important;
+    gap:6px!important;
+  }
+  #planChart > div:first-child > div{
+    flex:1 1 calc(50% - 10px)!important;
+    margin-right:0!important;
+    margin-bottom:4px!important;
+    min-width:0!important;
+  }
+  /* Confirmação — dialog compacto centralizado (não bottom sheet) */
+  #ovConfirm.ov{align-items:center!important;justify-content:center!important;padding:20px!important}
+  #ovConfirm .modal{
+    width:90%!important;max-width:370px!important;
+    border-radius:20px!important;
+    position:relative!important;
+    bottom:auto!important;top:auto!important;left:auto!important;right:auto!important;
+    max-height:80vh!important;margin:auto!important;
   }
   /* ── Calendário filtro (popup) ── */
   #calPop{
@@ -1992,7 +2019,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
   </div>
   <!-- Filtros -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+  <div id="catFiltroBarra" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
     <span style="font-size:12px;font-weight:700;color:var(--muted)">Ver:</span>
     <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
     <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
@@ -2279,7 +2306,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0;flex-wrap:wrap">
     <button id="relTabAnalise" class="rel-tab active" onclick="switchRelTab('analise')">📊 Análise</button>
     <button id="relTabFluxo" class="rel-tab" onclick="switchRelTab('fluxo')">🔮 Fluxo de Caixa</button>
-    <button id="relTabPlan" class="rel-tab" onclick="switchRelTab('plan')">🗓️ Planejamento Anual</button>
   </div>
 
   <!-- TAB: ANÁLISE -->
