@@ -332,6 +332,28 @@ def _write_local_fallback(user: dict, data: dict) -> None:
         logger.warning(f"Seed (local fallback userdata): {e}")
 
 
+def _upsert_userdata(uid: str, mock_data: dict) -> bool:
+    """Insere ou substitui os dados financeiros — funciona mesmo se a linha já existir."""
+    from datetime import datetime
+    dt_iso = datetime.utcnow().isoformat() + "Z"
+    payload = {"user_id": uid, "data": mock_data, "updated_at": dt_iso}
+    h = {**_sb_headers(), "Prefer": "resolution=merge-duplicates"}
+    r = httpx.post(f"{_SB_URL}/rest/v1/sf_userdata", headers=h, json=payload, timeout=15)
+    if r.status_code in (200, 201):
+        logger.info(f"✅ Seed: {len(mock_data['txs'])} txs salvas para user_id={uid}.")
+        return True
+    # Se POST falhou, tenta PATCH (linha pode existir com PK conflict sem merge)
+    rp = httpx.patch(
+        f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{uid}",
+        headers=_sb_headers(), json={"data": mock_data, "updated_at": dt_iso}, timeout=15
+    )
+    if rp.status_code in (200, 204):
+        logger.info(f"✅ Seed (PATCH): dados mockados atualizados para user_id={uid}.")
+        return True
+    logger.warning(f"Seed: falha ao salvar dados POST={r.status_code} PATCH={rp.status_code}: {rp.text[:200]}")
+    return False
+
+
 def _run_seed() -> None:
     pwd_hash = _sha256(TEST_PASSWORD)
     new_user = {
@@ -351,50 +373,44 @@ def _run_seed() -> None:
         return
 
     try:
-        # 1. Verificar se usuário já existe
+        # 1. Verificar se usuário já existe em Supabase
         resp = httpx.get(
             f"{_SB_URL}/rest/v1/sf_users?email=eq.{TEST_EMAIL}&select=id",
             headers=_sb_headers(), timeout=10
         )
-        existing_id = None
+        uid = None
         if resp.status_code == 200 and resp.json():
-            existing_id = resp.json()[0]["id"]
-            logger.info(f"Seed: usuário {TEST_EMAIL} já existe ({existing_id}).")
+            uid = resp.json()[0]["id"]
+            logger.info(f"Seed: usuário {TEST_EMAIL} já existe em Supabase (id={uid}).")
         else:
             # Cria o usuário
             h = {**_sb_headers(), "Prefer": "resolution=merge-duplicates"}
             r2 = httpx.post(f"{_SB_URL}/rest/v1/sf_users", headers=h, json=new_user, timeout=10)
             if r2.status_code in (200, 201):
-                logger.info(f"✅ Seed: usuário {TEST_EMAIL} criado ({TEST_ID}).")
-                existing_id = TEST_ID
+                uid = TEST_ID
+                logger.info(f"✅ Seed: usuário {TEST_EMAIL} criado ({uid}).")
             else:
                 logger.warning(f"Seed: erro ao criar usuário {r2.status_code}: {r2.text[:200]}")
                 _write_local_fallback(new_user, mock_data)
                 return
 
-        uid = existing_id or TEST_ID
-
-        # 2. Verificar se já há dados financeiros
+        # 2. Verificar se os dados financeiros têm conteúdo real (não apenas linha vazia)
         resp2 = httpx.get(
-            f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{uid}&select=user_id",
+            f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{uid}&select=data",
             headers=_sb_headers(), timeout=10
         )
+        has_real_data = False
         if resp2.status_code == 200 and resp2.json():
-            logger.info(f"Seed: dados de {TEST_EMAIL} já existem em Supabase, pulando.")
-            _write_local_fallback(new_user, mock_data)  # garante fallback local também
-            return
+            existing_data = resp2.json()[0].get("data", {}) or {}
+            txs_count = len(existing_data.get("txs") or [])
+            has_real_data = txs_count > 5  # mais de 5 txs = dados reais, não vazio
+            if has_real_data:
+                logger.info(f"Seed: {TEST_EMAIL} já tem {txs_count} transações, pulando.")
+                _write_local_fallback(new_user, mock_data)
+                return
 
-        # 3. Inserir dados financeiros
-        from datetime import datetime
-        dt_iso = datetime.utcnow().isoformat() + "Z"
-        payload = {"user_id": uid, "data": mock_data, "updated_at": dt_iso}
-        h3 = {**_sb_headers(), "Prefer": "resolution=merge-duplicates"}
-        r3 = httpx.post(f"{_SB_URL}/rest/v1/sf_userdata", headers=h3, json=payload, timeout=15)
-        if r3.status_code in (200, 201):
-            logger.info(f"✅ Seed: {len(mock_data['txs'])} txs + todos os dados mockados salvos para {TEST_EMAIL}.")
-        else:
-            logger.warning(f"Seed: erro ao salvar dados {r3.status_code}: {r3.text[:200]}")
-
+        # 3. Salvar dados mockados (insert ou overwrite)
+        _upsert_userdata(uid, mock_data)
         _write_local_fallback(new_user, mock_data)
 
     except Exception as e:
