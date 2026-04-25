@@ -2902,9 +2902,11 @@ async function pushDataToServer(){
     }
     data._pushTs = Date.now();
     data._device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
+    const hdrs = {...apiHeaders(), 'Content-Type': 'application/json'};
+    if(_intentionalClear) hdrs['X-Clear-Confirm'] = '1';
     const res = await fetch('/api/userdata', {
       method: 'POST',
-      headers: {...apiHeaders(), 'Content-Type': 'application/json'},
+      headers: hdrs,
       body: JSON.stringify(data)
     });
     if(res?.status === 401) _handleSessionExpired();

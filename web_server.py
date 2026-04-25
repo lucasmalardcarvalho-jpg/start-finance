@@ -515,16 +515,19 @@ def save_userdata():
     now_ms  = int(time.time() * 1000)
 
     # ── Anti-wipe ──────────────────────────────────────────────────────
-    # Se o payload está vazio, verifica se há dados existentes (cache OU Supabase).
-    # Cobre o cenário pós-restart onde _user_data_mem está vazio.
-    if not _sb_has_data(data):
+    # Limpeza intencional pelo usuário: header X-Clear-Confirm: 1 bypassa proteção
+    intentional_clear = request.headers.get("X-Clear-Confirm") == "1"
+
+    if not intentional_clear and not _sb_has_data(data):
         existing = _user_data_mem.get(user_id)
         if not existing and _SB_URL and _SB_KEY:
-            # Cache vazio após restart — busca referência no Supabase antes de decidir
             existing = _sb_fetch_userdata(user_id) or {}
         if _sb_has_data(existing):
             logger.warning(f"🛡️ Anti-wipe: payload vazio rejeitado para user {user_id}")
             return jsonify({"ok": False, "reason": "empty_payload_rejected"}), 409
+
+    if intentional_clear:
+        logger.info(f"🗑️ Clear intencional confirmado para user {user_id}")
 
     # ── Persiste ────────────────────────────────────────────────────────
     # 1. Cache em memória (instantâneo)
