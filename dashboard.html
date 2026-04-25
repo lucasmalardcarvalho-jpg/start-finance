@@ -3540,9 +3540,12 @@ function renderDashTxs(txMes){
   if(!recentes.length){el.innerHTML='<div class="empty" style="padding:24px"><p>Sem transações neste mês</p></div>';return;}
   el.innerHTML=recentes.map(t=>{
     const neg=t.valor<0;
+    const catInfo=CATS_CUSTOM.find(c=>c.nome===t.categoria);
+    const emoji=t.emoji||(catInfo&&catInfo.emoji)||EMOJIS[t.categoria]||'📦';
+    const cor=t.cor||(catInfo&&catInfo.cor)||CORES[t.categoria]||'#9CA3AF';
     const metIcon={'Cartão crédito':'💳','Cartão débito':'💳','Pix':'📲','Dinheiro':'💵','Boleto':'📄','Cartão':'💳'}[t.metodo]||'';
     return `<div style="display:flex;align-items:center;gap:9px;padding:9px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s" onclick="go('transacoes')" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background=''">
-      <div style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;background:${t.cor}20;border:1px solid ${t.cor}30;flex-shrink:0">${t.emoji}</div>
+      <div style="width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:14px;background:${cor}20;border:1px solid ${cor}30;flex-shrink:0">${emoji}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--txt)">${esc(t.descricao||t.categoria)}</div>
         <div style="font-size:10px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:4px">
@@ -8973,7 +8976,7 @@ function renderVencimentos(){
     let venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
     if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, dia);
     const diff = Math.round((venc-hoje)/(1000*60*60*24));
-    if(diff<=14) items.push({tipo:'fixa', nome:f.desc||f.nome||'—', valor:parseFloat(f.valor||0), venc, diff, emoji:'📌'});
+    items.push({tipo:'fixa', nome:f.desc||f.nome||'—', valor:parseFloat(f.valor||0), venc, diff, emoji:'📌'});
   });
 
   // Cartões
@@ -8985,10 +8988,11 @@ function renderVencimentos(){
     const diff = Math.round((venc-hoje)/(1000*60*60*24));
     const rawG = MES_DATA.gastosPorCartao||{};
     const fat = rawG[c.nome]||0;
-    if(diff<=14 && fat>0) items.push({tipo:'cartao', nome:`Fatura ${c.nome}`, valor:fat, venc, diff, emoji:'💳'});
+    if(fat>0) items.push({tipo:'cartao', nome:`Fatura ${c.nome}`, valor:fat, venc, diff, emoji:'💳'});
   });
 
   items.sort((a,b)=>a.diff-b.diff);
+  items.splice(5); // mostra até 5 mais próximos
 
   if(!items.length){
     el.innerHTML='';
@@ -8996,7 +9000,7 @@ function renderVencimentos(){
   }
 
   el.innerHTML=`<div class="card mb">
-    <div class="ch"><div><div class="ct">📅 Próximos Vencimentos</div><div class="cs">Próximos 14 dias</div></div><button class="btn bs btn-sm" onclick="go('vencimentos')">Ver tudo →</button></div>
+    <div class="ch"><div><div class="ct">📅 Próximos Vencimentos</div><div class="cs">Os 5 mais próximos</div></div><button class="btn bs btn-sm" onclick="go('vencimentos')">Ver tudo →</button></div>
     <div style="padding:0 18px 14px;display:flex;flex-direction:column;gap:0" data-venc-card="1">
       ${items.map(item=>{
         const urgency = item.diff===0?'var(--verm)':item.diff<=3?'var(--lara)':item.diff<=7?'var(--amar)':'var(--muted)';
