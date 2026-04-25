@@ -10158,7 +10158,9 @@ function importFlipTipos(){
 function renderImportTable(){
   const tbody = document.getElementById('importTableBody');
   if(!tbody) return;
-  const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
+  const _padraoNms = new Set(CATS_PADRAO_EXTRA.map(c=>c.nome));
+  const _extraCust = CATS_CUSTOM.filter(c=>!_padraoNms.has(c.nome)).map(c=>c.nome);
+  const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome).filter(n=>!CATS_OCULTAS.includes(n)), ..._extraCust].sort();
   tbody.innerHTML = IMPORT_ROWS.map((r, i) => {
     const isParc = (r.parcelas||1) > 1;
     const futuras = isParc ? (r.parcelas - r.parcela_atual) : 0;
