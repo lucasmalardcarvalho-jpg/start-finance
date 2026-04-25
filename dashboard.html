@@ -4036,6 +4036,7 @@ function populateMesSelector(){
 }
 
 function resetTxForm(){
+  atualizarSelectCats();
   document.getElementById('txTitle').textContent='Nova Transação';
   document.getElementById('txIdx').value='-1';
 
@@ -4124,12 +4125,14 @@ function editTx(idx){
     if(ctSel) ctSel.value=t.cartao;
   }
   // Membro da família e projeto — DEVEM ser populados antes de setar o valor
+  atualizarSelectCats();
   popularSelectMembro();
   popularSelectProjeto();
   const memEl=document.getElementById('txMembro');
   if(memEl) memEl.value=t.membro||'';
   const projEl=document.getElementById('txProjeto');
   if(projEl) projEl.value=t.projeto||'';
+  document.getElementById('txCat').value=t.categoria||'';
   populateMesSelector();
   OM('ovTx');
 }
@@ -8511,12 +8514,7 @@ function deletarMembro(){
 }
 
 function openRecorr(i=-1){
-  // Preenche select de categorias
-  const catSel = document.getElementById('rcCat');
-  if(catSel){
-    const todas = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
-    catSel.innerHTML = todas.map(c=>`<option>${esc(c)}</option>`).join('');
-  }
+  atualizarSelectCats();
   document.getElementById('rcIdx').value = i;
   const delBtn = document.getElementById('rcDelBtn');
   if(i >= 0){
@@ -9428,18 +9426,18 @@ function renderDicaDia(){
 // UTILITÁRIOS ESSENCIAIS
 // ════════════════════════════════════════════════
 function atualizarSelectCats(){
-  // Monta lista completa (padrão + custom), sem duplicatas, ordenada
-  const todas = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)];
-  const unicas = [...new Set(todas)].sort();
+  // Espelha a mesma lógica de renderCats(): padrão visível + custom genuinamente novas
+  const padraoNomes = new Set(CATS_PADRAO_EXTRA.map(c=>c.nome));
+  const padraoVisiveis = CATS_PADRAO_EXTRA.map(c=>c.nome).filter(n=>!CATS_OCULTAS.includes(n));
+  const extraCustom = CATS_CUSTOM.filter(c=>!padraoNomes.has(c.nome)).map(c=>c.nome);
+  const unicas = [...new Set([...padraoVisiveis, ...extraCustom])].sort();
   const opts = unicas.map(c=>`<option>${c}</option>`).join('');
 
-  // Atualiza TODOS os selects de categoria no app
   ['txCat','fxCat','rcCat'].forEach(id=>{
     const sel = document.getElementById(id);
     if(!sel) return;
     const atual = sel.value;
     sel.innerHTML = opts;
-    // Tenta preservar a seleção atual; se a categoria foi deletada, fica na primeira
     if(atual && unicas.includes(atual)) sel.value = atual;
   });
 }
