@@ -682,6 +682,11 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Relatórios — colapsa grids inline dentro do painel de análise */
   #relPanelAnalise > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   #relPanelAnalise .card > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  /* Fluxo de caixa — colapsa grid 2fr 1fr em coluna no mobile */
+  #relPanelFluxo > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  /* Planejamento dentro de relatórios */
+  #relPanelPlan > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
+  #relPanelPlan .card > div[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   /* Família e outros inner grids */
   #familiaResumoCols[style*="grid-template-columns"]{grid-template-columns:1fr!important}
   /* Card detail: empilha coluna esquerda (card+info) acima do extrato */
@@ -1937,17 +1942,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 </div>
 
 <!-- ═══ PLANEJAMENTO ═══ -->
-<div class="page" id="page-planejamento">
-  <div class="ph"><div><h1>🗓️ Planejamento Anual</h1><p>Visão completa do ano — receitas, gastos e saldo mês a mês</p></div>
-  <div class="pa" id="planControls"></div></div>
-  <div class="g4 mb" id="planKpis"></div>
-  <div class="g2e mb">
-    <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="padding:12px 0"></div></div>
-    <div class="card"><div class="ch"><div><div class="ct">🏆 Maiores Gastos por Categoria</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
-  </div>
-  <div id="planTable" style="margin-top:16px"></div>
-  <div id="planTabela"></div>
-</div>
+<div class="page" id="page-planejamento"></div>
 
 <!-- ═══ CATEGORIAS & LIMITES (UNIFICADO) ═══ -->
 <div class="page" id="page-categorias">
@@ -2263,9 +2258,10 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 
   <!-- Internal tabs -->
-  <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0">
+  <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid var(--border);padding-bottom:0;flex-wrap:wrap">
     <button id="relTabAnalise" class="rel-tab active" onclick="switchRelTab('analise')">📊 Análise</button>
     <button id="relTabFluxo" class="rel-tab" onclick="switchRelTab('fluxo')">🔮 Fluxo de Caixa</button>
+    <button id="relTabPlan" class="rel-tab" onclick="switchRelTab('plan')">🗓️ Planejamento Anual</button>
   </div>
 
   <!-- TAB: ANÁLISE -->
@@ -2381,6 +2377,21 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </table>
       </div>
     </div>
+  </div>
+
+  <!-- TAB: PLANEJAMENTO ANUAL -->
+  <div id="relPanelPlan" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
+      <p style="font-size:13px;color:var(--muted);font-weight:600;margin:0">Visão completa do ano — receitas, gastos e saldo mês a mês</p>
+      <div id="planControls"></div>
+    </div>
+    <div class="g4 mb" id="planKpis"></div>
+    <div class="g2e mb">
+      <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="padding:12px 0"></div></div>
+      <div class="card"><div class="ch"><div><div class="ct">🏆 Maiores Gastos por Categoria</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
+    </div>
+    <div id="planTable" style="margin-top:4px"></div>
+    <div id="planTabela"></div>
   </div>
 
   <!-- TAB: FLUXO DE CAIXA (unchanged) -->
@@ -2873,18 +2884,20 @@ let _intentionalClear = false;  // true APENAS durante resetDadosUsuario
 
 function _collectAllUserData(){
   return {
-    txs:           lsUser('txs', []),
-    fixas:         lsUser('fixas', []),
-    dividas:       lsUser('dividas', []),
-    metas:         lsUser('metas', []),
-    inv:           lsUser('inv', []),
-    cartoes:       lsUser('cartoes', []),
-    limites:       lsUser('limites', {}),
-    cats:          lsUser('cats', []),
-    recorrencias:  lsUser('recorrencias', []),
-    familia:       lsUser('familia', []),
-    faturas_pagas: lsUser('faturas_pagas', {}),
-    vcal_pagos:    lsUser('vcal_pagos', {}),
+    txs:              lsUser('txs', []),
+    fixas:            lsUser('fixas', []),
+    dividas:          lsUser('dividas', []),
+    metas:            lsUser('metas', []),
+    inv:              lsUser('inv', []),
+    cartoes:          lsUser('cartoes', []),
+    limites:          lsUser('limites', {}),
+    cats:             lsUser('cats', []),
+    recorrencias:     lsUser('recorrencias', []),
+    familia:          lsUser('familia', []),
+    faturas_pagas:    lsUser('faturas_pagas', {}),
+    vcal_pagos:       lsUser('vcal_pagos', {}),
+    recorr_geradas:   lsUser('recorr_geradas', {}),
+    recorr_ultimo_mes: lsUser('recorr_ultimo_mes', ''),
   };
 }
 
@@ -2910,6 +2923,7 @@ async function pushDataToServer(){
       body: JSON.stringify(data)
     });
     if(res?.status === 401) _handleSessionExpired();
+    else if(res?.ok && _syncReady) toast('☁️ Salvo na nuvem!', 'info');
   }catch(e){}
 }
 
@@ -2947,6 +2961,7 @@ async function pullDataFromServer(){
     if(res?.status === 401){ _handleSessionExpired(); return; }
     if(!res.ok) return;
     const data = await res.json();
+    _dataPullComplete = true; // servidor respondeu — libera push independente de ter dados
     if(!data || !Object.keys(data).length) return;
 
     const serverHasData = Object.keys(data).some(k=> Array.isArray(data[k]) ? data[k].length > 0 : Object.keys(data[k]||{}).length > 0);
@@ -2964,7 +2979,7 @@ async function pullDataFromServer(){
 
     // Aplica TODOS os dados do servidor — ele é fonte da verdade quando ts mudou
     _cloudSyncActive = true;
-    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia','faturas_pagas','vcal_pagos'];
+    const keys = ['txs','fixas','dividas','metas','inv','cartoes','limites','cats','recorrencias','familia','faturas_pagas','vcal_pagos','recorr_geradas','recorr_ultimo_mes'];
     keys.forEach(k=>{ if(data[k]!==undefined) saveUser(k, data[k]); });
     _cloudSyncActive = false;
 
@@ -2978,8 +2993,6 @@ async function pullDataFromServer(){
       const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderPlan};
       if(fns[cur]) fns[cur]();
     }
-    _dataPullComplete = true; // marca que o pull inicial completou — libera schedulePush
-    if(_syncReady) toast('🔄 Sincronizado!','info');
   }catch(e){}
 }
 
@@ -2990,8 +3003,8 @@ function go(page, _skipHistory=false){
   // Fecha qualquer modal aberto antes de navegar
   document.querySelectorAll('.ov.open').forEach(o=>o.classList.remove('open'));
 
-  // 'limites' redirects to the unified 'categorias' page on lims tab
-  const targetPage = page === 'limites' ? 'categorias' : page;
+  // 'limites' → 'categorias' tab; 'planejamento' → 'relatorios' plan tab
+  const targetPage = page === 'limites' ? 'categorias' : page === 'planejamento' ? 'relatorios' : page;
 
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.ni').forEach(i=>i.classList.remove('active'));
@@ -3008,7 +3021,7 @@ function go(page, _skipHistory=false){
   }
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
+  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:()=>{renderRel();setTimeout(()=>switchRelTab('plan'),60);},fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
   // Empurra estado para histórico do browser (habilita botão back do Android)
   if(!_skipHistory) try{ history.pushState({page:targetPage}, '', '#'+targetPage); }catch{}
@@ -6011,45 +6024,9 @@ function renderPlan(){
     <div class="kpi b" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⚖️</div></div><div class="kpi-v" style="color:${saldoAcum>=0?'var(--verde)':'var(--verm)'}">${saldoAcum>=0?'':'− '}${fmt(Math.abs(saldoAcum))}</div><div class="kpi-l">Saldo acumulado ${PLAN_ANO}</div></div>
     <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🏆</div></div><div class="kpi-v" style="color:var(--verde)">${melhorMes?melhorMes.label:'—'}</div><div class="kpi-l">Melhor mês${melhorMes?' · '+fmt(melhorMes.saldo):''}</div></div>`;
 
-  // ── Gráfico — novo estilo limpo ──
+  // ── Gráfico — mesmo layout do dashboard (renderEvolucaoAnual) ──
   const chartEl=document.getElementById('planChart');
-  if(chartEl){
-    const meses=PLAN_MODE==='anual'?planHist:planHist.filter(h=>!h.futuro&&(h.entradas>0||h.saidas>0||h.atual));
-    if(!meses.some(m=>m.entradas>0||m.saidas>0)){
-      chartEl.innerHTML=`<div style="text-align:center;padding:40px 20px;color:var(--muted)">Sem dados para ${PLAN_ANO}</div>`;
-    } else {
-      const W=700,H=240,PT=12,PB=28,PL=8,PR=8;
-      const CW=W-PL-PR,CH=H-PT-PB;
-      const n=meses.length;
-      const colW=CW/n;
-      const barW=Math.min(Math.max(colW*0.30,4),26);
-      const gap=3;
-      const maxVal=Math.max(...meses.map(h=>Math.max(h.entradas,h.saidas)),1);
-      const baseline=PT+CH;
-      let bars='';
-      meses.forEach((h,i)=>{
-        const cx=(PL+i*colW+colW/2).toFixed(1);
-        const xN=PL+i*colW+colW/2;
-        const op=h.futuro?0.3:1;
-        const isFut=h.futuro;
-        if(h.atual) bars+=`<rect x="${(PL+i*colW+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${CH}" rx="6" fill="#3B6FF0" opacity="0.06"/>`;
-        if(h.entradas>0){const bh=Math.max((h.entradas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN-barW-gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#3B6FF0" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
-        if(h.saidas>0){const bh=Math.max((h.saidas/maxVal)*CH,3);const by=(baseline-bh).toFixed(1);bars+=`<rect x="${(xN+gap/2).toFixed(1)}" y="${by}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#ee206e" opacity="${op}" class="chart-bar" data-mes="${h.label}" data-e="${h.entradas}" data-s="${h.saidas}" data-sd="${h.saldo}" data-f="${isFut}"/>`;}
-        if(isFut&&h.entradas===0&&h.saidas===0){const gh=14,gby=(baseline-gh).toFixed(1);bars+=`<rect x="${(xN-barW-gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#3B6FF0" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;bars+=`<rect x="${(xN+gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#ee206e" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;}
-        const cor=h.atual?'#3B6FF0':(h.futuro?'#D1D5DB':'#6B7280');
-        bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${cor}" font-weight="${h.atual?'800':'600'}" font-family="Cabinet Grotesk">${h.label.replace('.','').toUpperCase()}</text>`;
-      });
-      chartEl.innerHTML=`<div style="display:flex;gap:14px;padding:8px 12px 4px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#3B6FF0"><div style="width:10px;height:10px;border-radius:3px;background:#3B6FF0"></div>Receitas</div>
-        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#ee206e"><div style="width:10px;height:10px;border-radius:3px;background:#ee206e"></div>Despesas</div>
-      </div>
-      <div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:260px">
-        <line x1="${PL}" y1="${PT+CH}" x2="${W-PR}" y2="${PT+CH}" stroke="#E8EBE4" stroke-width="1.5"/>
-        ${bars}
-      </svg></div>`;
-      setupChartTooltip(chartEl);
-    }
-  }
+  if(chartEl) renderEvolucaoAnual(chartEl, 0, planHist);
 
   // ── Top categorias do período ──
   const txAno=TODAS_TX.filter(t=>t.mes_ano&&t.mes_ano.endsWith('/'+PLAN_ANO)&&t.valor<0);
@@ -6716,12 +6693,12 @@ function saveLimits(){salvarLimsLocal();renderLimits();renderCats();renderDash()
 // RELATÓRIOS — COMPLETO COM DADOS REAIS
 // ════════════════════════════════════════════════
 function switchRelTab(tab){
-  const isAnalise = tab === 'analise';
-  document.getElementById('relPanelAnalise').style.display = isAnalise ? '' : 'none';
-  document.getElementById('relPanelFluxo').style.display   = isAnalise ? 'none' : '';
-  document.getElementById('relTabAnalise').classList.toggle('active', isAnalise);
-  document.getElementById('relTabFluxo').classList.toggle('active', !isAnalise);
-  if(!isAnalise) renderFluxo();
+  const panels = {analise:'relPanelAnalise', fluxo:'relPanelFluxo', plan:'relPanelPlan'};
+  const tabs    = {analise:'relTabAnalise',   fluxo:'relTabFluxo',   plan:'relTabPlan'};
+  Object.entries(panels).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.style.display = k===tab?'':'none'; });
+  Object.entries(tabs).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', k===tab); });
+  if(tab==='fluxo') renderFluxo();
+  if(tab==='plan')  renderPlan();
 }
 
 function populateRelMesSel(){
@@ -9835,7 +9812,7 @@ function renderFluxo(){
   if(tl){
     if(!eventos.length){tl.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px">Nenhum evento previsto — adicione despesas fixas ou recorrências</div>';return;}
     const ICONS={fixa:'📌',cartao:'💳',divida:'⛓️',recorrente:'🔄'};
-    tl.innerHTML=`<table class="st" style="font-size:12px">
+    tl.innerHTML=`<div style="overflow-x:auto"><table class="st" style="font-size:12px;min-width:480px">
       <thead><tr><th>Data</th><th>Evento</th><th>Tipo</th><th>Categoria</th><th style="text-align:right">Valor</th></tr></thead>
       <tbody>
         ${eventos.map(ev=>`<tr>
@@ -9846,7 +9823,7 @@ function renderFluxo(){
           <td style="text-align:right;font-weight:800;color:${ev.valor>=0?'var(--verde)':'var(--verm)'}">${ev.valor>=0?'+':'−'} ${fmt(Math.abs(ev.valor))}</td>
         </tr>`).join('')}
       </tbody>
-    </table>`;
+    </table></div>`;
   }
 }
 
