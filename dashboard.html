@@ -1017,7 +1017,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </div>
       </div>
     </div><div class="fg"><label class="fl">Hora</label><input class="fi" id="txHora" placeholder="HH:MM"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="txValor" inputmode="decimal" placeholder="0,00" oninput="mascaraValor(this);atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="txValor" inputmode="decimal" placeholder="0,00" oninput="mascaraValor(this);atualizarValorParc()"></div><div class="fg"><label class="fl">Tipo</label><select class="fs" id="txTipo" onchange="txTipoChange()"><option>Gasto</option><option>Receita</option><option>Transferência</option><option value="Despesa Fixa">Despesa Fixa</option></select></div></div>
     <!-- txParc hidden — gerenciado pelo sistema de parcelamento -->
     <input type="hidden" id="txParc" value="0">
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="txCat"><option>Alimentação</option><option>Transporte</option><option>Contas</option><option>Lazer</option><option>Saúde</option><option>Educação</option><option>Moradia</option><option>Beleza</option><option>Vestuário</option><option>Pet</option><option>Tecnologia</option><option>Filhos</option><option>Presentes</option><option>Veículo</option><option>Impostos</option><option>Assinaturas</option><option>Salário</option><option>Freelance</option><option>Investimento</option><option>Outros</option></select></div><div class="fg"><label class="fl">Subcategoria</label><input class="fi" id="txSub" placeholder="Ex: Almoço, Uber..."></div></div>
@@ -1090,6 +1090,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
           </div>
         </div>
         <div id="txGanhoRecInfo" style="font-size:12px;color:var(--azul);font-weight:600;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
+      </div>
+    </div>
+    <!-- Campos extras para Despesa Fixa -->
+    <div id="txFxExtras" style="display:none">
+      <div class="fr">
+        <div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="txFxVenc" min="1" max="31" placeholder="Ex: 10"></div>
+        <div class="fg"><label class="fl">Prioridade</label><select class="fs" id="txFxPrior"><option value="">Normal</option><option>Alta</option><option>Baixa</option></select></div>
       </div>
     </div>
     <!-- Recorrência de gasto — aparece só quando tipo = Gasto e sem parcelamento -->
@@ -3808,17 +3815,31 @@ function txTipoChange(){
   const tipo=document.getElementById('txTipo').value;
   const ganhoArea=document.getElementById('txGanhoRecArea');
   const gastoArea=document.getElementById('txGastoRecArea');
+  const fxExtras=document.getElementById('txFxExtras');
+  const isParcArea=document.getElementById('txIsParcArea');
   if(tipo==='Receita'){
     document.getElementById('txMetodo').value='';
     document.getElementById('txCartaoRow').style.display='none';
     if(ganhoArea) ganhoArea.style.display='';
     if(gastoArea) gastoArea.style.display='none';
+    if(fxExtras) fxExtras.style.display='none';
     const gcb=document.getElementById('txGastoRec'); if(gcb) gcb.checked=false;
     const gdt=document.getElementById('txGastoRecDet'); if(gdt) gdt.style.display='none';
+  } else if(tipo==='Despesa Fixa'){
+    if(ganhoArea) ganhoArea.style.display='none';
+    const cb=document.getElementById('txGanhoRec'); if(cb) cb.checked=false;
+    const det=document.getElementById('txGanhoRecDet'); if(det) det.style.display='none';
+    if(fxExtras) fxExtras.style.display='';
+    if(gastoArea) gastoArea.style.display='';
+    // Despesa Fixa não usa parcelamento
+    if(isParcArea) isParcArea.style.display='none';
+    const isParcEl=document.getElementById('txIsParc'); if(isParcEl) isParcEl.checked=false;
+    document.getElementById('txParcRow').style.display='none';
   } else {
     if(ganhoArea) ganhoArea.style.display='none';
     const cb=document.getElementById('txGanhoRec'); if(cb) cb.checked=false;
     const det=document.getElementById('txGanhoRecDet'); if(det) det.style.display='none';
+    if(fxExtras) fxExtras.style.display='none';
     if(gastoArea) gastoArea.style.display='';
   }
 }
@@ -4209,6 +4230,11 @@ function resetTxForm(){
   if(gastoCb) gastoCb.checked=false;
   const gastoDet=document.getElementById('txGastoRecDet');
   if(gastoDet) gastoDet.style.display='none';
+  // Reseta campos de despesa fixa
+  const fxExtras=document.getElementById('txFxExtras');
+  if(fxExtras) fxExtras.style.display='none';
+  const fxVenc=document.getElementById('txFxVenc'); if(fxVenc) fxVenc.value='';
+  const fxPrior=document.getElementById('txFxPrior'); if(fxPrior) fxPrior.value='';
   popularSelectProjeto();
   popularSelectMembro();
 }
@@ -4413,6 +4439,7 @@ async function saveTx(){
 
   const idx=parseInt(document.getElementById('txIdx').value);
   const tipo=document.getElementById('txTipo').value;
+  const tipoTx = tipo==='Despesa Fixa' ? 'Gasto' : tipo; // normaliza para TODAS_TX
   const valor=parseBRL(document.getElementById('txValor').value)||parseFloat(document.getElementById('txValor').value)||0;
   const cartao=document.getElementById('txMetodo').value==='Cartão crédito'?document.getElementById('txCartaoSel').value:'';
   const projeto = document.getElementById('txProjeto')?.value || '';
@@ -4420,7 +4447,7 @@ async function saveTx(){
   const totalParc=parseInt(document.getElementById('txParc').value)||0;
   const mesAno=document.getElementById('txMesAno').value||getMesChave();
   // Valor bruto digitado
-  const valorBruto = tipo==='Gasto' ? -Math.abs(valor) : Math.abs(valor);
+  const valorBruto = (tipo==='Gasto'||tipo==='Despesa Fixa') ? -Math.abs(valor) : Math.abs(valor);
   // Se parcelado: divide pelo número de parcelas para salvar o valor unitário por mês
   const valorSalvar = totalParc > 1 ? valorBruto / totalParc : valorBruto;
 
@@ -4429,7 +4456,7 @@ async function saveTx(){
     data:document.getElementById('txData').value,
     hora:document.getElementById('txHora').value,
     valor: valorSalvar,
-    tipo,
+    tipo: tipoTx,
     categoria: catVal,
     subcategoria:document.getElementById('txSub').value,
     descricao:document.getElementById('txDesc').value,
@@ -4468,18 +4495,36 @@ async function saveTx(){
           novasTx.push({...dados, mes_ano:somarMes(mesAno,r*_passo), idx:novoIdx+r});
         }
         toast(`✅ ${_qtd} receitas criadas (${_period.toLowerCase()}, ${mesAno} → ${somarMes(mesAno,(_qtd-1)*_passo)})`,'success');
-      } else if(tipo==='Gasto' && totalParc<=1 && document.getElementById('txGastoRec')?.checked){
-        // Gasto recorrente — gera N cópias pela periodicidade escolhida
+      } else if((tipo==='Gasto'||tipo==='Despesa Fixa') && totalParc<=1 && document.getElementById('txGastoRec')?.checked){
+        // Gasto/Despesa Fixa recorrente — gera N cópias pela periodicidade escolhida
         const _period=document.getElementById('txGastoPeriod').value;
         const _qtd=Math.max(2,Math.min(60,parseInt(document.getElementById('txGastoQtd').value)||12));
         const _passo={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12}[_period]||1;
         for(let r=1;r<_qtd;r++){
           novasTx.push({...dados, mes_ano:somarMes(mesAno,r*_passo), idx:novoIdx+r});
         }
-        toast(`✅ ${_qtd} gastos criados (${_period.toLowerCase()}, ${mesAno} → ${somarMes(mesAno,(_qtd-1)*_passo)})`,'success');
+        const _label=tipo==='Despesa Fixa'?'despesas fixas':'gastos';
+        toast(`✅ ${_qtd} ${_label} criados (${_period.toLowerCase()}, ${mesAno} → ${somarMes(mesAno,(_qtd-1)*_passo)})`,'success');
       } else {
         toast('✅ Lançado!','success');
       }
+
+      // Se for Despesa Fixa, salva também em FIXAS para aparecer nessa aba
+      if(tipo==='Despesa Fixa'){
+        FIXAS.push({
+          desc:    dados.descricao || catVal,
+          valor:   Math.abs(valor),
+          cat:     catVal,
+          metodo:  document.getElementById('txMetodo').value,
+          cartao:  cartao,
+          venc:    document.getElementById('txFxVenc').value,
+          status:  'A pagar',
+          prioridade: document.getElementById('txFxPrior').value||'',
+          obs:     '',
+        });
+        salvarFixas();
+      }
+
       novasTx.forEach(t=>TODAS_TX.push(t));
       aprenderCategoria(dados.descricao, dados.categoria);
       salvarTxsLocal();   // ✅ persiste no localStorage imediatamente
