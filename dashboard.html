@@ -4122,6 +4122,13 @@ function editTx(idx){
     const ctSel=document.getElementById('txCartaoSel');
     if(ctSel) ctSel.value=t.cartao;
   }
+  // Membro da família e projeto — DEVEM ser populados antes de setar o valor
+  popularSelectMembro();
+  popularSelectProjeto();
+  const memEl=document.getElementById('txMembro');
+  if(memEl) memEl.value=t.membro||'';
+  const projEl=document.getElementById('txProjeto');
+  if(projEl) projEl.value=t.projeto||'';
   populateMesSelector();
   OM('ovTx');
 }
