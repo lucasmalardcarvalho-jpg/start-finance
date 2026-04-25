@@ -1191,6 +1191,36 @@ def _parse_pdf_rows(txt: str, pdf_bytes: bytes = None) -> list:
 
     return rows
 
+@app.route("/api/pdf-analyze-local", methods=["GET"])
+def pdf_analyze_local():
+    """Dev-only: analisa temp_c6.pdf em disco e grava resultado em pdf_analysis.json."""
+    import json as _json
+    path = os.path.join(os.path.dirname(__file__), 'temp_c6.pdf')
+    if not os.path.exists(path):
+        return jsonify({"erro": f"Arquivo não encontrado: {path}"}), 404
+    try:
+        import pdfplumber
+        result = {"pages": []}
+        with pdfplumber.open(path) as pdf:
+            for pi, page in enumerate(pdf.pages):
+                pg = {"page": pi+1, "texts": {}, "tables": [], "words": []}
+                for tol in [(3,3),(8,4),(12,6)]:
+                    txt = page.extract_text(x_tolerance=tol[0], y_tolerance=tol[1])
+                    pg["texts"][f"{tol[0]}_{tol[1]}"] = (txt or '')
+                tables = page.extract_tables()
+                for tbl in (tables or []):
+                    pg["tables"].append([r for r in (tbl or [])[:20]])
+                words = page.extract_words(x_tolerance=6, y_tolerance=4)
+                pg["words"] = [{"t":w["text"],"x":round(w["x0"],1),"y":round(w["top"],1)} for w in (words or [])]
+                result["pages"].append(pg)
+        out_path = os.path.join(os.path.dirname(__file__), 'pdf_analysis.json')
+        with open(out_path, 'w', encoding='utf-8') as fh:
+            _json.dump(result, fh, ensure_ascii=False, indent=2)
+        return jsonify({"ok": True, "pages": len(result["pages"]), "saved": out_path})
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
 @app.route("/api/parse-pdf", methods=["POST"])
 @requer_auth
 def parse_pdf():
