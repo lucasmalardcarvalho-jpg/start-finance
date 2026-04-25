@@ -148,7 +148,7 @@ def _save_db_users(users: list) -> None:
                     logger.warning(f"Supabase _save_db_users HTTP {resp.status_code}: {resp.text[:200]}")
             except Exception as e:
                 logger.warning(f"Supabase _save_db_users falhou: {e}")
-        threading.Thread(target=_upsert, daemon=True).start()
+        _upsert()
 
 
 # ── Usuários ──────────────────────────────────────────────────────────

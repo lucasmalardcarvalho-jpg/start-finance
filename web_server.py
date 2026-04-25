@@ -436,34 +436,66 @@ def _ud_path(user_id: str) -> str:
     _os.makedirs(_USER_DATA_DIR, exist_ok=True)
     return _os.path.join(_USER_DATA_DIR, f"{safe_id}.json")
 
+def _sb_has_data(d: dict) -> bool:
+    """Retorna True se o dict de dados contém ao menos uma lista não-vazia."""
+    return any(isinstance(d.get(k), list) and len(d[k]) > 0
+               for k in ('txs', 'fixas', 'dividas', 'metas', 'inv', 'cartoes'))
+
+def _sb_fetch_userdata(user_id: str) -> dict | None:
+    """Busca dados do Supabase. Retorna dict ou None em falha."""
+    if not (_SB_URL and _SB_KEY):
+        return None
+    try:
+        url = f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{user_id}&select=data,updated_at"
+        resp = httpx.get(url, headers=_sb_ud_headers(), timeout=6)
+        if resp.status_code == 200:
+            rows = resp.json()
+            if rows:
+                d    = rows[0].get("data") or {}
+                ts   = rows[0].get("updated_at") or 0
+                _user_data_mem[user_id] = d
+                try:
+                    _user_data_ts[user_id] = int(ts)
+                except Exception:
+                    pass
+                return d
+        else:
+            logger.error(f"Supabase GET userdata {resp.status_code}: {resp.text[:300]}")
+    except Exception as e:
+        logger.error(f"Supabase GET userdata exception: {e}")
+    return None
+
+def _sb_upsert_userdata(user_id: str, data: dict, now_ms: int) -> bool:
+    """Upsert síncrono no Supabase. Retorna True se bem-sucedido."""
+    if not (_SB_URL and _SB_KEY):
+        return False
+    try:
+        url     = f"{_SB_URL}/rest/v1/sf_userdata"
+        headers = {**_sb_ud_headers(), "Prefer": "resolution=merge-duplicates"}
+        payload = {"user_id": user_id, "data": data, "updated_at": now_ms}  # BIGINT
+        resp    = httpx.post(url, headers=headers, json=payload, timeout=10)
+        if resp.status_code in (200, 201):
+            return True
+        logger.error(f"Supabase UPSERT userdata {resp.status_code}: {resp.text[:300]}")
+    except Exception as e:
+        logger.error(f"Supabase UPSERT userdata exception: {e}")
+    return False
+
 @app.route("/api/userdata", methods=["GET"])
 @requer_auth
 def get_userdata():
     user_id = request.user["sub"]
 
-    # 1. Cache em memória (mais rápido)
+    # 1. Cache em memória — válido enquanto o processo estiver rodando
     if user_id in _user_data_mem:
         return jsonify(_user_data_mem[user_id])
 
-    # 2. Tenta Supabase
-    if _SB_URL and _SB_KEY:
-        try:
-            url = f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{user_id}&select=data,updated_at"
-            resp = httpx.get(url, headers=_sb_ud_headers(), timeout=5)
-            if resp.status_code == 200:
-                rows = resp.json()
-                if rows:
-                    data = rows[0].get("data", {})
-                    ts   = rows[0].get("updated_at", 0)
-                    _user_data_mem[user_id] = data
-                    _user_data_ts[user_id]  = int(ts)
-                    return jsonify(data)
-            else:
-                logger.warning(f"Supabase get_userdata HTTP {resp.status_code}: {resp.text[:200]}")
-        except Exception as e:
-            logger.warning(f"Supabase get_userdata falhou, usando arquivo: {e}")
+    # 2. Supabase — fonte primária de verdade
+    sb_data = _sb_fetch_userdata(user_id)
+    if sb_data is not None:
+        return jsonify(sb_data)
 
-    # 3. Fallback: arquivo local
+    # 3. Fallback: arquivo local (só existe em dev — ephemeral no Railway)
     path = _ud_path(user_id)
     if _os.path.exists(path):
         try:
@@ -479,53 +511,40 @@ def get_userdata():
 @requer_auth
 def save_userdata():
     user_id = request.user["sub"]
-    data = request.json or {}
-    now_ms = int(time.time() * 1000)
+    data    = request.json or {}
+    now_ms  = int(time.time() * 1000)
 
-    # Proteção anti-wipe: rejeita payload vazio quando já há dados salvos para este usuário
-    incoming_has_data = any(
-        isinstance(data.get(k), list) and len(data[k]) > 0
-        for k in ('txs', 'fixas', 'dividas', 'metas', 'inv', 'cartoes')
-    )
-    if not incoming_has_data:
+    # ── Anti-wipe ──────────────────────────────────────────────────────
+    # Se o payload está vazio, verifica se há dados existentes (cache OU Supabase).
+    # Cobre o cenário pós-restart onde _user_data_mem está vazio.
+    if not _sb_has_data(data):
         existing = _user_data_mem.get(user_id)
-        if existing:
-            existing_has_data = any(
-                isinstance(existing.get(k), list) and len(existing[k]) > 0
-                for k in ('txs', 'fixas', 'dividas', 'metas', 'inv', 'cartoes')
-            )
-            if existing_has_data:
-                logger.warning(f"🛡️ Anti-wipe: payload vazio rejeitado para user {user_id}")
-                return jsonify({"ok": False, "reason": "empty_payload_rejected"}), 409
+        if not existing and _SB_URL and _SB_KEY:
+            # Cache vazio após restart — busca referência no Supabase antes de decidir
+            existing = _sb_fetch_userdata(user_id) or {}
+        if _sb_has_data(existing):
+            logger.warning(f"🛡️ Anti-wipe: payload vazio rejeitado para user {user_id}")
+            return jsonify({"ok": False, "reason": "empty_payload_rejected"}), 409
 
-    # 1. Atualiza cache em memória
+    # ── Persiste ────────────────────────────────────────────────────────
+    # 1. Cache em memória (instantâneo)
     _user_data_mem[user_id] = data
     _user_data_ts[user_id]  = now_ms
 
-    # 2. Salva em arquivo local (síncrono)
+    # 2. Supabase — escrita SÍNCRONA (garante persistência antes de responder)
+    #    updated_at é BIGINT (milissegundos) — não enviar string ISO
+    sb_ok = _sb_upsert_userdata(user_id, data, now_ms)
+    if not sb_ok:
+        logger.error(f"⚠️ Dados do user {user_id} NÃO salvos no Supabase!")
+
+    # 3. Arquivo local — backup best-effort (ephemeral no Railway, útil em dev)
     try:
-        path = _ud_path(user_id)
-        with open(path, 'w') as f:
+        with open(_ud_path(user_id), 'w') as f:
             json.dump(data, f)
-    except Exception as e:
-        logger.warning(f"userdata write error: {e}")
+    except Exception:
+        pass
 
-    # 3. Upsert no Supabase em background
-    if _SB_URL and _SB_KEY:
-        dt_iso = datetime.utcnow().isoformat() + "Z"
-        def _upsert():
-            try:
-                url = f"{_SB_URL}/rest/v1/sf_userdata"
-                headers = {**_sb_ud_headers(), "Prefer": "resolution=merge-duplicates"}
-                payload = {"user_id": user_id, "data": data, "updated_at": dt_iso}
-                resp = httpx.post(url, headers=headers, json=payload, timeout=10)
-                if resp.status_code not in (200, 201):
-                    logger.warning(f"Supabase save_userdata HTTP {resp.status_code}: {resp.text[:200]}")
-            except Exception as e:
-                logger.warning(f"Supabase save_userdata falhou: {e}")
-        threading.Thread(target=_upsert, daemon=True).start()
-
-    return jsonify({"ok": True})
+    return jsonify({"ok": True, "sb": sb_ok})
 
 @app.route("/api/userdata/ts", methods=["GET"])
 @requer_auth
@@ -545,11 +564,7 @@ def get_userdata_ts():
             if resp.status_code == 200:
                 rows = resp.json()
                 if rows:
-                    raw_ts = rows[0].get("updated_at", "")
-                    try:
-                        ts = int(datetime.fromisoformat(str(raw_ts).replace("Z","+00:00")).timestamp() * 1000)
-                    except Exception:
-                        ts = 0
+                    ts = int(rows[0].get("updated_at") or 0)
                     _user_data_ts[user_id] = ts
                     return jsonify({"ts": ts, "user_id": user_id})
             else:
