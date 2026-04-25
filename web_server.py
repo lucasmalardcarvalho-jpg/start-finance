@@ -482,6 +482,22 @@ def save_userdata():
     data = request.json or {}
     now_ms = int(time.time() * 1000)
 
+    # Proteção anti-wipe: rejeita payload vazio quando já há dados salvos para este usuário
+    incoming_has_data = any(
+        isinstance(data.get(k), list) and len(data[k]) > 0
+        for k in ('txs', 'fixas', 'dividas', 'metas', 'inv', 'cartoes')
+    )
+    if not incoming_has_data:
+        existing = _user_data_mem.get(user_id)
+        if existing:
+            existing_has_data = any(
+                isinstance(existing.get(k), list) and len(existing[k]) > 0
+                for k in ('txs', 'fixas', 'dividas', 'metas', 'inv', 'cartoes')
+            )
+            if existing_has_data:
+                logger.warning(f"🛡️ Anti-wipe: payload vazio rejeitado para user {user_id}")
+                return jsonify({"ok": False, "reason": "empty_payload_rejected"}), 409
+
     # 1. Atualiza cache em memória
     _user_data_mem[user_id] = data
     _user_data_ts[user_id]  = now_ms

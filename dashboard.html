@@ -2854,6 +2854,8 @@ function stopAutoSync(){
 // ════════════════════════════════════════════════
 let _pushDebounce = null;
 let _cloudSyncActive = false;
+let _dataPullComplete = false;  // true após o primeiro pull bem-sucedido do servidor
+let _intentionalClear = false;  // true APENAS durante resetDadosUsuario
 
 function _collectAllUserData(){
   return {
@@ -2877,7 +2879,14 @@ async function pushDataToServer(){
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
     if(!isJWT || !AUTH_USER) return;
     const data = _collectAllUserData();
-    data._pushTs = Date.now(); // marca timestamp do push para detecção de changes
+    // Proteção anti-wipe: não envia dados vazios a menos que seja uma limpeza intencional
+    if(!_intentionalClear){
+      const hasData = (data.txs||[]).length > 0 || (data.fixas||[]).length > 0 ||
+                      (data.dividas||[]).length > 0 || (data.metas||[]).length > 0 ||
+                      (data.inv||[]).length > 0 || (data.cartoes||[]).length > 0;
+      if(!hasData) return;
+    }
+    data._pushTs = Date.now();
     data._device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
     const res = await fetch('/api/userdata', {
       method: 'POST',
@@ -2903,9 +2912,10 @@ function _handleSessionExpired(){
 }
 
 function schedulePush(){
-  // Debounce: envia após 2s de inatividade
   const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
   if(!isJWT) return;
+  // Bloqueia push antes do pull inicial completar (evita sobrescrever dados do servidor com estado vazio)
+  if(!_dataPullComplete && !_intentionalClear) return;
   clearTimeout(_pushDebounce);
   _pushDebounce = setTimeout(pushDataToServer, 2000);
 }
@@ -2952,6 +2962,7 @@ async function pullDataFromServer(){
       const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderPlan};
       if(fns[cur]) fns[cur]();
     }
+    _dataPullComplete = true; // marca que o pull inicial completou — libera schedulePush
     if(_syncReady) toast('🔄 Sincronizado!','info');
   }catch(e){}
 }
@@ -7965,19 +7976,19 @@ async function fazerLogin(){
 // ── Entrar no sistema ──────────────────────────
 function entrarNoSistema(){
   document.getElementById('loginScreen').classList.add('hidden');
-  carregarDadosUsuario(); // Carrega dados deste usuário do localStorage
+  carregarDadosUsuario();
   atualizarUIUsuario();
   init();
-  // Verifica e gera recorrências automáticas (após carregar dados)
-  setTimeout(verificarRecorrencias, 800);
   // Treina modelo de categorização com histórico existente (se modelo vazio)
   if(Object.keys(CAT_MODEL).length === 0) setTimeout(treinarCatModelComHistorico, 1200);
   // Mostra botão de notificações se não concedido; envia alertas se já concedido
   setTimeout(()=>{ checarBotaoNotificacoes(); verificarAlertasVencimento(); }, 1500);
-  // Pull inicial do servidor — traz dados de outros dispositivos
+  // Pull inicial do servidor — DEVE completar antes de qualquer push ou verificarRecorrencias
   setTimeout(async ()=>{
     await pullDataFromServer();
-    startAutoSync(); // só inicia polling após o pull inicial
+    // Recorrências e startAutoSync só rodam APÓS o pull (dados completos em memória)
+    verificarRecorrencias();
+    startAutoSync();
   }, 2000);
 }
 
@@ -8600,9 +8611,11 @@ function resetDadosUsuario(){
   keys.forEach(k => { try{ localStorage.removeItem(userKey(k)); }catch{} });
   TODAS_TX=[]; HISTORICO=[]; MES_DATA={};
   LIMS_LOCAL={}; FIXAS=[]; DIVIDAS=[]; METAS=[]; INVESTIMENTOS=[]; CARTOES=[]; CATS_CUSTOM=[]; CATS_OCULTAS=[]; RECORRENCIAS=[];
-  // Envia estado vazio ao servidor para que o sync não restaure os dados na próxima atualização
+  // Envia estado vazio ao servidor intencionalmente (bypass da proteção anti-wipe)
+  _intentionalClear = true;
   clearTimeout(_pushDebounce); _pushDebounce = null;
-  pushDataToServer();
+  await pushDataToServer();
+  _intentionalClear = false;
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
