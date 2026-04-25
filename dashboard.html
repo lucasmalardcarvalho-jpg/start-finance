@@ -2884,6 +2884,22 @@ function calcularMes(){
     }
   });
 
+  // Despesas fixas adicionadas diretamente (sem vínculo a transação existente)
+  // — evita dupla contagem de itens criados via Nova Transação > Despesa Fixa
+  FIXAS.filter(f=>!f.origem||f.origem!=='tx').forEach(f=>{
+    const v=parseFloat(f.valor||0);
+    if(v>0){
+      s+=v;
+      cats[f.cat||'Outros']=(cats[f.cat||'Outros']||0)+v;
+    }
+  });
+
+  // Pagamento mensal de dívidas ainda ativas (pagas < parcelas)
+  DIVIDAS.filter(d=>parseInt(d.pagas||0)<parseInt(d.parcelas||1)).forEach(d=>{
+    const v=parseFloat(d.mensal||0);
+    if(v>0){ s+=v; cats['Dívidas']=(cats['Dívidas']||0)+v; }
+  });
+
   const cartoesLimiteUso = calcCartoesLimiteUso();
 
   const lims={...LIMS_DEF,...LIMS_LOCAL};
@@ -4522,6 +4538,7 @@ async function saveTx(){
           status:  'A pagar',
           prioridade: document.getElementById('txFxPrior').value||'',
           obs:     '',
+          origem:  'tx', // evita dupla contagem em calcularMes()
         });
         salvarFixas();
       }
