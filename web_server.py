@@ -632,6 +632,8 @@ _parcela_re  = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
 _parc_kw_re  = _re.compile(r'\bPARC(?:ELA)?\s*[. ]*(\d{1,3})[/\- ]+(\d{1,3})\b', _re.I)
 _parc_XY_re  = _re.compile(r'\b(\d{1,3})[/](\d{2,3})\s*$')
 _parc_xN_re  = _re.compile(r'\b(\d{1,2})[Xx]\b\s*$')
+# Linha que contém APENAS info de parcelamento (sem data, sem valor) — C6 Bank, Nubank…
+_PARC_CONT_RE = _re.compile(r'^\s*(?:Parc(?:ela)?\s*\.?\s*)(\d{1,3})\s*[/\-]\s*(\d{1,3})\s*$', _re.I)
 
 # ── Helpers de parsing ───────────────────────────────────────────────────────
 _AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})', _re.I)
@@ -910,7 +912,9 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                 # tenta a linha inteira
                 amounts = _AMT_RE.findall(full)
             if amounts:
-                tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                # Fatura de cartão: sem saldo por linha → sempre pegar o ÚLTIMO valor
+                # (para compras internacionais: "USD 29,99  179,94" → queremos 179,94)
+                tx_str = amounts[-1]
                 valor, neg = _parse_valor_str(tx_str)
                 if valor > 0:
                     am = _AMT_RE.search(rest or full)
@@ -921,6 +925,7 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
         return None
 
     try:
+        sorted_ys_list: list = []
         with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
             for page in pdf.pages:
                 words = page.extract_words(x_tolerance=6, y_tolerance=4,
@@ -934,8 +939,9 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                     y_key = round(float(w['top']) / 4) * 4
                     line_map.setdefault(y_key, []).append(w)
 
+                sorted_ys_list = sorted(line_map.keys())
                 ctx_date = None  # data de contexto (quando data sozinha em linha)
-                for y_key in sorted(line_map):
+                for yi, y_key in enumerate(sorted_ys_list):
                     ws = sorted(line_map[y_key], key=lambda w: w['x0'])
                     texts = [w['text'] for w in ws]
                     full = ' '.join(texts)
@@ -955,16 +961,36 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                                 if mo:
                                     ctx_date = _make_date(mm2.group(1), mo, cur_year)
                                     continue
+                        # Linha só com info de parcelamento → associa ao último row
+                        pm = _PARC_CONT_RE.match(full)
+                        if pm and rows:
+                            pa, pt = int(pm.group(1)), int(pm.group(2))
+                            if 1 <= pa <= pt and 1 < pt <= 72:
+                                rows[-1]['parcela_atual'] = pa
+                                rows[-1]['parcelas'] = pt
+                            continue
 
+                    n_before = len(rows)
                     result = _parse_word_line(ws)
                     if result:
                         data, desc, valor, tipo = result
                         _add_row(rows, seen, data, desc, valor, tipo)
+                        # Lookahead: próxima linha de parcelamento?
+                        if len(rows) > n_before and yi + 1 < len(sorted_ys_list):
+                            next_ws = sorted(line_map[sorted_ys_list[yi+1]], key=lambda w: w['x0'])
+                            next_full = ' '.join(w['text'] for w in next_ws)
+                            pm = _PARC_CONT_RE.match(next_full)
+                            if pm:
+                                pa, pt = int(pm.group(1)), int(pm.group(2))
+                                if 1 <= pa <= pt and 1 < pt <= 72:
+                                    rows[-1]['parcela_atual'] = pa
+                                    rows[-1]['parcelas'] = pt
                     elif ctx_date and _MONEY_RE.search(full):
                         # Linha sem data própria, mas temos contexto + há valor monetário
                         amounts = _AMT_RE.findall(full)
                         if amounts:
-                            tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                            # Fatura de cartão: sempre pegar o último valor
+                            tx_str = amounts[-1]
                             valor, neg = _parse_valor_str(tx_str)
                             if valor > 0:
                                 am = _AMT_RE.search(full)
@@ -1065,7 +1091,19 @@ def _line_parse(txt: str, rows: list, seen: set):
                     _emit(data, rest, _AMT_RE.findall(rest), rows, seen, prefer_last=True)
             continue
 
-        # ── DD/MM/YYYY resto ──
+        def _lookahead_parc(rows, lines, i):
+            """Se a próxima linha for só parcelamento (Parc X/Y), aplica ao último row e avança i."""
+            if rows and i < len(lines):
+                pm = _PARC_CONT_RE.match(lines[i])
+                if pm:
+                    pa, pt = int(pm.group(1)), int(pm.group(2))
+                    if 1 <= pa <= pt and 1 < pt <= 72:
+                        rows[-1]['parcela_atual'] = pa
+                        rows[-1]['parcelas'] = pt
+                        return i + 1
+            return i
+
+        # ── DD/MM/YYYY resto (extrato bancário — tem saldo por linha) ──
         m = re_iso.match(line)
         if m and m.group(4).strip():
             data = _make_date(m.group(1), m.group(2), m.group(3))
@@ -1073,7 +1111,9 @@ def _line_parse(txt: str, rows: list, seen: set):
                 rest = m.group(4)
                 if not _AMT_RE.search(rest) and i < len(lines):
                     rest = rest + ' ' + lines[i]; i += 1
+                n_before = len(rows)
                 _emit(data, rest, _AMT_RE.findall(rest), rows, seen)
+                if len(rows) > n_before: i = _lookahead_parc(rows, lines, i)
             continue
 
         # ── DD/MM/YYYY sozinho (data de contexto) ──
@@ -1084,7 +1124,7 @@ def _line_parse(txt: str, rows: list, seen: set):
                 extrato_date = d
             continue
 
-        # ── DD/MM resto (sem ano — Itaú fatura, etc.) ──
+        # ── DD/MM resto (fatura de cartão — sem saldo por linha; pegar último valor) ──
         m = re_short.match(line)
         if m and m.group(3).strip():
             data = _make_date(m.group(1), m.group(2), cur_year)
@@ -1092,7 +1132,11 @@ def _line_parse(txt: str, rows: list, seen: set):
                 rest = m.group(3)
                 if not _AMT_RE.search(rest) and i < len(lines):
                     rest = rest + ' ' + lines[i]; i += 1
-                _emit(data, rest, _AMT_RE.findall(rest), rows, seen)
+                n_before = len(rows)
+                # prefer_last=True: fatura de cartão não tem saldo por linha
+                # dois valores = moeda estrangeira + BRL → queremos o BRL (último)
+                _emit(data, rest, _AMT_RE.findall(rest), rows, seen, prefer_last=True)
+                if len(rows) > n_before: i = _lookahead_parc(rows, lines, i)
             continue
 
         # ── DD MMM [resto] — C6 Bank, Neon e outros ──
@@ -1111,7 +1155,9 @@ def _line_parse(txt: str, rows: list, seen: set):
                         continue
                     if not _AMT_RE.search(rest) and i < len(lines):
                         rest = rest + ' ' + lines[i]; i += 1
+                    n_before = len(rows)
                     _emit(data, rest, _AMT_RE.findall(rest), rows, seen, prefer_last=True)
+                    if len(rows) > n_before: i = _lookahead_parc(rows, lines, i)
                     continue
 
         # ── Modo extrato (palavras-chave após cabeçalho de data) ──
@@ -1190,35 +1236,6 @@ def _parse_pdf_rows(txt: str, pdf_bytes: bytes = None) -> list:
             pass
 
     return rows
-
-@app.route("/api/pdf-analyze-local", methods=["GET"])
-def pdf_analyze_local():
-    """Dev-only: analisa temp_c6.pdf em disco e grava resultado em pdf_analysis.json."""
-    import json as _json
-    path = os.path.join(os.path.dirname(__file__), 'temp_c6.pdf')
-    if not os.path.exists(path):
-        return jsonify({"erro": f"Arquivo não encontrado: {path}"}), 404
-    try:
-        import pdfplumber
-        result = {"pages": []}
-        with pdfplumber.open(path) as pdf:
-            for pi, page in enumerate(pdf.pages):
-                pg = {"page": pi+1, "texts": {}, "tables": [], "words": []}
-                for tol in [(3,3),(8,4),(12,6)]:
-                    txt = page.extract_text(x_tolerance=tol[0], y_tolerance=tol[1])
-                    pg["texts"][f"{tol[0]}_{tol[1]}"] = (txt or '')
-                tables = page.extract_tables()
-                for tbl in (tables or []):
-                    pg["tables"].append([r for r in (tbl or [])[:20]])
-                words = page.extract_words(x_tolerance=6, y_tolerance=4)
-                pg["words"] = [{"t":w["text"],"x":round(w["x0"],1),"y":round(w["top"],1)} for w in (words or [])]
-                result["pages"].append(pg)
-        out_path = os.path.join(os.path.dirname(__file__), 'pdf_analysis.json')
-        with open(out_path, 'w', encoding='utf-8') as fh:
-            _json.dump(result, fh, ensure_ascii=False, indent=2)
-        return jsonify({"ok": True, "pages": len(result["pages"]), "saved": out_path})
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
 
 
 @app.route("/api/parse-pdf", methods=["POST"])
