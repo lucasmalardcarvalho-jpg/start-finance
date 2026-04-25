@@ -4108,7 +4108,8 @@ function editTx(idx){
   }
   document.getElementById('txData').value=t.data;
   document.getElementById('txHora').value=t.hora;
-  document.getElementById('txValor').value=Math.abs(t.valor).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const _parcEdit=parseInt(t.parcelas)||1;
+  document.getElementById('txValor').value=(Math.abs(t.valor)*_parcEdit).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   document.getElementById('txTipo').value=t.tipo;
   document.getElementById('txCat').value=t.categoria;
   document.getElementById('txSub').value=t.subcategoria||'';
@@ -4368,6 +4369,13 @@ function aplicarEdicaoRecorrencia(modo){
   const descOriginal = txOriginal.descricao;
   const totalParc = parseInt(txOriginal.parcelas||0);
   const parcAtual = parseInt(txOriginal.parcela_atual||1);
+  const valorOriginal = Math.abs(parseFloat(txOriginal.valor)||0);
+
+  // Identifica o grupo: mesma descrição, mesmo nº de parcelas E valor unitário idêntico
+  const _mesmoGrupo = t =>
+    t.descricao === descOriginal &&
+    parseInt(t.parcelas||0) === totalParc &&
+    Math.abs(Math.abs(parseFloat(t.valor)||0) - valorOriginal) < 0.02;
 
   if(modo === 'apenas'){
     // Altera só este
@@ -4378,9 +4386,8 @@ function aplicarEdicaoRecorrencia(modo){
   } else if(modo === 'futuros'){
     // Altera este + todos futuros do mesmo grupo (parcela_atual >= atual)
     TODAS_TX.forEach((t,i)=>{
-      const mesMatch = t.descricao===descOriginal && parseInt(t.parcelas||0)===totalParc;
       const isFuturo = parseInt(t.parcela_atual||1) >= parcAtual;
-      if(mesMatch && isFuturo){
+      if(_mesmoGrupo(t) && isFuturo){
         const offset = parseInt(t.parcela_atual||1) - parcAtual;
         const novoMes = somarMes(dados.mes_ano, offset);
         TODAS_TX[i]={...t,...dados,idx:t.idx,parcela_atual:t.parcela_atual,mes_ano:novoMes};
@@ -4391,7 +4398,7 @@ function aplicarEdicaoRecorrencia(modo){
   } else if(modo === 'todos'){
     // Altera todos do mesmo grupo
     TODAS_TX.forEach((t,i)=>{
-      if(t.descricao===descOriginal && parseInt(t.parcelas||0)===totalParc){
+      if(_mesmoGrupo(t)){
         const offset = parseInt(t.parcela_atual||1) - 1;
         const mesBase = somarMes(dados.mes_ano, -(parcAtual-1));
         const novoMes = somarMes(mesBase, offset);
@@ -9474,7 +9481,7 @@ function autoRefresh(){
   // Re-renderiza a aba ativa se não for dashboard
   const cur = document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur && cur !== 'dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur]) fns[cur]();
   }
 }
