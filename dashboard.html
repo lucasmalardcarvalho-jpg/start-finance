@@ -9895,7 +9895,9 @@ async function parsePDFExtrato(file){
     valor: r.valor,
     tipo: r.tipo,
     categoria: autoCategoria(r.descricao),
-    selecionado: true
+    selecionado: true,
+    parcela_atual: r.parcela_atual || 1,
+    parcelas: r.parcelas || 1
   }));
 }
 
@@ -10127,12 +10129,40 @@ function treinarCatModelComHistorico(){
   });
 }
 
+function importDetectarDuplicatas(rows){
+  return rows.map(r => {
+    const isDup = TODAS_TX.some(tx => {
+      if(Math.abs(Math.abs(parseFloat(tx.valor||0)) - r.valor) > 0.02) return false;
+      const dA = (r.descricao||'').toLowerCase().slice(0,20).trim();
+      const dB = (tx.descricao||'').toLowerCase().slice(0,20).trim();
+      if(dA.length < 4 || dB.length < 4) return false;
+      const sim = dA.slice(0,12) === dB.slice(0,12) || dA.includes(dB.slice(0,10)) || dB.includes(dA.slice(0,10));
+      if(!sim) return false;
+      const m1 = r.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      const m2 = (tx.data||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+      if(!m1||!m2) return false;
+      const d1 = new Date(+m1[3],+m1[2]-1,+m1[1]), d2 = new Date(+m2[3],+m2[2]-1,+m2[1]);
+      return Math.abs(d1-d2) <= 5*864e5;
+    });
+    r.duplicata = isDup;
+    return r;
+  });
+}
+
 function renderImportPreview(fileName, rows){
   document.getElementById('importStep1').style.display = 'none';
   document.getElementById('importStep2').style.display = '';
   document.getElementById('importConfirmBtn').style.display = '';
   document.getElementById('importFileName').textContent = fileName;
-  document.getElementById('importFileSummary').textContent = `${rows.length} transação(ões) encontrada(s)`;
+
+  // Marca duplicatas antes de renderizar
+  importDetectarDuplicatas(rows);
+  const nDup = rows.filter(r=>r.duplicata).length;
+  const nParc = rows.filter(r=>(r.parcelas||1)>1).length;
+  let summary = `${rows.length} transação(ões) encontrada(s)`;
+  if(nDup) summary += ` · ⚠️ ${nDup} possível(is) duplicata(s)`;
+  if(nParc) summary += ` · 🔄 ${nParc} parcelada(s)`;
+  document.getElementById('importFileSummary').textContent = summary;
 
   const bancoEl = document.getElementById('importBancoLabel');
   const autoCartao = mapearBancoParaCartao(IMPORT_BANCO_DETECTADO);
@@ -10144,12 +10174,22 @@ function renderImportPreview(fileName, rows){
   const tbody = document.getElementById('importTableBody');
   const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
 
-  tbody.innerHTML = rows.map((r, i) => `
-    <tr id="importRow_${i}" style="${!r.selecionado?'opacity:.45':''}">
+  tbody.innerHTML = rows.map((r, i) => {
+    const isParc = (r.parcelas||1) > 1;
+    const futuras = isParc ? (r.parcelas - r.parcela_atual) : 0;
+    const badges = [
+      r.duplicata ? `<span style="font-size:9px;background:#FEF3C7;color:#D97706;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">⚠️ Duplicada</span>` : '',
+      isParc ? `<span style="font-size:9px;background:#DBEAFE;color:#2563EB;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">🔄 ${r.parcela_atual}/${r.parcelas}${futuras>0?` +${futuras} futuras`:''}</span>` : ''
+    ].join('');
+    return `
+    <tr id="importRow_${i}" style="${!r.selecionado?'opacity:.45':''}${r.duplicata?';background:#FFFBEB':''}" title="${r.duplicata?'Possível duplicata — já existe transação similar no sistema':''}">
       <td><input type="checkbox" ${r.selecionado?'checked':''} onchange="importToggle(${i},this.checked)" style="cursor:pointer"></td>
       <td style="white-space:nowrap;font-size:11px">${esc(r.data)}</td>
-      <td><input type="text" value="${esc(r.descricao)}" onchange="IMPORT_ROWS[${i}].descricao=this.value"
-        style="border:none;background:transparent;width:100%;font-size:12px;color:var(--txt);font-family:inherit;outline:none;padding:2px 0"></td>
+      <td>
+        <input type="text" value="${esc(r.descricao)}" onchange="IMPORT_ROWS[${i}].descricao=this.value"
+          style="border:none;background:transparent;width:100%;font-size:12px;color:var(--txt);font-family:inherit;outline:none;padding:2px 0">
+        ${badges}
+      </td>
       <td style="font-weight:800;color:${r.tipo==='receita'?'var(--verde)':'var(--verm)'}">
         ${r.tipo==='receita'?'+':'−'} ${fmt(r.valor)}
       </td>
@@ -10166,7 +10206,8 @@ function renderImportPreview(fileName, rows){
           ${allCats.map(c=>`<option${c===r.categoria?' selected':''}>${esc(c)}</option>`).join('')}
         </select>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 
   importUpdateCount();
 }
@@ -10204,33 +10245,60 @@ function importConfirm(){
   const cartaoObj = CARTOES.find(c => c.nome === cartaoNome);
   const metodo = cartaoNome ? (cartaoObj && cartaoObj.fech ? 'Cartão crédito' : 'Débito') : 'Importado';
 
-  let importadas = 0;
+  let importadas = 0, futurasGeradas = 0;
+  const base = Date.now();
+
   sels.forEach(r => {
-    let mesAno = getMesChave();
     const dm = r.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    if(dm){
-      const d = new Date(parseInt(dm[3]), parseInt(dm[2])-1, parseInt(dm[1]));
-      mesAno = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
-    }
+    const baseDate = dm ? new Date(+dm[3], +dm[2]-1, +dm[1]) : new Date();
+    const mesAno = `${MESES_PT[baseDate.getMonth()]}/${baseDate.getFullYear()}`;
     const valor = r.tipo === 'gasto' ? -Math.abs(r.valor) : Math.abs(r.valor);
+    const pa = r.parcela_atual || 1;
+    const pt = r.parcelas || 1;
+
     TODAS_TX.push({
       data: r.data, hora: '00:00',
       descricao: r.descricao,
       categoria: r.categoria || 'Outros',
       valor, metodo, cartao: cartaoNome,
-      parcelas: 1, parcela_atual: 1,
+      parcelas: pt, parcela_atual: pa,
       tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
       local: '', mes_ano: mesAno,
-      idx: Date.now() + importadas
+      idx: base + importadas
     });
     aprenderCategoria(r.descricao, r.categoria);
     importadas++;
+
+    // Gera parcelas futuras automaticamente
+    if(pt > pa && dm){
+      for(let p = pa + 1; p <= pt; p++){
+        const mesesAhead = p - pa;
+        const fd = new Date(+dm[3], +dm[2]-1 + mesesAhead, +dm[1]);
+        const futData = `${String(fd.getDate()).padStart(2,'0')}/${String(fd.getMonth()+1).padStart(2,'0')}/${fd.getFullYear()}`;
+        const futMes = `${MESES_PT[fd.getMonth()]}/${fd.getFullYear()}`;
+        const futDesc = r.descricao.replace(/[(\[]\s*[Pp]arcela\s+\d+\s+de\s+\d+\s*[)\]]/,
+          `(Parcela ${p} de ${pt})`);
+        TODAS_TX.push({
+          data: futData, hora: '00:00',
+          descricao: futDesc,
+          categoria: r.categoria || 'Outros',
+          valor, metodo, cartao: cartaoNome,
+          parcelas: pt, parcela_atual: p,
+          tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
+          local: '', mes_ano: futMes,
+          idx: base + importadas
+        });
+        importadas++;
+        futurasGeradas++;
+      }
+    }
   });
 
   salvarTxsLocal();
   autoRefresh();
   CM('ovImport');
-  toast(`✅ ${importadas} transação(ões) importada(s) com sucesso!`, 'success');
+  const extra = futurasGeradas > 0 ? ` (+${futurasGeradas} parcelas futuras geradas)` : '';
+  toast(`✅ ${importadas} transação(ões) importada(s)${extra}`, 'success');
   renderTxPage();
 }
 

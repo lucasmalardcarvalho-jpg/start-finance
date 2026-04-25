@@ -591,6 +591,8 @@ _MESES_ABR = {
 def _normalizar_mes(s: str) -> str:
     return s.lower().replace('ç','c').replace('ã','a').replace('ê','e').replace('é','e').replace('ô','o').replace('ó','o')
 
+_parcela_re = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
+
 def _parse_pdf_rows(txt: str) -> list:
     """Parse bank statement PDF — suporta:
     1. Extrato Inter: "DD de Mês de YYYY Saldo do dia..." + linhas "Tipo: descr -R$ val R$ saldo"
@@ -638,7 +640,11 @@ def _parse_pdf_rows(txt: str) -> list:
         if key in seen or not desc or valor == 0:
             return
         seen.add(key)
-        rows.append({'data': data, 'descricao': desc, 'valor': valor, 'tipo': tipo})
+        pm = _parcela_re.search(desc)
+        pa = int(pm.group(1)) if pm else 1
+        pt = int(pm.group(2)) if pm else 1
+        rows.append({'data': data, 'descricao': desc, 'valor': valor, 'tipo': tipo,
+                     'parcela_atual': pa, 'parcelas': pt})
 
     def _parse_amt(s):
         """Retorna (valor_float, is_positive)."""
