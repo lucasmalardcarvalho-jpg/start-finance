@@ -3411,8 +3411,8 @@ function renderEvolucaoAnual(el, h, histParam){
   el.style.height='auto';
   el.style.padding='0';
 
-  // Totais (só meses passados/atual)
-  const comDados = hist.filter(hh=>!hh.futuro);
+  // Totais: inclui meses futuros que já têm transações pré-lançadas
+  const comDados = hist.filter(hh=>!hh.futuro || hh.entradas>0 || hh.saidas>0);
   const totE = comDados.reduce((s,hh)=>s+hh.entradas,0);
   const totS = comDados.reduce((s,hh)=>s+hh.saidas,0);
   const melhorList = comDados.filter(hh=>hh.entradas>0||hh.saidas>0);
@@ -6830,13 +6830,9 @@ function populateRelMesSel(){
 }
 
 function getHistAno(ano){
-  const hoje = new Date();
   return Array.from({length:12},(_,m)=>{
     const chave=`${MESES_PT[m]}/${ano}`;
-    const ex=HISTORICO.find(h=>h.chave===chave);
-    return ex||{label:MESES_PT[m].replace('.',''),chave,entradas:0,saidas:0,saldo:0,
-      atual:(m===hoje.getMonth()&&ano===hoje.getFullYear()),
-      futuro:new Date(ano,m,1)>hoje};
+    return HISTORICO.find(h=>h.chave===chave) || _calcHistMesFromTx(chave);
   });
 }
 
@@ -8833,25 +8829,31 @@ function toggleChartLayer(layer, el){
   renderHistChart('dashChart',60);
 }
 
+function _calcHistMesFromTx(chave){
+  const hoje=new Date();
+  const parts=chave.split('/');
+  const m=MESES_PT.indexOf(parts[0]);
+  const ano=parseInt(parts[1])||hoje.getFullYear();
+  const d=new Date(ano,m,1);
+  const txMes=TODAS_TX.filter(t=>t.mes_ano===chave);
+  let e=0,s=0;
+  txMes.forEach(t=>{const v=parseFloat(t.valor)||0; if(v>0)e+=v; else s+=Math.abs(v);});
+  return {label:MESES_PT[m].replace('.',''),chave,
+    entradas:Math.round(e*100)/100,saidas:Math.round(s*100)/100,saldo:Math.round((e-s)*100)/100,
+    atual:(m===hoje.getMonth()&&ano===hoje.getFullYear()),
+    futuro:d>hoje&&!(m===hoje.getMonth()&&ano===hoje.getFullYear())};
+}
+
 function getHistoricoFiltrado(){
-  if(!HISTORICO.length) return [];
+  if(!HISTORICO.length && !TODAS_TX.length) return [];
   if(CHART_PERIOD==='3m') return HISTORICO.slice(-3);
-  // Ano completo: todos os 12 meses do ano atual, incluindo futuros sem dados
-  const ano = new Date().getFullYear();
-  const hoje = new Date();
-  const hist12=[];
-  for(let m=0;m<12;m++){
+  // Ano completo: todos os 12 meses do ano atual — calcula do zero via TODAS_TX
+  // para garantir que meses futuros com transações pré-lançadas também apareçam
+  const ano=new Date().getFullYear();
+  return Array.from({length:12},(_,m)=>{
     const chave=`${MESES_PT[m]}/${ano}`;
-    const ex=HISTORICO.find(h=>h.chave===chave);
-    if(ex){ hist12.push(ex); }
-    else {
-      const d=new Date(ano,m,1);
-      hist12.push({label:MESES_PT[m].replace('.',''),chave,entradas:0,saidas:0,saldo:0,
-        atual:(d.getMonth()===hoje.getMonth()&&d.getFullYear()===hoje.getFullYear()),
-        futuro:d>hoje});
-    }
-  }
-  return hist12;
+    return HISTORICO.find(h=>h.chave===chave) || _calcHistMesFromTx(chave);
+  });
 }
 
 
