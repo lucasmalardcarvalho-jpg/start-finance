@@ -4237,6 +4237,7 @@ function resetTxForm(){
   const fxPrior=document.getElementById('txFxPrior'); if(fxPrior) fxPrior.value='';
   popularSelectProjeto();
   popularSelectMembro();
+  txTipoChange(); // garante visibilidade correta dos campos baseada no tipo padrão (Gasto)
 }
 
 // getMesChave com offset customizável
