@@ -528,6 +528,24 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Page */
   .page{padding:12px 0 16px;min-height:auto;overflow-x:hidden}
   .ph{display:none} /* header replaced by mobile topbar */
+  /* Mostra apenas a área de botões (.pa) nas páginas que têm ações importantes */
+  #page-cartoes .ph,
+  #page-fixas .ph,
+  #page-dividas .ph,
+  #page-metas .ph,
+  #page-investimentos .ph,
+  #page-categorias .ph,
+  #page-relatorios .ph {
+    display:flex!important;justify-content:flex-end;align-items:center;
+    padding:0 10px 8px!important;flex-wrap:wrap;gap:4px;
+  }
+  #page-cartoes .ph > div:first-child,
+  #page-fixas .ph > div:first-child,
+  #page-dividas .ph > div:first-child,
+  #page-metas .ph > div:first-child,
+  #page-investimentos .ph > div:first-child,
+  #page-categorias .ph > div:first-child,
+  #page-relatorios .ph > div:first-child { display:none!important; }
   /* Cards */
   .card{border-radius:12px;margin:0 10px 10px;overflow:hidden}
   .ch{padding:12px 14px 10px}
