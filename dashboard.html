@@ -6771,14 +6771,26 @@ function switchRelTab(tab){
 function populateRelMesSel(){
   const sel = document.getElementById('relMesSel');
   if(!sel) return;
+  const prevVal = sel.value; // preserva seleção do usuário
   const meses = [...new Set(TODAS_TX.map(t=>t.mes_ano).filter(Boolean))].sort().reverse();
   const curr = getMesChave();
   if(!meses.includes(curr)) meses.unshift(curr);
+  const valToSelect = (prevVal && meses.includes(prevVal)) ? prevVal : curr;
   sel.innerHTML = meses.map(m => {
-    const [mm,yy] = m.split('/');
     const label = mesChaveToLabel(m);
-    return `<option value="${m}" ${m===curr?'selected':''}>${label}</option>`;
+    return `<option value="${m}" ${m===valToSelect?'selected':''}>${label}</option>`;
   }).join('');
+}
+
+function getHistAno(ano){
+  const hoje = new Date();
+  return Array.from({length:12},(_,m)=>{
+    const chave=`${MESES_PT[m]}/${ano}`;
+    const ex=HISTORICO.find(h=>h.chave===chave);
+    return ex||{label:MESES_PT[m].replace('.',''),chave,entradas:0,saidas:0,saldo:0,
+      atual:(m===hoje.getMonth()&&ano===hoje.getFullYear()),
+      futuro:new Date(ano,m,1)>hoje};
+  });
 }
 
 function calcularMesRelatorio(mesChave){
@@ -6930,9 +6942,10 @@ function renderRel(){
     </div>
     <div style="height:4px;background:linear-gradient(90deg,var(--verde) ${Math.max(0,Math.min(100,taxaP))}%,var(--border) ${Math.max(0,Math.min(100,taxaP))}%)"></div>`;
 
-  // ── Full-width evolution chart ──
+  // ── Full-width evolution chart — usa ano do mês selecionado ──
+  const anoSel = parseInt((mesSel||'').split('/')[1]) || new Date().getFullYear();
   const relEvolEl = document.getElementById('relEvolChart');
-  if(relEvolEl) renderEvolucaoAnual(relEvolEl, 80, null);
+  if(relEvolEl) renderEvolucaoAnual(relEvolEl, 80, getHistAno(anoSel));
 
   // ── Category ranking ──
   document.getElementById('relCatRank').innerHTML = (d.categorias||[]).slice(0,6).map((c,i)=>{
