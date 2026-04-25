@@ -574,62 +574,136 @@ def _detectar_banco_txt(txt: str) -> str | None:
     if 'mercado pago' in t: return 'Mercado Pago'
     return None
 
-# Months in Portuguese for date headers like "25 de Março de 2026"
+# Meses por extenso: "25 de Março de 2026"
 _MESES_PT = {
     'janeiro':'01','fevereiro':'02','março':'03','marco':'03',
     'abril':'04','maio':'05','junho':'06','julho':'07',
     'agosto':'08','setembro':'09','outubro':'10',
     'novembro':'11','dezembro':'12'
 }
+# Meses abreviados: "19 de set. 2025" (faturas de cartão)
+_MESES_ABR = {
+    'jan':'01','fev':'02','mar':'03','abr':'04','mai':'05','jun':'06',
+    'jul':'07','ago':'08','set':'09','out':'10','nov':'11','dez':'12',
+    'apr':'04','sep':'09','oct':'10','dec':'12',
+}
+
+def _normalizar_mes(s: str) -> str:
+    return s.lower().replace('ç','c').replace('ã','a').replace('ê','e').replace('é','e').replace('ô','o').replace('ó','o')
 
 def _parse_pdf_rows(txt: str) -> list:
-    """Parse bank statement PDF text.
-    Supports:
-    - Inter / Brazilian banks: date headers 'DD de Mês de YYYY' + transaction lines
-    - Generic: lines starting with DD/MM/YYYY date
+    """Parse bank statement PDF — suporta:
+    1. Extrato Inter: "DD de Mês de YYYY Saldo do dia..." + linhas "Tipo: descr -R$ val R$ saldo"
+    2. Fatura cartão Inter: "DD de mes. YYYY  Descrição  -  (+ )R$ valor"
+    3. Genérico: linhas começando com DD/MM/YYYY
     """
     rows = []
     seen = set()
     lines = [l.strip() for l in txt.splitlines()]
 
-    # Regex patterns
-    date_header_re = _re.compile(
-        r'\b(\d{1,2})\s+de\s+([a-z\u00e1\u00e0\u00e2\u00e3\u00e9\u00ea\u00ed\u00f3\u00f4\u00f5\u00fa\u00e7]+)\s+de\s+(\d{4})\b',
-        _re.I
-    )
+    # Regex
+    # Valor com sinal: "-R$ 1.234,56", "+ R$ 1.234,56", "R$ 1.234,56"
+    amt_re  = _re.compile(r'([+\-]?\s*R\$\s*[\d.]+,\d{2})', _re.I)
+    # Data por extenso: "25 de Março de 2026"
+    date_ext_re = _re.compile(
+        r'\b(\d{1,2})\s+de\s+([a-z\u00c0-\u00ff]+)\s+de\s+(\d{4})\b', _re.I)
+    # Data abreviada: "19 de set. 2025" ou "19 de set 2025"
+    date_abr_re = _re.compile(
+        r'^(\d{1,2})\s+de\s+([a-z]{3})\.?\s+(\d{4})\b', _re.I)
+    # Data ISO: "19/03/2026" ou "19-03-2026"
     date_iso_re = _re.compile(r'^(\d{2}[/\-]\d{2}[/\-](?:\d{4}|\d{2}))\s+(.+)')
-    # Monetary amount: -R$ 1.234,56 or R$ 1.234,56
-    amt_re = _re.compile(r'-?R\$\s*[\d.]+,\d{2}', _re.I)
+
     tx_keywords = [
-        'compra no debito','compra no crédito','compra no credito',
-        'pix recebido','pix enviado','pagamento efetuado',
-        'deposito','depósito','saque','transferencia','transferência',
-        'rendimento','iof','tarifa','ted recebido','ted enviado',
-        'doc recebido','doc enviado','estorno','reembolso','resgate',
+        'compra no debito','compra no cr','pix recebido','pix enviado',
+        'pagamento efetuado','deposito','dep\u00f3sito','saque',
+        'transferencia','transfer\u00eancia','rendimento','iof','tarifa',
+        'ted recebido','ted enviado','doc recebido','doc enviado',
+        'estorno','reembolso','resgate',
+    ]
+    skip_patterns = [
+        'saldo total','data movimenta','benefici\u00e1rio','beneficiario',
+        'fatura atual','pr\u00f3xima fatura','saldo em aberto','despesas do m\u00eas',
+        'limite de cr\u00e9dito','pagamento m\u00ednimo','encargos financeiros',
+        'valor do documento','data de vencimento','movimenta\u00e7\u00e3o',
+        'total cart\u00e3o','total cartao','parcelamento','pr\u00f3ximo per\u00edodo',
+        'data corte','saldo demais','compras parceladas',
     ]
 
-    current_date = None
+    extrato_date = None   # data corrente no modo extrato
+    in_fatura   = False   # True quando estamos na seção "Despesas da fatura"
+
+    def _add(data, desc, valor, tipo):
+        desc = desc.strip()[:60]
+        key = f"{data}|{desc[:30]}|{valor}"
+        if key in seen or not desc or valor == 0:
+            return
+        seen.add(key)
+        rows.append({'data': data, 'descricao': desc, 'valor': valor, 'tipo': tipo})
+
+    def _parse_amt(s):
+        """Retorna (valor_float, is_positive)."""
+        positive = s.strip().startswith('+')
+        negative = s.strip().startswith('-')
+        num = s.replace('+','').replace('-','').replace('R$','').replace(' ','').replace('.','').replace(',','.')
+        try:
+            v = float(num)
+            return v, positive or not negative
+        except ValueError:
+            return 0.0, True
+
     i = 0
     while i < len(lines):
         line = lines[i]; i += 1
         if not line:
             continue
+        low = line.lower()
 
-        # ── Date header (Inter/extended format): "25 de Março de 2026" ──
-        dhm = date_header_re.search(line)
-        if dhm and ('saldo' in line.lower() or 'dia' in line.lower()):
-            day = dhm.group(1).zfill(2)
-            m_raw = dhm.group(2).lower()
-            mo = _MESES_PT.get(m_raw)
-            if not mo:
-                # try removing accents for lookup
-                norm = m_raw.replace('ç','c').replace('ã','a').replace('ê','e').replace('é','e').replace('ô','o').replace('ó','o')
-                mo = _MESES_PT.get(norm)
-            if mo:
-                current_date = f"{day}/{mo}/{dhm.group(3)}"
+        # Pula linhas de cabeçalho/totais conhecidas
+        if any(p in low for p in skip_patterns):
             continue
 
-        # ── Generic date line: DD/MM/YYYY ... ──
+        # Detecta entrada na seção de fatura do cartão
+        if ('cart\u00e3o' in low or 'cartao' in low) and ('****' in line or 'despesas' in low):
+            in_fatura = True
+            extrato_date = None
+            continue
+
+        # ── MODO EXTRATO: cabeçalho de data "DD de Mês de YYYY Saldo do dia..." ──
+        dhm = date_ext_re.search(line)
+        if dhm and ('saldo' in low or 'dia' in low):
+            m_raw = dhm.group(2).lower()
+            mo = _MESES_PT.get(m_raw) or _MESES_PT.get(_normalizar_mes(m_raw))
+            if mo:
+                extrato_date = f"{dhm.group(1).zfill(2)}/{mo}/{dhm.group(3)}"
+                in_fatura = False
+            continue
+
+        # ── MODO FATURA: linha de transação "DD de set. 2025 Descrição - R$ valor" ──
+        abr_m = date_abr_re.match(line)
+        if abr_m:
+            mo = _MESES_ABR.get(abr_m.group(2).lower())
+            if mo:
+                data = f"{abr_m.group(1).zfill(2)}/{mo}/{abr_m.group(3)}"
+                rest = line[abr_m.end():].strip()
+                # merge next line se não tiver valor ainda
+                if not amt_re.search(rest) and i < len(lines):
+                    rest = rest + ' ' + lines[i]; i += 1
+                amounts = amt_re.findall(rest)
+                if not amounts:
+                    continue
+                tx_str = amounts[-1]
+                valor, positivo = _parse_amt(tx_str)
+                if valor == 0:
+                    continue
+                first_m = amt_re.search(rest)
+                desc = (rest[:first_m.start()] if first_m else rest)
+                # Remove coluna "Beneficiário" vazia (traço)
+                desc = _re.sub(r'\s*[-\u2013\u2014]\s*$', '', desc).strip()
+                tipo = 'receita' if positivo and tx_str.strip().startswith('+') else 'gasto'
+                _add(data, desc, valor, tipo)
+            continue
+
+        # ── MODO GENÉRICO: linha começa com DD/MM/YYYY ──
         gm = date_iso_re.match(line)
         if gm:
             raw = gm.group(1).replace('-','/')
@@ -637,72 +711,43 @@ def _parse_pdf_rows(txt: str) -> list:
             if len(p) == 3:
                 d, mo, y = p
                 if len(y) == 2: y = '20' + y
-                current_date = f"{d}/{mo}/{y}"
+                cur = f"{d}/{mo}/{y}"
                 rest = gm.group(2)
-                amounts = amt_re.findall(rest)
-                if not amounts and i < len(lines):
+                if not amt_re.search(rest) and i < len(lines):
                     rest = rest + ' ' + lines[i]; i += 1
-                    amounts = amt_re.findall(rest)
+                amounts = amt_re.findall(rest)
                 if amounts:
                     tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
-                    negative = tx_str.startswith('-')
-                    num = tx_str.replace('-','').replace('R$','').replace(' ','').replace('.','').replace(',','.')
-                    try:
-                        valor = float(num)
-                    except ValueError:
-                        continue
-                    if valor == 0: continue
+                    valor, _ = _parse_amt(tx_str)
+                    negative = tx_str.strip().startswith('-')
                     first_m = amt_re.search(rest)
-                    desc = (rest[:first_m.start()] if first_m else rest).strip()
-                    desc = _re.sub(r'^["\']|["\']$', '', desc).strip()[:60]
-                    key = f"{current_date}|{desc[:30]}|{valor}"
-                    if key not in seen:
-                        seen.add(key)
-                        rows.append({'data':current_date,'descricao':desc,'valor':valor,'tipo':'gasto' if negative else 'receita'})
+                    desc = (rest[:first_m.start()] if first_m else rest).strip().strip('"')
+                    _add(cur, desc, valor, 'gasto' if negative else 'receita')
             continue
 
-        # ── Transaction line under a date header ──
-        if not current_date:
+        # ── MODO EXTRATO: linha de transação sob cabeçalho de data ──
+        if not extrato_date:
             continue
-        low = line.lower()
         if not any(low.startswith(k) for k in tx_keywords):
             continue
-
-        # Possibly merge with next line if no amount yet
         full = line
         if not amt_re.search(full) and i < len(lines):
             full = full + ' ' + lines[i]; i += 1
-
         amounts = amt_re.findall(full)
         if not amounts:
             continue
-
-        # Second-to-last = transaction value; last = running balance
+        # Penúltimo = valor da transação, último = saldo corrente
         tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
-        negative = tx_str.startswith('-')
-        num = tx_str.replace('-','').replace('R$','').replace(' ','').replace('.','').replace(',','.')
-        try:
-            valor = float(num)
-        except ValueError:
-            continue
+        negative = tx_str.strip().startswith('-')
+        valor, _ = _parse_amt(tx_str)
         if valor == 0:
             continue
-
-        # Extract description: everything before the first amount
         first_m = amt_re.search(full)
         desc = (full[:first_m.start()] if first_m else full).strip()
-        # Clean: remove 'Type: "' prefix pattern, surrounding quotes
         desc = _re.sub(r'^[^:]+:\s*"?', '', desc).strip('"').strip()
         desc = _re.sub(r'^No estabelecimento\s+', '', desc, flags=_re.I).strip()
-        if not desc:
-            desc = low.split(':')[0].title()
-        desc = desc[:60]
-
-        key = f"{current_date}|{desc[:30]}|{valor}"
-        if key in seen:
-            continue
-        seen.add(key)
-        rows.append({'data':current_date,'descricao':desc,'valor':valor,'tipo':'gasto' if negative else 'receita'})
+        desc = desc or low.split(':')[0].title()
+        _add(extrato_date, desc, valor, 'gasto' if negative else 'receita')
 
     return rows
 
