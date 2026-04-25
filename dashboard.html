@@ -9853,6 +9853,7 @@ function renderFluxo(){
 // ════════════════════════════════════════════════
 let IMPORT_ROWS = [];
 let IMPORT_BANCO_DETECTADO = null;
+let IMPORT_IS_PDF = false;
 
 function abrirImportacao(){
   if(!CARTOES.length){
@@ -9866,6 +9867,7 @@ function abrirImportacao(){
 function importReset(){
   IMPORT_ROWS = [];
   IMPORT_BANCO_DETECTADO = null;
+  IMPORT_IS_PDF = false;
   document.getElementById('importStep1').style.display = '';
   document.getElementById('importStep2').style.display = 'none';
   document.getElementById('importConfirmBtn').style.display = 'none';
@@ -9889,6 +9891,7 @@ function importHandleFile(file){
   const ext = file.name.split('.').pop().toLowerCase();
 
   if(ext === 'pdf'){
+    IMPORT_IS_PDF = true;
     const loading = document.getElementById('importPdfLoading');
     const dz = document.getElementById('importDropZone');
     if(loading) loading.style.display = '';
@@ -10026,13 +10029,13 @@ function importPreencherMesSel(){
 
 function importOnCartaoChange(){
   const nome = document.getElementById('importCartaoSel')?.value;
-  const cartao = CARTOES.find(c => c.nome === nome);
   const sel = document.getElementById('importCartaoSel');
-  if(sel) sel.style.border = nome ? '2px solid var(--border)' : '2px solid var(--border)';
-  if(cartao && cartao.fech && IMPORT_ROWS.length){
+  if(sel) sel.style.border = '2px solid var(--border)';
+  // Qualquer cartão selecionado + PDF = fatura → flip receita→gasto
+  if(nome && IMPORT_IS_PDF && IMPORT_ROWS.length){
     const antesReceita = IMPORT_ROWS.filter(r => r.tipo === 'receita').length;
     IMPORT_ROWS.forEach(r => { if(r.tipo === 'receita') r.tipo = 'gasto'; });
-    if(antesReceita > 0){ renderImportTable(); toast('💳 Cartão de crédito — lançamentos ajustados para gasto', 'info'); }
+    if(antesReceita > 0){ renderImportTable(); toast('💳 Tipos ajustados para gasto', 'info'); }
   }
 }
 
@@ -10316,8 +10319,9 @@ function renderImportPreview(fileName, rows){
   importPreencherCartaoSel(autoCartao);
   importPreencherMesSel();
 
-  // Cartão de crédito detectado: faturas mostram gastos como positivos → inverte receita→gasto
-  if(autoCartao && autoCartao.fech){
+  // PDF = fatura de cartão de crédito: cobranças aparecem como positivos → tudo gasto
+  // Sem detecção automática de banco, o flip precisa acontecer aqui (não só no onCartaoChange)
+  if(IMPORT_IS_PDF || (autoCartao && autoCartao.fech)){
     rows.forEach(r => { if(r.tipo === 'receita') r.tipo = 'gasto'; });
   }
 
