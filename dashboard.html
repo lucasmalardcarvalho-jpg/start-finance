@@ -8614,8 +8614,7 @@ function resetDadosUsuario(){
   // Envia estado vazio ao servidor intencionalmente (bypass da proteção anti-wipe)
   _intentionalClear = true;
   clearTimeout(_pushDebounce); _pushDebounce = null;
-  await pushDataToServer();
-  _intentionalClear = false;
+  pushDataToServer().finally(() => { _intentionalClear = false; });
   CM('ovPerfil');
   autoRefresh();
   toast('🗑️ Dados apagados. Conta limpa!','success');
