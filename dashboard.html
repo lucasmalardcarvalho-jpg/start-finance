@@ -5088,8 +5088,27 @@ function delCt(i){CARTOES.splice(i,1);salvarCartoes();voltarListaCartoes();rende
 // ════════════════════════════════════════════════
 function openFx(i=-1){
   document.getElementById('fxIdx').value=i;
-  if(i>=0){const f=FIXAS[i];document.getElementById('fxDesc').value=f.desc;document.getElementById('fxValor').value=(f.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});document.getElementById('fxCat').value=f.cat;document.getElementById('fxVenc').value=f.venc;document.getElementById('fxStatus').value=f.status;document.getElementById('fxObs').value=f.obs||'';document.getElementById('fxTitle').textContent='✏️ Editar Despesa Fixa';}
-  else{['fxDesc','fxValor','fxObs'].forEach(id=>document.getElementById(id).value='');document.getElementById('fxStatus').value='A pagar';document.getElementById('fxTitle').textContent='Nova Despesa Fixa';}
+  // Reconstrói o select de categorias antes de abrir (garante categorias custom)
+  atualizarSelectCats();
+  if(i>=0){
+    const f=FIXAS[i];
+    document.getElementById('fxDesc').value=f.desc;
+    document.getElementById('fxValor').value=(f.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    // Adiciona a categoria salva como opção se não existir mais (compatibilidade)
+    const catSel=document.getElementById('fxCat');
+    if(catSel && f.cat && ![...catSel.options].some(o=>o.value===f.cat)){
+      catSel.insertAdjacentHTML('beforeend',`<option>${f.cat}</option>`);
+    }
+    document.getElementById('fxCat').value=f.cat||'';
+    document.getElementById('fxVenc').value=f.venc;
+    document.getElementById('fxStatus').value=f.status;
+    document.getElementById('fxObs').value=f.obs||'';
+    document.getElementById('fxTitle').textContent='✏️ Editar Despesa Fixa';
+  } else {
+    ['fxDesc','fxValor','fxObs'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fxStatus').value='A pagar';
+    document.getElementById('fxTitle').textContent='Nova Despesa Fixa';
+  }
   OM('ovFx');
 }
 function saveFx(){
@@ -9402,13 +9421,20 @@ function renderDicaDia(){
 // UTILITÁRIOS ESSENCIAIS
 // ════════════════════════════════════════════════
 function atualizarSelectCats(){
-  // Atualiza o select de categorias no modal de transação
+  // Monta lista completa (padrão + custom), sem duplicatas, ordenada
   const todas = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)];
   const unicas = [...new Set(todas)].sort();
-  const sel = document.getElementById('txCat');
-  if(!sel) return;
-  const atual = sel.value;
-  sel.innerHTML = unicas.map(c=>`<option${c===atual?' selected':''}>${c}</option>`).join('');
+  const opts = unicas.map(c=>`<option>${c}</option>`).join('');
+
+  // Atualiza TODOS os selects de categoria no app
+  ['txCat','fxCat','rcCat'].forEach(id=>{
+    const sel = document.getElementById(id);
+    if(!sel) return;
+    const atual = sel.value;
+    sel.innerHTML = opts;
+    // Tenta preservar a seleção atual; se a categoria foi deletada, fica na primeira
+    if(atual && unicas.includes(atual)) sel.value = atual;
+  });
 }
 
 function buildHistoricoLocal(){
