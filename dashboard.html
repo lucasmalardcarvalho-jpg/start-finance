@@ -2874,6 +2874,7 @@ let _lastUdTs = 0; // timestamp do último userdata do servidor
 let _silentSyncRunning = false;
 async function silentSync(){
   if(_silentSyncRunning) return; // evita execuções paralelas
+  if(_pendingPush) return; // aguarda push pendente antes de puxar
   _silentSyncRunning = true;
   try{
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
@@ -2923,6 +2924,7 @@ let _pushDebounce = null;
 let _cloudSyncActive = false;
 let _dataPullComplete = false;  // true após o primeiro pull bem-sucedido do servidor
 let _intentionalClear = false;  // true APENAS durante resetDadosUsuario
+let _pendingPush = false;       // true enquanto há push debouncing ou em voo (bloqueia pulls)
 
 function _collectAllUserData(){
   return {
@@ -2965,8 +2967,15 @@ async function pushDataToServer(){
       body: JSON.stringify(data)
     });
     if(res?.status === 401) _handleSessionExpired();
-    else if(res?.ok && _syncReady) toast('☁️ Salvo na nuvem!', 'info');
+    else if(res?.ok){
+      // Atualiza _lastUdTs com o ts retornado pelo servidor (ou Date.now() como fallback)
+      // Isso impede o próximo silentSync de re-puxar dados que acabamos de enviar
+      const resp = await res.json().catch(()=>({}));
+      _lastUdTs = resp.ts || Date.now();
+      if(_syncReady) toast('☁️ Salvo na nuvem!', 'info');
+    }
   }catch(e){}
+  finally{ _pendingPush = false; }
 }
 
 let _sessionExpiredShown = false;
@@ -2988,6 +2997,7 @@ function schedulePush(){
   if(!isJWT) return;
   // Bloqueia push antes do pull inicial completar (evita sobrescrever dados do servidor com estado vazio)
   if(!_dataPullComplete && !_intentionalClear) return;
+  _pendingPush = true; // impede silentSync de puxar enquanto há alteração local pendente
   clearTimeout(_pushDebounce);
   _pushDebounce = setTimeout(pushDataToServer, 2000);
 }

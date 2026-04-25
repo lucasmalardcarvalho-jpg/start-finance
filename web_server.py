@@ -547,7 +547,7 @@ def save_userdata():
     except Exception:
         pass
 
-    return jsonify({"ok": True, "sb": sb_ok})
+    return jsonify({"ok": True, "sb": sb_ok, "ts": now_ms})
 
 @app.route("/api/userdata/ts", methods=["GET"])
 @requer_auth
