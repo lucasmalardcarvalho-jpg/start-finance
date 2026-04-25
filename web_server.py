@@ -590,187 +590,389 @@ def _detectar_banco_txt(txt: str) -> str | None:
     if 'mercado pago' in t: return 'Mercado Pago'
     return None
 
-# Meses por extenso: "25 de Março de 2026"
+# ── Dicionários de meses (PT-BR + abreviados + inglês) ──────────────────────
 _MESES_PT = {
     'janeiro':'01','fevereiro':'02','março':'03','marco':'03',
     'abril':'04','maio':'05','junho':'06','julho':'07',
     'agosto':'08','setembro':'09','outubro':'10',
-    'novembro':'11','dezembro':'12'
-}
-# Meses abreviados: "19 de set. 2025" (faturas de cartão)
-_MESES_ABR = {
+    'novembro':'11','dezembro':'12',
     'jan':'01','fev':'02','mar':'03','abr':'04','mai':'05','jun':'06',
     'jul':'07','ago':'08','set':'09','out':'10','nov':'11','dez':'12',
-    'apr':'04','sep':'09','oct':'10','dec':'12',
+    'jan.':'01','fev.':'02','mar.':'03','abr.':'04','mai.':'05','jun.':'06',
+    'jul.':'07','ago.':'08','set.':'09','out.':'10','nov.':'11','dez.':'12',
+    'january':'01','february':'02','march':'03','april':'04','may':'05','june':'06',
+    'july':'07','august':'08','september':'09','october':'10','november':'11','december':'12',
 }
+_MESES_ABR = {k:v for k,v in _MESES_PT.items() if len(k.replace('.',''))<=4}
 
 def _normalizar_mes(s: str) -> str:
-    return s.lower().replace('ç','c').replace('ã','a').replace('ê','e').replace('é','e').replace('ô','o').replace('ó','o')
+    rep = {'ç':'c','ã':'a','â':'a','á':'a','à':'a','ê':'e','é':'e','è':'e',
+           'ô':'o','ó':'o','ú':'u','ü':'u','í':'i','î':'i'}
+    return ''.join(rep.get(c,c) for c in s.lower())
 
 _parcela_re = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
 
-def _parse_pdf_rows(txt: str) -> list:
-    """Parse bank statement PDF — suporta:
-    1. Extrato Inter: "DD de Mês de YYYY Saldo do dia..." + linhas "Tipo: descr -R$ val R$ saldo"
-    2. Fatura cartão Inter: "DD de mes. YYYY  Descrição  -  (+ )R$ valor"
-    3. Genérico: linhas começando com DD/MM/YYYY
-    """
-    rows = []
-    seen = set()
-    lines = [l.strip() for l in txt.splitlines()]
+# ── Helpers de parsing ───────────────────────────────────────────────────────
+_AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*\d{1,3}(?:\.\d{3})*,\d{2})', _re.I)
 
-    # Regex
-    # Valor com sinal: "-R$ 1.234,56", "+ R$ 1.234,56", "R$ 1.234,56"
-    amt_re  = _re.compile(r'([+\-]?\s*R\$\s*[\d.]+,\d{2})', _re.I)
-    # Data por extenso: "25 de Março de 2026"
-    date_ext_re = _re.compile(
-        r'\b(\d{1,2})\s+de\s+([a-z\u00c0-\u00ff]+)\s+de\s+(\d{4})\b', _re.I)
-    # Data abreviada: "19 de set. 2025" ou "19 de set 2025"
-    date_abr_re = _re.compile(
-        r'^(\d{1,2})\s+de\s+([a-z]{3})\.?\s+(\d{4})\b', _re.I)
-    # Data ISO: "19/03/2026" ou "19-03-2026"
-    date_iso_re = _re.compile(r'^(\d{2}[/\-]\d{2}[/\-](?:\d{4}|\d{2}))\s+(.+)')
-
-    tx_keywords = [
-        'compra no debito','compra no cr','pix recebido','pix enviado',
-        'pagamento efetuado','deposito','dep\u00f3sito','saque',
-        'transferencia','transfer\u00eancia','rendimento','iof','tarifa',
-        'ted recebido','ted enviado','doc recebido','doc enviado',
-        'estorno','reembolso','resgate',
-    ]
-    skip_patterns = [
-        'saldo total','data movimenta','benefici\u00e1rio','beneficiario',
-        'fatura atual','pr\u00f3xima fatura','saldo em aberto','despesas do m\u00eas',
-        'limite de cr\u00e9dito','pagamento m\u00ednimo','encargos financeiros',
-        'valor do documento','data de vencimento','movimenta\u00e7\u00e3o',
-        'total cart\u00e3o','total cartao','parcelamento','pr\u00f3ximo per\u00edodo',
-        'data corte','saldo demais','compras parceladas',
-    ]
-
-    extrato_date = None   # data corrente no modo extrato
-    in_fatura   = False   # True quando estamos na seção "Despesas da fatura"
-
-    def _add(data, desc, valor, tipo):
-        desc = desc.strip()[:60]
-        key = f"{data}|{desc[:30]}|{valor}"
-        if key in seen or not desc or valor == 0:
-            return
-        seen.add(key)
-        pm = _parcela_re.search(desc)
-        pa = int(pm.group(1)) if pm else 1
-        pt = int(pm.group(2)) if pm else 1
-        rows.append({'data': data, 'descricao': desc, 'valor': valor, 'tipo': tipo,
-                     'parcela_atual': pa, 'parcelas': pt})
-
-    def _parse_amt(s):
-        """Retorna (valor_float, is_positive)."""
-        positive = s.strip().startswith('+')
-        negative = s.strip().startswith('-')
-        num = s.replace('+','').replace('-','').replace('R$','').replace(' ','').replace('.','').replace(',','.')
+def _parse_valor_str(s: str):
+    """(float_abs, is_negative)  — formato brasileiro 1.234,56"""
+    s = str(s or '').strip()
+    neg = s.startswith('-') or s.endswith('-')
+    clean = _re.sub(r'[^\d,]', '', s)           # keep only digits + comma
+    if ',' in clean:
+        int_part, dec_part = clean.rsplit(',', 1)
         try:
-            v = float(num)
-            return v, positive or not negative
+            return abs(float(f"{int_part or 0}.{dec_part[:2]}")), neg
         except ValueError:
-            return 0.0, True
+            return 0.0, False
+    try:
+        return abs(float(clean)), neg
+    except ValueError:
+        return 0.0, False
 
+def _make_date(d, m, y=''):
+    from datetime import datetime
+    if not y: y = str(datetime.utcnow().year)
+    if len(str(y)) == 2: y = '20' + str(y)
+    try:
+        d, m = int(d), int(m)
+        if not (1 <= d <= 31 and 1 <= m <= 12): return None
+        return f"{d:02d}/{m:02d}/{y}"
+    except (ValueError, TypeError):
+        return None
+
+def _resolve_mes(s: str):
+    """'março' / 'mar' / 'mar.' → '03'"""
+    s = s.lower().strip().rstrip('.')
+    return _MESES_PT.get(s) or _MESES_PT.get(_normalizar_mes(s)) or _MESES_PT.get(s[:3])
+
+def _add_row(rows, seen, data, desc, valor, tipo, pa=1, pt=1):
+    if not data or valor <= 0: return
+    desc = _re.sub(r'\s+', ' ', str(desc).strip())[:80]
+    if not desc: return
+    key = f"{data}|{desc[:28]}|{round(valor,2)}"
+    if key in seen: return
+    seen.add(key)
+    pm = _parcela_re.search(desc)
+    if pm: pa, pt = int(pm.group(1)), int(pm.group(2))
+    rows.append({'data': data, 'descricao': desc, 'valor': round(valor, 2),
+                 'tipo': tipo, 'parcela_atual': pa, 'parcelas': pt})
+
+# ── Strategy 1 — pdfplumber table extraction ─────────────────────────────────
+def _try_table_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
+    """
+    Extrai transações de tabelas estruturadas (Bradesco, Itaú, Caixa, Sicredi…).
+    Tenta múltiplas estratégias de detecção de tabela.
+    Retorna o número de linhas adicionadas.
+    """
+    import pdfplumber
+    from datetime import datetime
+    cur_year = str(datetime.utcnow().year)
+
+    _DATE_RE  = _re.compile(r'^(\d{1,2})[/\-\.](\d{1,2})(?:[/\-\.](\d{2,4}))?$')
+    _MONEY_RE = _re.compile(r'\d{1,3}(?:\.\d{3})*,\d{2}')
+
+    DATE_HDR = {'data','dt','dia','date','data mov','data lanç','data mov.','data lançamento','data movimentação','data movimentacao'}
+    DESC_HDR = {'histórico','historico','descrição','descricao','descrição','lançamento','lancamento',
+                'estabelecimento','detalhes','memo','complemento','discriminação','discriminacao','narrat'}
+    VAL_HDR  = {'valor','vr','quantia','montante','value','importe'}
+    DEB_HDR  = {'débito','debito','déb','deb','saída','saida','retirada','pagamento','d'}
+    CRE_HDR  = {'crédito','credito','créd','cred','entrada','depósito','deposito','aplicação','c'}
+    CD_HDR   = {'c/d','d/c','tipo','natureza','operação','entrada/saída','cr/db','cd','operacao'}
+    BAL_HDR  = {'saldo','balance','sal'}
+
+    added_before = len(rows)
+
+    strategies = [
+        {'vertical_strategy':'lines','horizontal_strategy':'lines'},
+        {'vertical_strategy':'lines_strict','horizontal_strategy':'lines_strict'},
+        {'vertical_strategy':'text','horizontal_strategy':'text'},
+        {},
+    ]
+
+    with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+        for page in pdf.pages:
+            for strat in strategies:
+                try:
+                    tables = page.extract_tables(strat) if strat else page.extract_tables()
+                except Exception:
+                    continue
+
+                for table in (tables or []):
+                    if not table or len(table) < 2: continue
+                    ncols = max((len(r) for r in table if r), default=0)
+                    if ncols < 2: continue
+
+                    # ── Identificar colunas ──────────────────────────────
+                    date_c = desc_c = val_c = deb_c = cre_c = cd_c = bal_c = None
+
+                    hdr = [str(c or '').lower().strip() for c in (table[0] or [])]
+                    for j, h in enumerate(hdr):
+                        h_clean = _re.sub(r'[^\w/]','',h)
+                        if date_c is None and (h in DATE_HDR or h_clean in DATE_HDR): date_c = j
+                        elif cd_c is None and (h in CD_HDR or h_clean in CD_HDR): cd_c = j
+                        elif cre_c is None and (h in CRE_HDR or h_clean in CRE_HDR): cre_c = j
+                        elif deb_c is None and (h in DEB_HDR or h_clean in DEB_HDR): deb_c = j
+                        elif val_c is None and (h in VAL_HDR or h_clean in VAL_HDR): val_c = j
+                        elif bal_c is None and (h in BAL_HDR or h_clean in BAL_HDR): bal_c = j
+                        elif desc_c is None and any(k in h for k in DESC_HDR): desc_c = j
+
+                    # Auto-detect via dados se header não ajudou
+                    if date_c is None and val_c is None and deb_c is None:
+                        date_cnt  = [0]*ncols
+                        money_cnt = [0]*ncols
+                        text_len  = [0]*ncols
+                        for row in table[1:8]:
+                            if not row: continue
+                            for j, cell in enumerate(row[:ncols]):
+                                c = str(cell or '').strip()
+                                if _DATE_RE.match(c.replace(' ','/').replace('.','/') if c else ''): date_cnt[j] += 1
+                                if _MONEY_RE.search(c): money_cnt[j] += 1
+                                text_len[j] += len(c)
+                        if max(date_cnt, default=0) > 0:
+                            date_c = date_cnt.index(max(date_cnt))
+                        mcols = sorted([j for j in range(ncols) if money_cnt[j]>0], key=lambda j: -money_cnt[j])
+                        if len(mcols)==1:   val_c = mcols[0]
+                        elif len(mcols)==2: deb_c,bal_c = mcols[0],mcols[1]
+                        elif len(mcols)>=3: cre_c,deb_c,bal_c = mcols[0],mcols[1],mcols[2]
+                        if desc_c is None and date_c is not None:
+                            cands = [j for j in range(ncols) if j not in (date_c,)+tuple(mcols) and j!=cd_c]
+                            if cands: desc_c = max(cands, key=lambda j: text_len[j] if j<ncols else 0)
+
+                    if date_c is None and val_c is None and deb_c is None: continue
+
+                    # ── Processar linhas ─────────────────────────────────
+                    for row in table[1:]:
+                        if not row: continue
+                        cells = [str(c or '').strip() for c in row] + ['']*(ncols+2)
+
+                        # Data
+                        dstr = cells[date_c] if date_c is not None else cells[0]
+                        dstr = dstr.replace(' ','/').replace('.','/').strip()
+                        dm = _DATE_RE.match(dstr)
+                        if not dm:
+                            # Tentar data por extenso dentro da célula: "19 jan 2025"
+                            tm = _re.match(r'(\d{1,2})\s+([a-zA-ZÀ-ÿ]{3,})\.?\s*(\d{4})?', dstr)
+                            if tm:
+                                mo = _resolve_mes(tm.group(2))
+                                if mo:
+                                    data = _make_date(tm.group(1), mo, tm.group(3) or cur_year)
+                                else: continue
+                            else: continue
+                        else:
+                            dd, mm, yy = dm.group(1), dm.group(2), dm.group(3) or cur_year
+                            if not mm.isdigit():
+                                mo = _resolve_mes(mm)
+                                if not mo: continue
+                                mm = mo
+                            data = _make_date(dd, mm, yy)
+                            if not data: continue
+
+                        # Descrição
+                        if desc_c is not None:
+                            desc = cells[desc_c]
+                        else:
+                            skip_j = {date_c, val_c, deb_c, cre_c, cd_c, bal_c} - {None}
+                            desc = ' '.join(cells[j] for j in range(ncols) if j not in skip_j and cells[j] and not _MONEY_RE.search(cells[j]))
+
+                        # Valor e tipo
+                        valor, tipo = 0.0, 'gasto'
+                        if cre_c is not None and deb_c is not None:
+                            dv, _ = _parse_valor_str(cells[deb_c])
+                            cv, _ = _parse_valor_str(cells[cre_c])
+                            if dv > 0:   valor, tipo = dv, 'gasto'
+                            elif cv > 0: valor, tipo = cv, 'receita'
+                        elif val_c is not None:
+                            valor, neg = _parse_valor_str(cells[val_c])
+                            if cd_c is not None:
+                                cd = cells[cd_c].upper().strip().lstrip('(').rstrip(')')
+                                tipo = 'receita' if cd[:1] in ('C','+') else 'gasto'
+                            else:
+                                tipo = 'gasto' if neg else 'receita'
+                        elif deb_c is not None:
+                            valor, _ = _parse_valor_str(cells[deb_c])
+                            if cd_c is not None:
+                                cd = cells[cd_c].upper().strip()
+                                tipo = 'receita' if cd[:1] in ('C','+') else 'gasto'
+
+                        # Fallback: varre células buscando qualquer valor monetário
+                        if valor <= 0:
+                            for j in range(ncols):
+                                if j == bal_c: continue
+                                m = _MONEY_RE.search(cells[j])
+                                if m:
+                                    valor, neg = _parse_valor_str(cells[j])
+                                    if valor > 0:
+                                        tipo = 'gasto' if neg else 'receita'
+                                        break
+
+                        if not desc or valor <= 0: continue
+                        _add_row(rows, seen, data, desc, valor, tipo)
+
+                if len(rows) - added_before >= 3:
+                    return len(rows) - added_before  # achou dados suficientes
+
+    return len(rows) - added_before
+
+# ── Strategy 2 — line-based heuristics ──────────────────────────────────────
+def _line_parse(txt: str, rows: list, seen: set):
+    """
+    Parser linha a linha — suporta Inter, Nubank, formatos livres.
+    Detecta: DD/MM/YYYY, DD/MM, DD de Mês de YYYY, DD de mes. YYYY
+    """
+    from datetime import datetime
+    cur_year = str(datetime.utcnow().year)
+    lines = [l.strip() for l in txt.splitlines() if l.strip()]
+
+    # Padrões de data
+    re_long = _re.compile(r'\b(\d{1,2})\s+de\s+([a-zA-ZÀ-ÿ]+)\s+de\s+(\d{4})\b', _re.I)  # DD de Mês de YYYY
+    re_abr  = _re.compile(r'^(\d{1,2})\s+de\s+([a-zA-ZÀ-ÿ]{3,})\.?\s+(\d{4})\b', _re.I)  # DD de mes. YYYY
+    re_iso  = _re.compile(r'^(\d{2})[/\-](\d{2})[/\-](\d{2,4})\s+(.+)')                   # DD/MM/YYYY resto
+    re_short = _re.compile(r'^(\d{2})[/\-](\d{2})\s+(.+)')                                 # DD/MM resto
+
+    skip = {
+        'saldo total','saldo anterior','saldo disponível','saldo do dia',
+        'data movimenta','beneficiário','beneficiario','fatura atual',
+        'próxima fatura','saldo em aberto','limite de crédito',
+        'pagamento mínimo','encargos','valor do documento','data de vencimento',
+        'movimentação','total cartão','parcelamento','próximo período',
+        'data corte','saldo demais','compras parceladas','extrato de conta',
+        'agência','conta corrente','período','página','page','emissão',
+        'saldo inicial','saldo final','total de débitos','total de créditos',
+    }
+    tx_starts = [
+        'compra','pix','pagamento','depósito','deposito','saque',
+        'transferência','transferencia','rendimento','iof','tarifa',
+        'ted','doc','estorno','reembolso','resgate','débito','crédito',
+    ]
+
+    extrato_date = None
     i = 0
     while i < len(lines):
         line = lines[i]; i += 1
-        if not line:
-            continue
         low = line.lower()
+        if len(line) < 4: continue
+        if any(p in low for p in skip): continue
 
-        # Pula linhas de cabeçalho/totais conhecidas
-        if any(p in low for p in skip_patterns):
-            continue
-
-        # Detecta entrada na seção de fatura do cartão
-        if ('cart\u00e3o' in low or 'cartao' in low) and ('****' in line or 'despesas' in low):
-            in_fatura = True
-            extrato_date = None
-            continue
-
-        # ── MODO EXTRATO: cabeçalho de data "DD de Mês de YYYY Saldo do dia..." ──
-        dhm = date_ext_re.search(line)
-        if dhm and ('saldo' in low or 'dia' in low):
-            m_raw = dhm.group(2).lower()
-            mo = _MESES_PT.get(m_raw) or _MESES_PT.get(_normalizar_mes(m_raw))
+        # ── DD de Mês de YYYY como cabeçalho de data ──
+        m = re_long.search(line)
+        if m and ('saldo' in low or 'dia' in low or 'moviment' in low or 'extrato' in low):
+            mo = _resolve_mes(m.group(2))
             if mo:
-                extrato_date = f"{dhm.group(1).zfill(2)}/{mo}/{dhm.group(3)}"
-                in_fatura = False
+                extrato_date = _make_date(m.group(1), mo, m.group(3))
             continue
 
-        # ── MODO FATURA: linha de transação "DD de set. 2025 Descrição - R$ valor" ──
-        abr_m = date_abr_re.match(line)
-        if abr_m:
-            mo = _MESES_ABR.get(abr_m.group(2).lower())
+        # ── DD de mes. YYYY + transação na mesma linha ──
+        m = re_abr.match(line)
+        if m:
+            mo = _resolve_mes(m.group(2))
             if mo:
-                data = f"{abr_m.group(1).zfill(2)}/{mo}/{abr_m.group(3)}"
-                rest = line[abr_m.end():].strip()
-                # merge next line se não tiver valor ainda
-                if not amt_re.search(rest) and i < len(lines):
-                    rest = rest + ' ' + lines[i]; i += 1
-                amounts = amt_re.findall(rest)
-                if not amounts:
-                    continue
-                tx_str = amounts[-1]
-                valor, positivo = _parse_amt(tx_str)
-                if valor == 0:
-                    continue
-                first_m = amt_re.search(rest)
-                desc = (rest[:first_m.start()] if first_m else rest)
-                # Remove coluna "Beneficiário" vazia (traço)
-                desc = _re.sub(r'\s*[-\u2013\u2014]\s*$', '', desc).strip()
-                tipo = 'receita' if positivo and tx_str.strip().startswith('+') else 'gasto'
-                _add(data, desc, valor, tipo)
+                data = _make_date(m.group(1), mo, m.group(3))
+                if data:
+                    rest = line[m.end():].strip()
+                    if not _AMT_RE.search(rest) and i < len(lines):
+                        rest = rest + ' ' + lines[i]; i += 1
+                    amounts = _AMT_RE.findall(rest)
+                    if amounts:
+                        tx_str = amounts[-1]
+                        valor, _ = _parse_valor_str(tx_str)
+                        fm = _AMT_RE.search(rest)
+                        desc = (rest[:fm.start()] if fm else rest).strip()
+                        desc = _re.sub(r'\s*[-–—]\s*$', '', desc).strip()
+                        tipo = 'receita' if tx_str.strip().startswith('+') else 'gasto'
+                        _add_row(rows, seen, data, desc, valor, tipo)
             continue
 
-        # ── MODO GENÉRICO: linha começa com DD/MM/YYYY ──
-        gm = date_iso_re.match(line)
-        if gm:
-            raw = gm.group(1).replace('-','/')
-            p = raw.split('/')
-            if len(p) == 3:
-                d, mo, y = p
-                if len(y) == 2: y = '20' + y
-                cur = f"{d}/{mo}/{y}"
-                rest = gm.group(2)
-                if not amt_re.search(rest) and i < len(lines):
+        # ── DD/MM/YYYY resto ──
+        m = re_iso.match(line)
+        if m:
+            data = _make_date(m.group(1), m.group(2), m.group(3))
+            if data:
+                rest = m.group(4)
+                if not _AMT_RE.search(rest) and i < len(lines):
                     rest = rest + ' ' + lines[i]; i += 1
-                amounts = amt_re.findall(rest)
+                amounts = _AMT_RE.findall(rest)
                 if amounts:
                     tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
-                    valor, _ = _parse_amt(tx_str)
-                    negative = tx_str.strip().startswith('-')
-                    first_m = amt_re.search(rest)
-                    desc = (rest[:first_m.start()] if first_m else rest).strip().strip('"')
-                    _add(cur, desc, valor, 'gasto' if negative else 'receita')
+                    valor, neg = _parse_valor_str(tx_str)
+                    if valor > 0:
+                        fm = _AMT_RE.search(rest)
+                        desc = (rest[:fm.start()] if fm else rest).strip().strip('"')
+                        # Indicador C/D no final da descrição (ex: Caixa, Sicredi)
+                        cd_m = _re.search(r'\s+([CD])\s*$', desc, _re.I)
+                        if cd_m:
+                            tipo = 'receita' if cd_m.group(1).upper()=='C' else 'gasto'
+                            desc = desc[:cd_m.start()].strip()
+                        else:
+                            tipo = 'gasto' if neg else 'receita'
+                        _add_row(rows, seen, data, desc, valor, tipo)
             continue
 
-        # ── MODO EXTRATO: linha de transação sob cabeçalho de data ──
-        if not extrato_date:
+        # ── DD/MM resto (sem ano — Itaú fatura, etc.) ──
+        m = re_short.match(line)
+        if m:
+            data = _make_date(m.group(1), m.group(2), cur_year)
+            if data:
+                rest = m.group(3)
+                if not _AMT_RE.search(rest) and i < len(lines):
+                    rest = rest + ' ' + lines[i]; i += 1
+                amounts = _AMT_RE.findall(rest)
+                if amounts:
+                    tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                    valor, neg = _parse_valor_str(tx_str)
+                    if valor > 0:
+                        fm = _AMT_RE.search(rest)
+                        desc = (rest[:fm.start()] if fm else rest).strip()
+                        cd_m = _re.search(r'\s+([CD])\s*$', desc, _re.I)
+                        if cd_m:
+                            tipo = 'receita' if cd_m.group(1).upper()=='C' else 'gasto'
+                            desc = desc[:cd_m.start()].strip()
+                        else:
+                            tipo = 'gasto' if neg else 'receita'
+                        _add_row(rows, seen, data, desc, valor, tipo)
             continue
-        if not any(low.startswith(k) for k in tx_keywords):
-            continue
+
+        # ── Modo extrato (palavras-chave após cabeçalho de data) ──
+        if not extrato_date: continue
+        if not any(low.startswith(k) for k in tx_starts): continue
         full = line
-        if not amt_re.search(full) and i < len(lines):
+        if not _AMT_RE.search(full) and i < len(lines):
             full = full + ' ' + lines[i]; i += 1
-        amounts = amt_re.findall(full)
-        if not amounts:
-            continue
-        # Penúltimo = valor da transação, último = saldo corrente
+        amounts = _AMT_RE.findall(full)
+        if not amounts: continue
         tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
-        negative = tx_str.strip().startswith('-')
-        valor, _ = _parse_amt(tx_str)
-        if valor == 0:
-            continue
-        first_m = amt_re.search(full)
-        desc = (full[:first_m.start()] if first_m else full).strip()
+        neg = tx_str.strip().startswith('-')
+        valor, _ = _parse_valor_str(tx_str)
+        if valor <= 0: continue
+        fm = _AMT_RE.search(full)
+        desc = (full[:fm.start()] if fm else full).strip()
         desc = _re.sub(r'^[^:]+:\s*"?', '', desc).strip('"').strip()
         desc = _re.sub(r'^No estabelecimento\s+', '', desc, flags=_re.I).strip()
-        desc = desc or low.split(':')[0].title()
-        _add(extrato_date, desc, valor, 'gasto' if negative else 'receita')
+        _add_row(rows, seen, extrato_date, desc or 'Transação', valor, 'gasto' if neg else 'receita')
 
+
+def _parse_pdf_rows(txt: str, pdf_bytes: bytes = None) -> list:
+    """
+    Parser universal de extratos bancários.
+    Estratégia 1: extração de tabelas pdfplumber (Bradesco, Itaú, Caixa, Sicredi…)
+    Estratégia 2: heurística linha a linha (Inter, Nubank, formatos livres)
+    """
+    rows = []
+    seen = set()
+
+    # Tenta extração estruturada via tabelas
+    if pdf_bytes:
+        try:
+            n = _try_table_parse(pdf_bytes, rows, seen)
+            if n >= 2:
+                return rows
+        except Exception as _e:
+            logger.debug(f"table parse falhou, usando line parse: {_e}")
+        rows.clear(); seen.clear()
+
+    # Fallback: parser linha a linha
+    _line_parse(txt, rows, seen)
     return rows
 
 @app.route("/api/parse-pdf", methods=["POST"])
@@ -790,7 +992,7 @@ def parse_pdf():
                     full_text.append(txt)
         combined = '\n'.join(full_text)
         banco = _detectar_banco_txt(combined)
-        rows = _parse_pdf_rows(combined)
+        rows = _parse_pdf_rows(combined, pdf_bytes=pdf_bytes)
         return jsonify({"banco": banco, "rows": rows, "total": len(rows)})
     except ImportError:
         return jsonify({"erro": "pdfplumber não instalado no servidor"}), 500
