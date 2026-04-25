@@ -1070,6 +1070,28 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         <div id="txMesesInfo" style="display:none;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;font-size:12px;color:var(--azul);font-weight:600;margin-top:8px"></div>
       </div>
     </div>
+    <!-- Recorrência de receita — aparece só quando tipo = Receita -->
+    <div id="txGanhoRecArea" style="display:none">
+      <div class="fr one"><div class="fg">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border)">
+          <label class="switch"><input type="checkbox" id="txGanhoRec" onchange="txGanhoRecToggle()"><span class="slider"></span></label>
+          <span style="font-size:13px;font-weight:700;color:var(--txt2)">Esse ganho se repete?</span>
+        </div>
+      </div></div>
+      <div id="txGanhoRecDet" style="display:none">
+        <div class="fr">
+          <div class="fg"><label class="fl">Periodicidade</label>
+            <select class="fs" id="txGanhoPeriod" onchange="txGanhoRecToggle()">
+              <option>Mensal</option><option>Bimestral</option><option>Trimestral</option><option>Semestral</option><option>Anual</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Quantidade</label>
+            <input type="number" class="fi" id="txGanhoQtd" min="2" max="60" placeholder="12" value="12" oninput="txGanhoRecToggle()">
+          </div>
+        </div>
+        <div id="txGanhoRecInfo" style="font-size:12px;color:var(--azul);font-weight:600;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
+      </div>
+    </div>
     <div class="fg" id="fgTxProjeto">
       <label class="fl">🗂️ Orçamento/Projeto (opcional)</label>
       <select class="sf-f" id="txProjeto">
@@ -1177,7 +1199,28 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="fxTitle">Nova Despesa Fixa</div><button class="mc" onclick="CM('ovFx')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="fxValor" inputmode="decimal" placeholder="0,00"></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"><option>Contas</option><option>Moradia</option><option>Saúde</option><option>Educação</option><option>Assinaturas</option><option>Transporte</option><option>Outros</option></select></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"></select></div><div class="fg"><label class="fl">Método de Pagamento</label><select class="fs" id="fxMetodo"><option value="">— Nenhum —</option><option>Pix</option><option>Débito automático</option><option>Boleto</option><option>Cartão crédito</option><option>Cartão débito</option><option>Dinheiro</option><option>TED/DOC</option></select></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div><div class="fg"><label class="fl">Prioridade</label><select class="fs" id="fxPrior"><option value="">Normal</option><option>Alta</option><option>Baixa</option></select></div></div>
+    <!-- Recorrência -->
+    <div class="fr one"><div class="fg">
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border)">
+        <label class="switch"><input type="checkbox" id="fxRepete" onchange="fxRepeteToggle()"><span class="slider"></span></label>
+        <span style="font-size:13px;font-weight:700;color:var(--txt2)">Essa despesa se repete?</span>
+      </div>
+    </div></div>
+    <div id="fxRepeteDet" style="display:none">
+      <div class="fr">
+        <div class="fg"><label class="fl">Periodicidade</label>
+          <select class="fs" id="fxPeriod" onchange="fxRepeteToggle()">
+            <option>Mensal</option><option>Bimestral</option><option>Trimestral</option><option>Semestral</option><option>Anual</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Quantidade</label>
+          <input type="number" class="fi" id="fxQtd" min="2" max="60" placeholder="12" value="12" oninput="fxRepeteToggle()">
+        </div>
+      </div>
+      <div id="fxRepeteInfo" style="font-size:12px;color:var(--azul);font-weight:600;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
+    </div>
     <div class="fr one"><div class="fg"><label class="fl">Observação</label><input class="fi" id="fxObs" placeholder="Opcional"></div></div>
     <input type="hidden" id="fxIdx" value="-1">
   </div>
@@ -1818,7 +1861,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">⏰</div></div><div class="kpi-v" id="fxPd">R$ 0,00</div><div class="kpi-l">A pagar / Em atraso</div></div>
   </div>
   <div class="tw mb">
-    <table class="st"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Vencimento</th><th>Status</th><th>Observação</th><th>Ações</th></tr></thead>
+    <table class="st"><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Vencimento</th><th>Método</th><th>Status</th><th>Observação</th><th>Ações</th></tr></thead>
     <tbody id="fxBody"></tbody></table>
   </div>
   <div id="fxCardList"></div>
@@ -2813,20 +2856,21 @@ function calcularMes(){
 
   // Limite do cartão: soma TODAS as parcelas de TODAS as transações do cartão
   // (não apenas do mês atual) — representa o crédito total comprometido
+  // Limite comprometido = soma de todas as parcelas/compras do mês atual em diante
+  // (parcelas já pagas em meses anteriores não consomem mais limite)
+  const _mesHojeK = getMesChave(0);
+  const _mesGte = (a)=>{
+    const [ma,aa]=a.split('/'), [mb,ab]=_mesHojeK.split('/');
+    const ya=parseInt(aa)||0, yb=parseInt(ab)||0;
+    const ia=MESES_PT.indexOf(ma), ib=MESES_PT.indexOf(mb);
+    return ya!==yb ? ya>=yb : ia>=ib;
+  };
   const cartoesLimiteUso = {};
   TODAS_TX.forEach(tx=>{
-    if(!tx.cartao||!tx.cartao.trim()||tx.valor>=0) return;
+    if(!tx.cartao||!tx.cartao.trim()||parseFloat(tx.valor||0)>=0) return;
+    if(!tx.mes_ano||!_mesGte(tx.mes_ano)) return; // ignora meses já passados
     const ct=tx.cartao.trim();
-    const pt=parseInt(tx.parcelas)||0;
-    const pa=parseInt(tx.parcela_atual)||0;
-    if(pt>1 && pa===1){
-      // Primeira parcela: compromete valor TOTAL no limite
-      cartoesLimiteUso[ct]=(cartoesLimiteUso[ct]||0)+Math.abs(tx.valor)*pt;
-    } else if(pt<=1){
-      // Compra à vista: compromete o valor da compra
-      cartoesLimiteUso[ct]=(cartoesLimiteUso[ct]||0)+Math.abs(tx.valor);
-    }
-    // Parcelas 2..N não contam de novo (já contadas na parcela 1)
+    cartoesLimiteUso[ct]=(cartoesLimiteUso[ct]||0)+Math.abs(parseFloat(tx.valor||0));
   });
 
   const lims={...LIMS_DEF,...LIMS_LOCAL};
@@ -3737,10 +3781,31 @@ function renderMetasDash(){
 // ════════════════════════════════════════════════
 function txTipoChange(){
   const tipo=document.getElementById('txTipo').value;
+  const ganhoArea=document.getElementById('txGanhoRecArea');
   if(tipo==='Receita'){
     document.getElementById('txMetodo').value='';
     document.getElementById('txCartaoRow').style.display='none';
+    if(ganhoArea) ganhoArea.style.display='';
+  } else {
+    if(ganhoArea) ganhoArea.style.display='none';
+    const cb=document.getElementById('txGanhoRec');
+    if(cb) cb.checked=false;
+    const det=document.getElementById('txGanhoRecDet');
+    if(det) det.style.display='none';
   }
+}
+
+function txGanhoRecToggle(){
+  const checked=document.getElementById('txGanhoRec').checked;
+  const det=document.getElementById('txGanhoRecDet');
+  if(det) det.style.display=checked?'':'none';
+  if(!checked) return;
+  const period=document.getElementById('txGanhoPeriod').value;
+  const qtd=parseInt(document.getElementById('txGanhoQtd').value)||12;
+  const passos={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12};
+  const meses=passos[period]||1;
+  const info=document.getElementById('txGanhoRecInfo');
+  if(info) info.textContent=`📅 Serão criadas ${qtd} receitas a cada ${meses} mês(es) — ${period.toLowerCase()}`;
 }
 
 function txMetChange(){
@@ -4084,6 +4149,13 @@ function resetTxForm(){
   document.querySelectorAll('.parc-btn').forEach(b=>b.classList.remove('sel'));
   const custEl=document.getElementById('txParcCustom');
   if(custEl) custEl.value='';
+  // Reseta área de receita recorrente
+  const ganhoArea=document.getElementById('txGanhoRecArea');
+  if(ganhoArea) ganhoArea.style.display='none';
+  const ganhoCb=document.getElementById('txGanhoRec');
+  if(ganhoCb) ganhoCb.checked=false;
+  const ganhoDet=document.getElementById('txGanhoRecDet');
+  if(ganhoDet) ganhoDet.style.display='none';
   popularSelectProjeto();
   popularSelectMembro();
 }
@@ -4335,6 +4407,15 @@ async function saveTx(){
           novasTx.push({...dados, valor:valorUnitario, parcela_atual:p, mes_ano:mesParc, idx:novoIdx+(p-1)});
         }
         toast(`✅ Lançado! ${totalParc} parcelas (${mesAno} → ${somarMes(mesAno,totalParc-1)})`,'success');
+      } else if(tipo==='Receita' && document.getElementById('txGanhoRec')?.checked){
+        // Receita recorrente — gera N cópias pela periodicidade escolhida
+        const _period=document.getElementById('txGanhoPeriod').value;
+        const _qtd=Math.max(2,Math.min(60,parseInt(document.getElementById('txGanhoQtd').value)||12));
+        const _passo={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12}[_period]||1;
+        for(let r=1;r<_qtd;r++){
+          novasTx.push({...dados, mes_ano:somarMes(mesAno,r*_passo), idx:novoIdx+r});
+        }
+        toast(`✅ ${_qtd} receitas criadas (${_period.toLowerCase()}, ${mesAno} → ${somarMes(mesAno,(_qtd-1)*_passo)})`,'success');
       } else {
         toast('✅ Lançado!','success');
       }
@@ -5107,37 +5188,81 @@ function delCt(i){CARTOES.splice(i,1);salvarCartoes();voltarListaCartoes();rende
 // ════════════════════════════════════════════════
 // DESPESAS FIXAS
 // ════════════════════════════════════════════════
+function fxRepeteToggle(){
+  const checked=document.getElementById('fxRepete').checked;
+  const det=document.getElementById('fxRepeteDet');
+  if(det) det.style.display=checked?'':'none';
+  if(!checked) return;
+  const period=document.getElementById('fxPeriod').value;
+  const qtd=parseInt(document.getElementById('fxQtd').value)||12;
+  const passos={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12};
+  const info=document.getElementById('fxRepeteInfo');
+  if(info) info.textContent=`📅 Serão criadas ${qtd} ocorrências a cada ${passos[period]||1} mês(es) — ${period.toLowerCase()}`;
+}
+
 function openFx(i=-1){
   document.getElementById('fxIdx').value=i;
-  // Reconstrói o select de categorias antes de abrir (garante categorias custom)
   atualizarSelectCats();
+  // Reseta toggle recorrência
+  const fxRep=document.getElementById('fxRepete');
+  if(fxRep) fxRep.checked=false;
+  const fxDet=document.getElementById('fxRepeteDet');
+  if(fxDet) fxDet.style.display='none';
+  document.getElementById('fxPeriod').value='Mensal';
+  document.getElementById('fxQtd').value='12';
+  document.getElementById('fxPrior').value='';
   if(i>=0){
     const f=FIXAS[i];
-    document.getElementById('fxDesc').value=f.desc;
+    document.getElementById('fxDesc').value=f.desc||'';
     document.getElementById('fxValor').value=(f.valor||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-    // Adiciona a categoria salva como opção se não existir mais (compatibilidade)
     const catSel=document.getElementById('fxCat');
     if(catSel && f.cat && ![...catSel.options].some(o=>o.value===f.cat)){
-      catSel.insertAdjacentHTML('beforeend',`<option>${f.cat}</option>`);
+      catSel.insertAdjacentHTML('beforeend',`<option>${esc(f.cat)}</option>`);
     }
     document.getElementById('fxCat').value=f.cat||'';
-    document.getElementById('fxVenc').value=f.venc;
-    document.getElementById('fxStatus').value=f.status;
+    document.getElementById('fxMetodo').value=f.metodo||'';
+    document.getElementById('fxVenc').value=f.venc||'';
+    document.getElementById('fxStatus').value=f.status||'A pagar';
+    document.getElementById('fxPrior').value=f.prioridade||'';
     document.getElementById('fxObs').value=f.obs||'';
     document.getElementById('fxTitle').textContent='✏️ Editar Despesa Fixa';
   } else {
-    ['fxDesc','fxValor','fxObs'].forEach(id=>document.getElementById(id).value='');
+    ['fxDesc','fxValor','fxObs','fxVenc'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fxMetodo').value='';
     document.getElementById('fxStatus').value='A pagar';
     document.getElementById('fxTitle').textContent='Nova Despesa Fixa';
   }
   OM('ovFx');
 }
+
 function saveFx(){
   const i=parseInt(document.getElementById('fxIdx').value);
-  const f={desc:document.getElementById('fxDesc').value,valor:parseBRL(document.getElementById('fxValor').value)||0,cat:document.getElementById('fxCat').value,venc:document.getElementById('fxVenc').value,status:document.getElementById('fxStatus').value,obs:document.getElementById('fxObs').value};
-  if(!f.desc||!f.valor)return toast('Preencha descrição e valor','warning');
-  if(i>=0)FIXAS[i]=f;else FIXAS.push(f);
-  salvarFixas();CM('ovFx');renderFixas();renderDash();toast('✅ Salva!','success');
+  const f={
+    desc:    document.getElementById('fxDesc').value,
+    valor:   parseBRL(document.getElementById('fxValor').value)||0,
+    cat:     document.getElementById('fxCat').value,
+    metodo:  document.getElementById('fxMetodo').value,
+    venc:    document.getElementById('fxVenc').value,
+    status:  document.getElementById('fxStatus').value,
+    prioridade: document.getElementById('fxPrior').value,
+    obs:     document.getElementById('fxObs').value,
+  };
+  if(!f.desc||!f.valor) return toast('Preencha descrição e valor','warning');
+
+  const repete=document.getElementById('fxRepete').checked;
+  if(i>=0){
+    FIXAS[i]=f;
+  } else if(repete){
+    const period=document.getElementById('fxPeriod').value;
+    const qtd=Math.max(2,Math.min(60,parseInt(document.getElementById('fxQtd').value)||12));
+    const passo={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12}[period]||1;
+    for(let r=0;r<qtd;r++) FIXAS.push({...f});
+    toast(`✅ ${qtd} despesas fixas criadas (${period.toLowerCase()})`, 'success');
+  } else {
+    FIXAS.push(f);
+  }
+  salvarFixas(); CM('ovFx'); renderFixas(); renderDash();
+  if(!repete) toast('✅ Salva!','success');
 }
 function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';salvarFixas();renderFixas();}
 function delFx(i){showConfirm(`Remover <strong>${esc(FIXAS[i]?.desc)}</strong>?`,()=>{FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')},'🗑️','Remover')}
@@ -5156,7 +5281,8 @@ function renderFxCards(){
     const atraso=f.status==='Em atraso';
     const cls=pago?'fx-mcard pago':atraso?'fx-mcard atraso':'fx-mcard';
     const spCls=pago?'pill pr':atraso?'pill pa2':'pill pp';
-    const meta=[f.cat, f.venc?'Dia '+f.venc:'', f.obs||''].filter(Boolean).join(' · ');
+    const priorTag=f.prioridade==='Alta'?'🔴 Alta':f.prioridade==='Baixa'?'🟢 Baixa':'';
+    const meta=[f.cat, f.venc?'Dia '+f.venc:'', f.metodo||'', priorTag, f.obs||''].filter(Boolean).join(' · ');
     const toggleBg=pago?'var(--verm-l)':'var(--verde-l)';
     const toggleClr=pago?'var(--verm)':'var(--verde-d)';
     return `<div class="${cls}">
@@ -5188,13 +5314,15 @@ function renderFixas(){
   // Mobile: use cards
   if(window.innerWidth<=768){ renderFxCards(); renderRecorr(); return; }
   const el=document.getElementById('fxBody');
-  if(!FIXAS.length){el.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-ic">📌</div><h3>Sem despesas fixas</h3><p>Adicione compromissos recorrentes</p></div></td></tr>`;renderRecorr();return;}
+  if(!FIXAS.length){el.innerHTML=`<tr><td colspan="8"><div class="empty"><div class="empty-ic">📌</div><h3>Sem despesas fixas</h3><p>Adicione compromissos recorrentes</p></div></td></tr>`;renderRecorr();return;}
   el.innerHTML=FIXAS.map((f,i)=>{
     const sp=f.status==='Pago'?'pill pr':f.status==='Em atraso'?'pill pa2':'pill pp';
-    return `<tr><td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${emjs[f.cat]||'📦'}</span><span style="font-weight:700">${esc(f.desc)}</span></div></td>
+    const priorBadge=f.prioridade==='Alta'?'<span style="font-size:10px;color:var(--verm);font-weight:700">🔴 Alta</span>':f.prioridade==='Baixa'?'<span style="font-size:10px;color:var(--verde);font-weight:700">🟢 Baixa</span>':'';
+    return `<tr><td><div style="display:flex;align-items:center;gap:7px"><span style="font-size:14px">${emjs[f.cat]||'📦'}</span><span style="font-weight:700">${esc(f.desc)}</span>${priorBadge}</div></td>
     <td><span class="pill pcat">${esc(f.cat)}</span></td>
     <td class="vn">${fmt(f.valor)}</td>
     <td style="font-size:12px">${f.venc?'Dia '+f.venc:'—'}</td>
+    <td style="font-size:12px">${esc(f.metodo||'—')}</td>
     <td><span class="${sp}">${esc(f.status)}</span></td>
     <td style="font-size:12px;color:var(--muted)">${esc(f.obs)||'—'}</td>
     <td><div style="display:flex;gap:4px">
