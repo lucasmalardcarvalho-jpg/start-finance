@@ -787,7 +787,7 @@ def _try_table_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                             tx_cols = [j for j in mcols_pos if j != bal_c]
                             deb_c, cre_c = tx_cols[0], tx_cols[1]
                         if desc_c is None and date_c is not None:
-                            cands = [j for j in range(ncols) if j not in (date_c,)+tuple(mcols) and j!=cd_c]
+                            cands = [j for j in range(ncols) if j not in {date_c, bal_c, deb_c, cre_c, val_c, cd_c} and j not in mcols_freq]
                             if cands: desc_c = max(cands, key=lambda j: text_len[j] if j<ncols else 0)
 
                     if date_c is None and val_c is None and deb_c is None: continue
@@ -865,21 +865,140 @@ def _try_table_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
 
     return len(rows) - added_before
 
+# ── Strategy 2b — word-grid (C6 Bank, PDFs sem linhas de tabela) ─────────────
+def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
+    """
+    Reconstrói linhas agrupando palavras por posição Y.
+    Lida com PDFs colunar sem bordas (C6 Bank, Neon, inter fatura…).
+    """
+    import pdfplumber
+    from datetime import datetime
+    cur_year = str(datetime.utcnow().year)
+
+    _DATE_DMY = _re.compile(r'^(\d{1,2})[/\-\.](\d{1,2})(?:[/\-\.](\d{2,4}))?$')
+    _DATE_MMM = _re.compile(r'^(\d{1,2})\s+([a-zA-ZÀ-ÿ]{3,5})\.?$')
+    _MONEY_RE = _re.compile(r'\d{1,3}(?:\.\d{3})*,\d{2}')
+
+    added_before = len(rows)
+
+    def _parse_word_line(ws):
+        """Recebe lista de word-dicts ordenados por x; retorna (data, desc, valor, tipo) ou None."""
+        texts = [w['text'] for w in ws]
+        full = ' '.join(texts)
+
+        # Tentar extrair data do primeiro token
+        t0 = texts[0] if texts else ''
+        data = None
+
+        dm = _DATE_DMY.match(t0)
+        if dm:
+            data = _make_date(dm.group(1), dm.group(2), dm.group(3) or cur_year)
+        if not data:
+            mm2 = _DATE_MMM.match(t0 + (' ' + texts[1] if len(texts) > 1 else ''))
+            if mm2:
+                mo = _resolve_mes(mm2.group(2))
+                if mo:
+                    data = _make_date(mm2.group(1), mo, cur_year)
+                    # consume dois tokens como data
+                    texts = texts[2:]
+                    full = ' '.join(texts)
+        if data:
+            rest_texts = texts[1:] if dm else texts
+            rest = ' '.join(rest_texts)
+            amounts = _AMT_RE.findall(rest)
+            if not amounts:
+                # tenta a linha inteira
+                amounts = _AMT_RE.findall(full)
+            if amounts:
+                tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                valor, neg = _parse_valor_str(tx_str)
+                if valor > 0:
+                    am = _AMT_RE.search(rest or full)
+                    desc = ((rest or full)[:am.start()] if am else (rest or full)).strip()
+                    desc = _re.sub(r'\s*[-–]\s*$', '', desc).strip()
+                    tipo = 'receita' if tx_str.strip().startswith('+') else 'gasto'
+                    return data, desc, valor, tipo
+        return None
+
+    try:
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                words = page.extract_words(x_tolerance=6, y_tolerance=4,
+                                           keep_blank_chars=False, use_text_flow=False)
+                if not words:
+                    continue
+
+                # Agrupar por Y (±4 px = mesma linha)
+                line_map: dict = {}
+                for w in words:
+                    y_key = round(float(w['top']) / 4) * 4
+                    line_map.setdefault(y_key, []).append(w)
+
+                ctx_date = None  # data de contexto (quando data sozinha em linha)
+                for y_key in sorted(line_map):
+                    ws = sorted(line_map[y_key], key=lambda w: w['x0'])
+                    texts = [w['text'] for w in ws]
+                    full = ' '.join(texts)
+
+                    # Linha só com data → contexto para próximas linhas
+                    if len(texts) <= 2:
+                        t0 = texts[0]
+                        dm = _DATE_DMY.match(t0)
+                        if dm:
+                            d = _make_date(dm.group(1), dm.group(2), dm.group(3) or cur_year)
+                            if d:
+                                ctx_date = d; continue
+                        if len(texts) == 2:
+                            mm2 = _DATE_MMM.match(t0 + ' ' + texts[1])
+                            if mm2:
+                                mo = _resolve_mes(mm2.group(2))
+                                if mo:
+                                    ctx_date = _make_date(mm2.group(1), mo, cur_year)
+                                    continue
+
+                    result = _parse_word_line(ws)
+                    if result:
+                        data, desc, valor, tipo = result
+                        _add_row(rows, seen, data, desc, valor, tipo)
+                    elif ctx_date and _MONEY_RE.search(full):
+                        # Linha sem data própria, mas temos contexto + há valor monetário
+                        amounts = _AMT_RE.findall(full)
+                        if amounts:
+                            tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                            valor, neg = _parse_valor_str(tx_str)
+                            if valor > 0:
+                                am = _AMT_RE.search(full)
+                                desc = (full[:am.start()] if am else full).strip()
+                                desc = _re.sub(r'\s*[-–]\s*$', '', desc).strip()
+                                if desc and len(desc) > 2:
+                                    tipo = 'receita' if tx_str.strip().startswith('+') else 'gasto'
+                                    _add_row(rows, seen, ctx_date, desc, valor, tipo)
+    except Exception as _e:
+        import logging as _lg; _lg.getLogger(__name__).debug(f"word_grid_parse: {_e}")
+
+    return len(rows) - added_before
+
+
 # ── Strategy 2 — line-based heuristics ──────────────────────────────────────
 def _line_parse(txt: str, rows: list, seen: set):
     """
-    Parser linha a linha — suporta Inter, Nubank, formatos livres.
-    Detecta: DD/MM/YYYY, DD/MM, DD de Mês de YYYY, DD de mes. YYYY
+    Parser linha a linha — suporta Inter, Nubank, C6 Bank, formatos livres.
+    Detecta: DD/MM/YYYY, DD/MM, DD MMM, DD de Mês de YYYY, DD de mes. YYYY
     """
     from datetime import datetime
     cur_year = str(datetime.utcnow().year)
     lines = [l.strip() for l in txt.splitlines() if l.strip()]
 
     # Padrões de data
-    re_long = _re.compile(r'\b(\d{1,2})\s+de\s+([a-zA-ZÀ-ÿ]+)\s+de\s+(\d{4})\b', _re.I)  # DD de Mês de YYYY
-    re_abr  = _re.compile(r'^(\d{1,2})\s+de\s+([a-zA-ZÀ-ÿ]{3,})\.?\s+(\d{4})\b', _re.I)  # DD de mes. YYYY
-    re_iso  = _re.compile(r'^(\d{2})[/\-](\d{2})[/\-](\d{2,4})\s+(.+)')                   # DD/MM/YYYY resto
-    re_short = _re.compile(r'^(\d{2})[/\-](\d{2})\s+(.+)')                                 # DD/MM resto
+    re_long  = _re.compile(r'\b(\d{1,2})\s+de\s+([a-zA-ZÀ-ÿ]+)\s+de\s+(\d{4})\b', _re.I)  # DD de Mês de YYYY
+    re_abr   = _re.compile(r'^(\d{1,2})\s+de\s+([a-zA-ZÀ-ÿ]{3,})\.?\s+(\d{4})\b', _re.I)   # DD de mes. YYYY
+    re_iso   = _re.compile(r'^(\d{1,2})[/\-](\d{1,2})[/\-](\d{2,4})\s+(.*)')                # DD/MM/YYYY resto
+    re_short = _re.compile(r'^(\d{1,2})[/\-](\d{1,2})\s+(.*)')                               # DD/MM resto
+    # "20 mar" ou "20 mar." — dia + mês abreviado (C6 Bank, alguns extratos)
+    re_mmm   = _re.compile(r'^(\d{1,2})\s+([a-zA-ZÀ-ÿ]{3,5})\.?\s*(.*)', _re.I)
+    # Data sozinha em linha "20/03" ou "20 mar" (contexto para próximas linhas)
+    re_date_only_dmy = _re.compile(r'^(\d{1,2})[/\-](\d{1,2})(?:[/\-](\d{2,4}))?$')
+    re_date_only_mmm = _re.compile(r'^(\d{1,2})\s+([a-zA-ZÀ-ÿ]{3,5})\.?$', _re.I)
 
     skip = {
         'saldo total','saldo anterior','saldo disponível','saldo do dia',
@@ -890,6 +1009,7 @@ def _line_parse(txt: str, rows: list, seen: set):
         'data corte','saldo demais','compras parceladas','extrato de conta',
         'agência','conta corrente','período','página','page','emissão',
         'saldo inicial','saldo final','total de débitos','total de créditos',
+        'total de lançamentos','total internacional','total nacional',
     }
     tx_starts = [
         'compra','pix','pagamento','depósito','deposito','saque',
@@ -897,12 +1017,31 @@ def _line_parse(txt: str, rows: list, seen: set):
         'ted','doc','estorno','reembolso','resgate','débito','crédito',
     ]
 
+    def _resolve_cd(rest, neg):
+        """Detecta indicador C/D e retorna (tipo, desc_limpa)."""
+        cd_m = _re.search(r'\s+([CD])\s*$', rest, _re.I)
+        if cd_m:
+            return ('receita' if cd_m.group(1).upper()=='C' else 'gasto'), rest[:cd_m.start()].strip()
+        return ('gasto' if neg else 'receita'), rest
+
+    def _emit(data, rest, amounts, rows, seen, *, prefer_last=False):
+        if not amounts: return
+        tx_str = (amounts[-2] if len(amounts) >= 2 and not prefer_last else amounts[-1])
+        valor, neg = _parse_valor_str(tx_str)
+        if valor <= 0: return
+        fm = _AMT_RE.search(rest)
+        raw_desc = (rest[:fm.start()] if fm else rest).strip().strip('"')
+        raw_desc = _re.sub(r'\s*[-–—]\s*$', '', raw_desc).strip()
+        tipo, desc = _resolve_cd(raw_desc, neg)
+        if tx_str.strip().startswith('+'): tipo = 'receita'
+        _add_row(rows, seen, data, desc, valor, tipo)
+
     extrato_date = None
     i = 0
     while i < len(lines):
         line = lines[i]; i += 1
         low = line.lower()
-        if len(line) < 4: continue
+        if len(line) < 3: continue
         if any(p in low for p in skip): continue
 
         # ── DD de Mês de YYYY como cabeçalho de data ──
@@ -923,68 +1062,77 @@ def _line_parse(txt: str, rows: list, seen: set):
                     rest = line[m.end():].strip()
                     if not _AMT_RE.search(rest) and i < len(lines):
                         rest = rest + ' ' + lines[i]; i += 1
-                    amounts = _AMT_RE.findall(rest)
-                    if amounts:
-                        tx_str = amounts[-1]
-                        valor, _ = _parse_valor_str(tx_str)
-                        fm = _AMT_RE.search(rest)
-                        desc = (rest[:fm.start()] if fm else rest).strip()
-                        desc = _re.sub(r'\s*[-–—]\s*$', '', desc).strip()
-                        tipo = 'receita' if tx_str.strip().startswith('+') else 'gasto'
-                        _add_row(rows, seen, data, desc, valor, tipo)
+                    _emit(data, rest, _AMT_RE.findall(rest), rows, seen, prefer_last=True)
             continue
 
         # ── DD/MM/YYYY resto ──
         m = re_iso.match(line)
-        if m:
+        if m and m.group(4).strip():
             data = _make_date(m.group(1), m.group(2), m.group(3))
             if data:
                 rest = m.group(4)
                 if not _AMT_RE.search(rest) and i < len(lines):
                     rest = rest + ' ' + lines[i]; i += 1
-                amounts = _AMT_RE.findall(rest)
-                if amounts:
-                    tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
-                    valor, neg = _parse_valor_str(tx_str)
-                    if valor > 0:
-                        fm = _AMT_RE.search(rest)
-                        desc = (rest[:fm.start()] if fm else rest).strip().strip('"')
-                        # Indicador C/D no final da descrição (ex: Caixa, Sicredi)
-                        cd_m = _re.search(r'\s+([CD])\s*$', desc, _re.I)
-                        if cd_m:
-                            tipo = 'receita' if cd_m.group(1).upper()=='C' else 'gasto'
-                            desc = desc[:cd_m.start()].strip()
-                        else:
-                            tipo = 'gasto' if neg else 'receita'
-                        _add_row(rows, seen, data, desc, valor, tipo)
+                _emit(data, rest, _AMT_RE.findall(rest), rows, seen)
+            continue
+
+        # ── DD/MM/YYYY sozinho (data de contexto) ──
+        m2 = re_date_only_dmy.match(line)
+        if m2:
+            d = _make_date(m2.group(1), m2.group(2), m2.group(3) or cur_year)
+            if d:
+                extrato_date = d
             continue
 
         # ── DD/MM resto (sem ano — Itaú fatura, etc.) ──
         m = re_short.match(line)
-        if m:
+        if m and m.group(3).strip():
             data = _make_date(m.group(1), m.group(2), cur_year)
             if data:
                 rest = m.group(3)
                 if not _AMT_RE.search(rest) and i < len(lines):
                     rest = rest + ' ' + lines[i]; i += 1
-                amounts = _AMT_RE.findall(rest)
-                if amounts:
-                    tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
-                    valor, neg = _parse_valor_str(tx_str)
-                    if valor > 0:
-                        fm = _AMT_RE.search(rest)
-                        desc = (rest[:fm.start()] if fm else rest).strip()
-                        cd_m = _re.search(r'\s+([CD])\s*$', desc, _re.I)
-                        if cd_m:
-                            tipo = 'receita' if cd_m.group(1).upper()=='C' else 'gasto'
-                            desc = desc[:cd_m.start()].strip()
-                        else:
-                            tipo = 'gasto' if neg else 'receita'
-                        _add_row(rows, seen, data, desc, valor, tipo)
+                _emit(data, rest, _AMT_RE.findall(rest), rows, seen)
             continue
+
+        # ── DD MMM [resto] — C6 Bank, Neon e outros ──
+        m = re_mmm.match(line)
+        if m:
+            mo = _resolve_mes(m.group(2))
+            if mo:
+                data = _make_date(m.group(1), mo, cur_year)
+                if data:
+                    rest = m.group(3).strip()
+                    # data sozinha na linha → contexto
+                    if not rest:
+                        m2 = re_date_only_mmm.match(line)
+                        if m2:
+                            extrato_date = data
+                        continue
+                    if not _AMT_RE.search(rest) and i < len(lines):
+                        rest = rest + ' ' + lines[i]; i += 1
+                    _emit(data, rest, _AMT_RE.findall(rest), rows, seen, prefer_last=True)
+                    continue
 
         # ── Modo extrato (palavras-chave após cabeçalho de data) ──
         if not extrato_date: continue
+
+        # Linha com valor monetário mas sem data prefixada (contexto ativo)
+        if _AMT_RE.search(low):
+            amounts = _AMT_RE.findall(line)
+            if amounts:
+                tx_str = amounts[-2] if len(amounts) >= 2 else amounts[-1]
+                neg = tx_str.strip().startswith('-')
+                valor, _ = _parse_valor_str(tx_str)
+                if valor > 0 and any(c.isalpha() for c in line):
+                    fm = _AMT_RE.search(line)
+                    raw_desc = (line[:fm.start()] if fm else line).strip()
+                    raw_desc = _re.sub(r'\s*[-–—]\s*$', '', raw_desc).strip()
+                    tipo, desc = _resolve_cd(raw_desc, neg)
+                    if desc and len(desc) > 2:
+                        _add_row(rows, seen, extrato_date, desc, valor, tipo)
+                        continue
+
         if not any(low.startswith(k) for k in tx_starts): continue
         full = line
         if not _AMT_RE.search(full) and i < len(lines):
@@ -1005,24 +1153,42 @@ def _line_parse(txt: str, rows: list, seen: set):
 def _parse_pdf_rows(txt: str, pdf_bytes: bytes = None) -> list:
     """
     Parser universal de extratos bancários.
-    Estratégia 1: extração de tabelas pdfplumber (Bradesco, Itaú, Caixa, Sicredi…)
-    Estratégia 2: heurística linha a linha (Inter, Nubank, formatos livres)
+    Estratégia 1 : extração de tabelas pdfplumber (Bradesco, Itaú, Caixa, Sicredi…)
+    Estratégia 2a: heurística linha a linha (Inter, Nubank, formatos livres)
+    Estratégia 2b: word-grid — reconstrói linhas por posição Y (C6 Bank, Neon…)
     """
     rows = []
     seen = set()
 
-    # Tenta extração estruturada via tabelas
     if pdf_bytes:
+        # Estratégia 1 — tabelas estruturadas
         try:
             n = _try_table_parse(pdf_bytes, rows, seen)
             if n >= 2:
                 return rows
         except Exception as _e:
-            logger.debug(f"table parse falhou, usando line parse: {_e}")
+            logger.debug(f"table parse falhou: {_e}")
         rows.clear(); seen.clear()
 
-    # Fallback: parser linha a linha
+        # Estratégia 2b — word-grid (antes do line parse, melhor para PDFs colunar)
+        try:
+            n = _word_grid_parse(pdf_bytes, rows, seen)
+            if n >= 2:
+                return rows
+        except Exception as _e:
+            logger.debug(f"word_grid parse falhou: {_e}")
+        rows.clear(); seen.clear()
+
+    # Estratégia 2a — linha a linha (fallback universal)
     _line_parse(txt, rows, seen)
+
+    # Se 2a falhou mas temos PDF, tenta word-grid de novo com texto completo
+    if not rows and pdf_bytes:
+        try:
+            _word_grid_parse(pdf_bytes, rows, seen)
+        except Exception:
+            pass
+
     return rows
 
 @app.route("/api/parse-pdf", methods=["POST"])
@@ -1035,9 +1201,13 @@ def parse_pdf():
         import pdfplumber
         pdf_bytes = f.read()
         full_text = []
+        # Tenta duas configurações de tolerância para melhor extração de texto
         with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
             for page in pdf.pages:
-                txt = page.extract_text(x_tolerance=3, y_tolerance=3)
+                # Tolerância maior captura melhor layouts colunar (C6, Neon…)
+                txt = page.extract_text(x_tolerance=8, y_tolerance=4)
+                if not txt:
+                    txt = page.extract_text(x_tolerance=3, y_tolerance=3)
                 if txt:
                     full_text.append(txt)
         combined = '\n'.join(full_text)
@@ -1049,6 +1219,36 @@ def parse_pdf():
     except Exception as e:
         logger.error(f"parse_pdf error: {e}")
         return jsonify({"erro": f"Erro ao ler PDF: {str(e)}"}), 500
+
+
+@app.route("/api/parse-pdf-debug", methods=["POST"])
+@requer_auth
+def parse_pdf_debug():
+    """Endpoint de diagnóstico — retorna texto bruto e estrutura de tabelas do PDF."""
+    if 'file' not in request.files:
+        return jsonify({"erro": "Nenhum arquivo enviado"}), 400
+    f = request.files['file']
+    try:
+        import pdfplumber
+        pdf_bytes = f.read()
+        result = {"pages": []}
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            for pi, page in enumerate(pdf.pages):
+                pg = {"page": pi+1, "texts": {}, "tables": [], "words_sample": []}
+                for tol in [(3,3), (8,4)]:
+                    txt = page.extract_text(x_tolerance=tol[0], y_tolerance=tol[1])
+                    pg["texts"][f"tol_{tol[0]}_{tol[1]}"] = (txt or '')[:2000]
+                tables = page.extract_tables()
+                for tbl in (tables or []):
+                    pg["tables"].append([r[:6] for r in (tbl or [])[:10]])
+                words = page.extract_words(x_tolerance=6, y_tolerance=4)
+                pg["words_sample"] = [{"t":w["text"],"x":round(w["x0"]),"y":round(w["top"])} for w in (words or [])[:50]]
+                result["pages"].append(pg)
+        return jsonify(result)
+    except ImportError:
+        return jsonify({"erro": "pdfplumber não instalado"}), 500
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 
 # ── Health ────────────────────────────────────────────────────────
