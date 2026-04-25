@@ -673,6 +673,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   #ctMobileAdd{display:flex!important;flex-direction:column;gap:8px}
   /* Planejamento: mostra controles de filtro (ano/modo) no mobile */
   #page-planejamento .ph{display:flex!important;align-items:center;justify-content:flex-end;padding:2px 10px 8px!important;flex-wrap:wrap;gap:8px}
+  #page-familia .ph{display:flex!important;align-items:center;justify-content:space-between;padding:4px 10px 10px!important;flex-wrap:wrap;gap:8px}
+  #page-familia .ph h1{font-size:16px}
+  #page-familia .ph p{display:none}
   #page-planejamento .ph > div:first-child{display:none}
   /* Plan year dropdown: abre para a esquerda no mobile para não sair da tela */
   .plan-year-drop{right:auto!important;left:0!important}
@@ -3362,12 +3365,12 @@ function renderEvolucaoAnual(el, h, histParam){
       bars+=`<rect x="${(cx-colW/2+1).toFixed(1)}" y="${PT}" width="${(colW-2).toFixed(1)}" height="${chartH}" rx="6" fill="#3B6FF0" opacity="0.06"/>`;
     }
 
-    if(hh.entradas>0){
+    if(CHART_LAYERS.entradas && hh.entradas>0){
       const bh=Math.max((hh.entradas/maxVal)*chartH, 3);
       const by=PT+chartH-bh;
       bars+=`<rect x="${(cx-barW-gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#3B6FF0" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
     }
-    if(hh.saidas>0){
+    if(CHART_LAYERS.saidas && hh.saidas>0){
       const bh=Math.max((hh.saidas/maxVal)*chartH, 3);
       const by=PT+chartH-bh;
       bars+=`<rect x="${(cx+gap/2).toFixed(1)}" y="${by.toFixed(1)}" width="${barW.toFixed(1)}" height="${bh.toFixed(1)}" rx="4" fill="#ee206e" opacity="${opacity}" class="chart-bar" data-mes="${hh.label}" data-e="${hh.entradas}" data-s="${hh.saidas}" data-sd="${hh.saldo}" data-f="${isFut}"/>`;
@@ -5380,7 +5383,7 @@ function renderDividas(){
     const total=parseFloat(d.total||0);
     const rest=Math.max(parcelas-pagas,0);
     const pago=mensal*pagas;
-    const vRest=Math.max(total-pago,0);  // correto: total - já pago
+    const vRest=mensal*rest; // parcelas restantes × valor mensal
     const pct=parcelas>0?Math.min(pagas/parcelas*100,100):0;
     const statusCor = pct>=100?'var(--verde)':pct>=75?'var(--azul)':pct>=50?'var(--lara)':'var(--verm)';
     const statusLabel = pct>=100?'✅ Quitada':pct>=75?'📈 Quase lá':pct>=50?'🔄 Em andamento':'🔴 Início';

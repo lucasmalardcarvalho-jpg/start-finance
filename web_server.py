@@ -613,7 +613,7 @@ def _normalizar_mes(s: str) -> str:
 _parcela_re = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
 
 # ── Helpers de parsing ───────────────────────────────────────────────────────
-_AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*\d{1,3}(?:\.\d{3})*,\d{2})', _re.I)
+_AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})', _re.I)
 
 def _parse_valor_str(s: str):
     """(float_abs, is_negative)  — formato brasileiro 1.234,56"""
@@ -732,10 +732,18 @@ def _try_table_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                                 text_len[j] += len(c)
                         if max(date_cnt, default=0) > 0:
                             date_c = date_cnt.index(max(date_cnt))
-                        mcols = sorted([j for j in range(ncols) if money_cnt[j]>0], key=lambda j: -money_cnt[j])
-                        if len(mcols)==1:   val_c = mcols[0]
-                        elif len(mcols)==2: deb_c,bal_c = mcols[0],mcols[1]
-                        elif len(mcols)>=3: cre_c,deb_c,bal_c = mcols[0],mcols[1],mcols[2]
+                        # Ordena por frequência: coluna mais preenchida = saldo
+                        mcols_freq = sorted([j for j in range(ncols) if money_cnt[j]>0], key=lambda j: -money_cnt[j])
+                        mcols_pos  = sorted(mcols_freq)  # por posição (esq→dir)
+                        if len(mcols_freq)==1:
+                            val_c = mcols_freq[0]
+                        elif len(mcols_freq)==2:
+                            bal_c = mcols_freq[0]   # mais frequente = saldo
+                            val_c = mcols_freq[1]   # menos frequente = valor da tx
+                        elif len(mcols_freq)>=3:
+                            bal_c = mcols_freq[0]   # mais frequente = saldo
+                            tx_cols = [j for j in mcols_pos if j != bal_c]
+                            deb_c, cre_c = tx_cols[0], tx_cols[1]
                         if desc_c is None and date_c is not None:
                             cands = [j for j in range(ncols) if j not in (date_c,)+tuple(mcols) and j!=cd_c]
                             if cands: desc_c = max(cands, key=lambda j: text_len[j] if j<ncols else 0)
