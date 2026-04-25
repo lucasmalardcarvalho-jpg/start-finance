@@ -649,10 +649,21 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   /* Category grid */
   #catsGrid{grid-template-columns:repeat(2,1fr)!important;gap:8px}
   .cat-card-item{padding:10px 8px}
-  /* Filtros de categorias — ordenar vai pra linha própria */
-  #catFiltroBarra{padding:0 10px 2px;gap:6px}
-  #catFiltroBarra > div:last-child{flex:0 0 100%;margin-left:0!important;margin-top:4px}
-  #catFiltroBarra > div:last-child .sf-f{flex:1;width:auto!important}
+  /* Filtros de categorias — scroll horizontal, ordenar em linha própria */
+  #catFiltroBarra{
+    flex-wrap:nowrap!important;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;padding:0 10px 6px;gap:6px;margin-bottom:4px!important;
+  }
+  #catFiltroBarra::-webkit-scrollbar{display:none}
+  #catFiltroBarra .catFiltBtn{flex:0 0 auto;white-space:nowrap}
+  #catFiltroBarra > div:last-child{
+    flex:0 0 auto;margin-left:12px!important;white-space:nowrap;
+    border-left:1px solid var(--border);padding-left:12px;
+  }
+  #catFiltroBarra > div:last-child .sf-f{width:auto!important;font-size:11px}
+  /* Relatorios PA — seletor de mês + reload na mesma linha */
+  #page-relatorios .pa{flex-wrap:nowrap!important;align-items:center;padding:0 10px 8px!important}
+  #page-relatorios .pa #relMesSel{width:auto!important;flex:1;min-width:0}
   /* Cards específicos */
   .dv-card,.meta-card,.inv-card{padding:12px}
   .credit-card{padding:16px}
@@ -2021,8 +2032,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
   </div>
   <!-- Filtros -->
-  <div id="catFiltroBarra" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-    <span style="font-size:12px;font-weight:700;color:var(--muted)">Ver:</span>
+  <div id="catFiltroBarra" style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+    <span style="font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0">Ver:</span>
     <button class="btn bs btn-sm catFiltBtn active" data-f="todas" onclick="setCatFiltro('todas',this)">Todas</button>
     <button class="btn bs btn-sm catFiltBtn" data-f="estourou" onclick="setCatFiltro('estourou',this)">🔴 Estourou</button>
     <button class="btn bs btn-sm catFiltBtn" data-f="atencao" onclick="setCatFiltro('atencao',this)">🟡 Atenção</button>
