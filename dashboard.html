@@ -1092,6 +1092,28 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         <div id="txGanhoRecInfo" style="font-size:12px;color:var(--azul);font-weight:600;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
       </div>
     </div>
+    <!-- Recorrência de gasto — aparece só quando tipo = Gasto e sem parcelamento -->
+    <div id="txGastoRecArea" style="display:none">
+      <div class="fr one"><div class="fg">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border)">
+          <label class="switch"><input type="checkbox" id="txGastoRec" onchange="txGastoRecToggle()"><span class="slider"></span></label>
+          <span style="font-size:13px;font-weight:700;color:var(--txt2)">Esse gasto se repete?</span>
+        </div>
+      </div></div>
+      <div id="txGastoRecDet" style="display:none">
+        <div class="fr">
+          <div class="fg"><label class="fl">Periodicidade</label>
+            <select class="fs" id="txGastoPeriod" onchange="txGastoRecToggle()">
+              <option>Mensal</option><option>Bimestral</option><option>Trimestral</option><option>Semestral</option><option>Anual</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Quantidade</label>
+            <input type="number" class="fi" id="txGastoQtd" min="2" max="60" placeholder="12" value="12" oninput="txGastoRecToggle()">
+          </div>
+        </div>
+        <div id="txGastoRecInfo" style="font-size:12px;color:var(--verm);font-weight:600;background:var(--verm-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
+      </div>
+    </div>
     <div class="fg" id="fgTxProjeto">
       <label class="fl">🗂️ Orçamento/Projeto (opcional)</label>
       <select class="sf-f" id="txProjeto">
@@ -1199,7 +1221,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="fxTitle">Nova Despesa Fixa</div><button class="mc" onclick="CM('ovFx')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="fxValor" inputmode="decimal" placeholder="0,00"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"></select></div><div class="fg"><label class="fl">Método de Pagamento</label><select class="fs" id="fxMetodo"><option value="">— Nenhum —</option><option>Pix</option><option>Débito automático</option><option>Boleto</option><option>Cartão crédito</option><option>Cartão débito</option><option>Dinheiro</option><option>TED/DOC</option></select></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"></select></div><div class="fg"><label class="fl">Método de Pagamento</label><select class="fs" id="fxMetodo" onchange="fxMetodoChange()"><option value="">— Nenhum —</option><option>Pix</option><option>Débito automático</option><option>Boleto</option><option>Cartão crédito</option><option>Cartão débito</option><option>Dinheiro</option><option>TED/DOC</option></select></div></div>
+    <div id="fxCartaoRow" style="display:none"><div class="fr one"><div class="fg"><label class="fl">Cartão</label><select class="fs" id="fxCartaoSel"><option value="">— Selecione o cartão —</option></select></div></div></div>
     <div class="fr three"><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div><div class="fg"><label class="fl">Prioridade</label><select class="fs" id="fxPrior"><option value="">Normal</option><option>Alta</option><option>Baixa</option></select></div></div>
     <!-- Recorrência -->
     <div class="fr one"><div class="fg">
@@ -2854,24 +2877,7 @@ function calcularMes(){
     }
   });
 
-  // Limite do cartão: soma TODAS as parcelas de TODAS as transações do cartão
-  // (não apenas do mês atual) — representa o crédito total comprometido
-  // Limite comprometido = soma de todas as parcelas/compras do mês atual em diante
-  // (parcelas já pagas em meses anteriores não consomem mais limite)
-  const _mesHojeK = getMesChave(0);
-  const _mesGte = (a)=>{
-    const [ma,aa]=a.split('/'), [mb,ab]=_mesHojeK.split('/');
-    const ya=parseInt(aa)||0, yb=parseInt(ab)||0;
-    const ia=MESES_PT.indexOf(ma), ib=MESES_PT.indexOf(mb);
-    return ya!==yb ? ya>=yb : ia>=ib;
-  };
-  const cartoesLimiteUso = {};
-  TODAS_TX.forEach(tx=>{
-    if(!tx.cartao||!tx.cartao.trim()||parseFloat(tx.valor||0)>=0) return;
-    if(!tx.mes_ano||!_mesGte(tx.mes_ano)) return; // ignora meses já passados
-    const ct=tx.cartao.trim();
-    cartoesLimiteUso[ct]=(cartoesLimiteUso[ct]||0)+Math.abs(parseFloat(tx.valor||0));
-  });
+  const cartoesLimiteUso = calcCartoesLimiteUso();
 
   const lims={...LIMS_DEF,...LIMS_LOCAL};
   const catsArr=Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([nome,gasto])=>{
@@ -2896,6 +2902,25 @@ function calcularMes(){
 }
 
 function round2(v){return Math.round(v*100)/100}
+
+// Computa o total de limite de cartão comprometido (mês atual + parcelas futuras)
+// usando TODAS_TX diretamente — mais confiável do que depender de MES_DATA cacheado
+function calcCartoesLimiteUso(){
+  const today = getMesChave(0); // mês real atual (ignorar MES_OFF)
+  const parse = s => { const p=(s||'').split('/'); return {m:MESES_PT.indexOf(p[0]),y:parseInt(p[1])||0}; };
+  const ref = parse(today);
+  const result = {};
+  TODAS_TX.forEach(tx=>{
+    if(!tx.cartao||!tx.cartao.trim()||parseFloat(tx.valor||0)>=0) return;
+    if(!tx.mes_ano) return;
+    const {m,y} = parse(tx.mes_ano);
+    if(m<0) return; // mês inválido
+    if(y<ref.y || (y===ref.y && m<ref.m)) return; // mês já passou
+    const ct = tx.cartao.trim();
+    result[ct] = (result[ct]||0) + Math.abs(parseFloat(tx.valor||0));
+  });
+  return result;
+}
 
 // ════════════════════════════════════════════════
 // CARREGAR DADOS
@@ -3709,10 +3734,10 @@ function renderCartoesDash(){
   if(!CARTOES.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">💳</div><p>Nenhum cartão</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'cartoes\')">Adicionar cartão</button></div>';return;}
   const rawG=MES_DATA.gastosPorCartao||{};
   const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
-  const limUsoD=MES_DATA.cartoesLimiteUso||{};
+  const limUsoD=calcCartoesLimiteUso();
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
     const fatMes=gastos[c.nome]||0;
-    const comprometido=limUsoD[c.nome]||fatMes;
+    const comprometido=limUsoD[c.nome.trim()]||fatMes;
     const usado=comprometido;
     const pct=c.limite>0?Math.min(comprometido/c.limite*100,100):0;
     const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
@@ -3782,16 +3807,19 @@ function renderMetasDash(){
 function txTipoChange(){
   const tipo=document.getElementById('txTipo').value;
   const ganhoArea=document.getElementById('txGanhoRecArea');
+  const gastoArea=document.getElementById('txGastoRecArea');
   if(tipo==='Receita'){
     document.getElementById('txMetodo').value='';
     document.getElementById('txCartaoRow').style.display='none';
     if(ganhoArea) ganhoArea.style.display='';
+    if(gastoArea) gastoArea.style.display='none';
+    const gcb=document.getElementById('txGastoRec'); if(gcb) gcb.checked=false;
+    const gdt=document.getElementById('txGastoRecDet'); if(gdt) gdt.style.display='none';
   } else {
     if(ganhoArea) ganhoArea.style.display='none';
-    const cb=document.getElementById('txGanhoRec');
-    if(cb) cb.checked=false;
-    const det=document.getElementById('txGanhoRecDet');
-    if(det) det.style.display='none';
+    const cb=document.getElementById('txGanhoRec'); if(cb) cb.checked=false;
+    const det=document.getElementById('txGanhoRecDet'); if(det) det.style.display='none';
+    if(gastoArea) gastoArea.style.display='';
   }
 }
 
@@ -3806,6 +3834,19 @@ function txGanhoRecToggle(){
   const meses=passos[period]||1;
   const info=document.getElementById('txGanhoRecInfo');
   if(info) info.textContent=`📅 Serão criadas ${qtd} receitas a cada ${meses} mês(es) — ${period.toLowerCase()}`;
+}
+
+function txGastoRecToggle(){
+  const checked=document.getElementById('txGastoRec').checked;
+  const det=document.getElementById('txGastoRecDet');
+  if(det) det.style.display=checked?'':'none';
+  if(!checked) return;
+  const period=document.getElementById('txGastoPeriod').value;
+  const qtd=parseInt(document.getElementById('txGastoQtd').value)||12;
+  const passos={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12};
+  const meses=passos[period]||1;
+  const info=document.getElementById('txGastoRecInfo');
+  if(info) info.textContent=`📅 Serão criados ${qtd} gastos a cada ${meses} mês(es) — ${period.toLowerCase()}`;
 }
 
 function txMetChange(){
@@ -3913,6 +3954,11 @@ function selParc(n){
   // Mostra a info de meses
   const miEl=document.getElementById('txMesesInfo');
   if(miEl) miEl.style.display='block';
+  // Parcelamento e gasto recorrente são mutuamente exclusivos
+  const gastoArea=document.getElementById('txGastoRecArea');
+  if(gastoArea) gastoArea.style.display='none';
+  const gcb=document.getElementById('txGastoRec'); if(gcb) gcb.checked=false;
+  const gdt=document.getElementById('txGastoRecDet'); if(gdt) gdt.style.display='none';
   atualizarValorParc();
 }
 
@@ -4156,6 +4202,13 @@ function resetTxForm(){
   if(ganhoCb) ganhoCb.checked=false;
   const ganhoDet=document.getElementById('txGanhoRecDet');
   if(ganhoDet) ganhoDet.style.display='none';
+  // Reseta área de gasto recorrente
+  const gastoArea=document.getElementById('txGastoRecArea');
+  if(gastoArea) gastoArea.style.display='none';
+  const gastoCb=document.getElementById('txGastoRec');
+  if(gastoCb) gastoCb.checked=false;
+  const gastoDet=document.getElementById('txGastoRecDet');
+  if(gastoDet) gastoDet.style.display='none';
   popularSelectProjeto();
   popularSelectMembro();
 }
@@ -4274,7 +4327,6 @@ async function confirmDel(){
       CM('ovDel');
       toast('🗑️ Excluído!','success');
     }
-    setTimeout(()=>reload(), 1200);
   }catch(e){
     toast('❌ '+e.message,'error');
   }finally{
@@ -4416,6 +4468,15 @@ async function saveTx(){
           novasTx.push({...dados, mes_ano:somarMes(mesAno,r*_passo), idx:novoIdx+r});
         }
         toast(`✅ ${_qtd} receitas criadas (${_period.toLowerCase()}, ${mesAno} → ${somarMes(mesAno,(_qtd-1)*_passo)})`,'success');
+      } else if(tipo==='Gasto' && totalParc<=1 && document.getElementById('txGastoRec')?.checked){
+        // Gasto recorrente — gera N cópias pela periodicidade escolhida
+        const _period=document.getElementById('txGastoPeriod').value;
+        const _qtd=Math.max(2,Math.min(60,parseInt(document.getElementById('txGastoQtd').value)||12));
+        const _passo={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12}[_period]||1;
+        for(let r=1;r<_qtd;r++){
+          novasTx.push({...dados, mes_ano:somarMes(mesAno,r*_passo), idx:novoIdx+r});
+        }
+        toast(`✅ ${_qtd} gastos criados (${_period.toLowerCase()}, ${mesAno} → ${somarMes(mesAno,(_qtd-1)*_passo)})`,'success');
       } else {
         toast('✅ Lançado!','success');
       }
@@ -4926,7 +4987,7 @@ let CT_DETAIL_IDX = -1; // índice do cartão em detalhe
 function renderCartoes(){
   const rawG = MES_DATA.gastosPorCartao||{};
   const gastos = Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
-  const limUso = MES_DATA.cartoesLimiteUso||{};
+  const limUso = calcCartoesLimiteUso();
 
   const fatTotal = Object.values(gastos).reduce((s,v)=>s+v,0);
   const limTotal = CARTOES.reduce((s,c)=>s+parseFloat(c.limite||0),0);
@@ -4953,7 +5014,7 @@ function renderCartoes(){
 
   el.innerHTML = CARTOES.map((c,i)=>{
     const fatMes = gastos[c.nome.trim()]||0;
-    const comprometido = limUso[c.nome]||fatMes;
+    const comprometido = limUso[c.nome.trim()]||fatMes;
     const disponivel = Math.max(parseFloat(c.limite||0)-comprometido,0);
     const pct = parseFloat(c.limite||0)>0 ? Math.min(comprometido/parseFloat(c.limite||0)*100,100) : 0;
     const corBar = pct>85?'rgba(239,68,68,.9)':pct>60?'rgba(249,115,22,.8)':'rgba(255,255,255,.55)';
@@ -5116,7 +5177,7 @@ function renderExtratoCartao(){
   const gastos = Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
   const fatMes = txs.filter(t=>parseFloat(t.valor||0)<0).reduce((s,t)=>s+Math.abs(parseFloat(t.valor||0)),0);
   // Use total committed limit (all installments), not just this month's bill
-  const comprometido = (MES_DATA.cartoesLimiteUso||{})[c.nome] || fatMes;
+  const comprometido = calcCartoesLimiteUso()[c.nome.trim()] || fatMes;
   const disponivel = Math.max(parseFloat(c.limite||0)-comprometido,0);
 
   const sumEl = document.getElementById('ctDetailSummary');
@@ -5200,6 +5261,19 @@ function fxRepeteToggle(){
   if(info) info.textContent=`📅 Serão criadas ${qtd} ocorrências a cada ${passos[period]||1} mês(es) — ${period.toLowerCase()}`;
 }
 
+function fxMetodoChange(){
+  const met=document.getElementById('fxMetodo').value;
+  const row=document.getElementById('fxCartaoRow');
+  const sel=document.getElementById('fxCartaoSel');
+  if(met==='Cartão crédito'||met==='Cartão débito'){
+    row.style.display='';
+    sel.innerHTML='<option value="">— Selecione o cartão —</option>'+
+      CARTOES.map(c=>`<option value="${esc(c.nome)}">${esc(c.nome)}${c.final?' ••••'+esc(c.final):''}</option>`).join('');
+  } else {
+    row.style.display='none';
+  }
+}
+
 function openFx(i=-1){
   document.getElementById('fxIdx').value=i;
   atualizarSelectCats();
@@ -5221,6 +5295,8 @@ function openFx(i=-1){
     }
     document.getElementById('fxCat').value=f.cat||'';
     document.getElementById('fxMetodo').value=f.metodo||'';
+    fxMetodoChange();
+    document.getElementById('fxCartaoSel').value=f.cartao||'';
     document.getElementById('fxVenc').value=f.venc||'';
     document.getElementById('fxStatus').value=f.status||'A pagar';
     document.getElementById('fxPrior').value=f.prioridade||'';
@@ -5229,6 +5305,7 @@ function openFx(i=-1){
   } else {
     ['fxDesc','fxValor','fxObs','fxVenc'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('fxMetodo').value='';
+    fxMetodoChange();
     document.getElementById('fxStatus').value='A pagar';
     document.getElementById('fxTitle').textContent='Nova Despesa Fixa';
   }
@@ -5237,11 +5314,13 @@ function openFx(i=-1){
 
 function saveFx(){
   const i=parseInt(document.getElementById('fxIdx').value);
+  const _fxMet = document.getElementById('fxMetodo').value;
   const f={
     desc:    document.getElementById('fxDesc').value,
     valor:   parseBRL(document.getElementById('fxValor').value)||0,
     cat:     document.getElementById('fxCat').value,
-    metodo:  document.getElementById('fxMetodo').value,
+    metodo:  _fxMet,
+    cartao:  (_fxMet==='Cartão crédito'||_fxMet==='Cartão débito') ? document.getElementById('fxCartaoSel').value : '',
     venc:    document.getElementById('fxVenc').value,
     status:  document.getElementById('fxStatus').value,
     prioridade: document.getElementById('fxPrior').value,
