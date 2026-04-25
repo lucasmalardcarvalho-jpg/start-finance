@@ -227,6 +227,7 @@ button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
 
 /* MODAIS */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
+#ovConfirm{z-index:1000}
 .ov.open{display:flex}
 .modal{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-lg);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:mIn .22s ease}
 @keyframes mIn{from{opacity:0;transform:translateY(-18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -5078,7 +5079,7 @@ function saveFx(){
   salvarFixas();CM('ovFx');renderFixas();renderDash();toast('✅ Salva!','success');
 }
 function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';salvarFixas();renderFixas();}
-function delFx(i){FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')}
+function delFx(i){showConfirm(`Remover <strong>${esc(FIXAS[i]?.desc)}</strong>?`,()=>{FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')},'🗑️','Remover')}
 function marcarTodasPagas(){FIXAS.forEach(f=>f.status='Pago');salvarFixas();renderFixas();toast('✅ Todas pagas!','success')}
 
 function renderFxCards(){
@@ -5162,7 +5163,7 @@ function saveDv(){
   salvarDividas();CM('ovDv');renderDividas();renderDash();toast('✅ Salva!','success');
 }
 function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();renderDash();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
-function delDv(i){DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')}
+function delDv(i){showConfirm(`Remover <strong>${esc(DIVIDAS[i]?.nome)}</strong>?`,()=>{DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')},'🗑️','Remover')}
 
 // ── Estado do Endividamento ──
 let ENDIV_TAB = 'ambos';
@@ -5622,7 +5623,7 @@ function confirmarDeposito(){
   CM('ovDepMeta');
   toast(`💰 ${fmt(v)} adicionado à meta!`,'success');
 }
-function delMt(i){METAS.splice(i,1);salvarMetas();renderMetas();toast('🗑️ Meta removida','info')}
+function delMt(i){showConfirm(`Remover <strong>${esc(METAS[i]?.nome)}</strong>?`,()=>{METAS.splice(i,1);salvarMetas();renderMetas();toast('🗑️ Meta removida','info')},'🗑️','Remover')}
 
 function renderMetas(){
   const el=document.getElementById('metasGrid');if(!el)return;
