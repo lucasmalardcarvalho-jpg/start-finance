@@ -757,13 +757,16 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     min-width:0!important;
   }
   /* Confirmação — dialog compacto centralizado (não bottom sheet) */
-  #ovConfirm.ov{align-items:center!important;justify-content:center!important;padding:20px!important}
+  #ovConfirm.ov{padding:0!important}
   #ovConfirm .modal{
-    width:90%!important;max-width:370px!important;
+    position:fixed!important;
+    top:50%!important;left:50%!important;
+    right:auto!important;bottom:auto!important;
+    transform:translate(-50%,-50%)!important;
+    width:88%!important;max-width:370px!important;
     border-radius:20px!important;
-    position:relative!important;
-    bottom:auto!important;top:auto!important;left:auto!important;right:auto!important;
-    max-height:80vh!important;margin:auto!important;
+    max-height:80vh!important;margin:0!important;
+    animation:none!important;
   }
   /* ── Calendário filtro (popup) ── */
   #calPop{
