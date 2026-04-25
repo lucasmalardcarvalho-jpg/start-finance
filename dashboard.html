@@ -1921,8 +1921,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <!-- KPI bar — sempre visível -->
   <div class="g3 mb" id="ctKpis">
     <div class="kpi r" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💳</div></div><div class="kpi-v" id="ctFatTotal">R$ 0,00</div><div class="kpi-l">Fatura total</div></div>
-    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📊</div></div><div class="kpi-v" id="ctUsoMedio">0%</div><div class="kpi-l">Uso médio do limite</div></div>
-    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v" id="ctDispTotal">R$ 0,00</div><div class="kpi-l">Disponível total</div></div>
+    <div class="kpi y" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">🏦</div></div><div class="kpi-v" id="ctLimTotal">R$ 0,00</div><div class="kpi-l">Limite total</div></div>
+    <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">✅</div></div><div class="kpi-v" id="ctDispTotal">R$ 0,00</div><div class="kpi-l">Disponível (após gastos)</div></div>
   </div>
 
   <!-- LIST VIEW: grid de cartões -->
@@ -4550,7 +4550,22 @@ async function saveTx(){
       if(pos>=0) TODAS_TX[pos]={...TODAS_TX[pos],...dados,idx};
       else TODAS_TX.push({...dados,idx});
       aprenderCategoria(dados.descricao, dados.categoria);
-      toast('✅ Atualizado!','success');
+
+      // Se recorrência habilitada na edição, cria cópias para meses futuros
+      const _editRec = (tipoTx==='Gasto') && totalParc<=1 && document.getElementById('txGastoRec')?.checked;
+      if(_editRec){
+        const _period=document.getElementById('txGastoPeriod').value;
+        const _qtd=Math.max(2,Math.min(60,parseInt(document.getElementById('txGastoQtd').value)||12));
+        const _passo={Mensal:1,Bimestral:2,Trimestral:3,Semestral:6,Anual:12}[_period]||1;
+        const maxIdx=TODAS_TX.length>0?Math.max(...TODAS_TX.map(t=>t.idx||0))+1:0;
+        for(let r=1;r<_qtd;r++){
+          TODAS_TX.push({...dados,idx:maxIdx+r-1,mes_ano:somarMes(mesAno,r*_passo)});
+        }
+        toast(`✅ Editado + ${_qtd-1} cópias criadas (${_period.toLowerCase()})`,'success');
+      } else {
+        toast('✅ Atualizado!','success');
+      }
+
       fetch(`/api/transacao/${idx}`,{method:'PUT',headers:apiHeaders(),body:JSON.stringify({...dados,user_id:AUTH_USER?.id})}).catch(()=>{});
       salvarTxsLocal();
       CM('ovTx');
@@ -5037,19 +5052,15 @@ function renderCartoes(){
 
   const fatTotal = Object.values(gastos).reduce((s,v)=>s+v,0);
   const limTotal = CARTOES.reduce((s,c)=>s+parseFloat(c.limite||0),0);
-  const limComprometido = CARTOES.reduce((s,c)=>s+(limUso[c.nome]||0),0);
+  const limComprometido = CARTOES.reduce((s,c)=>s+(limUso[c.nome.trim()]||0),0);
   const dispTotal = Math.max(limTotal-limComprometido,0);
-  const usoMedio = CARTOES.length ? CARTOES.reduce((s,c)=>{
-    const comp = limUso[c.nome]||0;
-    return s+(parseFloat(c.limite||0)>0 ? comp/parseFloat(c.limite||0)*100 : 0);
-  },0)/CARTOES.length : 0;
 
   const ctFat = document.getElementById('ctFatTotal');
-  const ctUso = document.getElementById('ctUsoMedio');
+  const ctLim = document.getElementById('ctLimTotal');
   const ctDisp = document.getElementById('ctDispTotal');
   if(ctFat) ctFat.textContent = fmt(fatTotal);
-  if(ctUso) ctUso.textContent = usoMedio.toFixed(1)+'%';
-  if(ctDisp) ctDisp.textContent = fmt(Math.max(dispTotal,0));
+  if(ctLim) ctLim.textContent = fmt(limTotal);
+  if(ctDisp) ctDisp.textContent = fmt(dispTotal);
 
   const el = document.getElementById('cartoesGrid');
   if(!el) return;
@@ -5290,7 +5301,38 @@ function irParaCartao(nomeCartao){
   if(idx >= 0) setTimeout(()=>abrirDetalheCartao(idx), 80);
 }
 
-function delCt(i){CARTOES.splice(i,1);salvarCartoes();voltarListaCartoes();renderCartoes();toast('🗑️ Cartão removido','info')}
+function delCt(i){
+  const c = CARTOES[i];
+  if(!c) return;
+  const nome = c.nome;
+  const txCount = TODAS_TX.filter(t=>t.cartao===nome).length;
+  const msg = `Remover o cartão <strong>${esc(nome)}</strong>?<br><br>`+
+    `<span style="color:var(--verm);font-size:12px;font-weight:600">`+
+    `⚠️ Isso também excluirá <strong>${txCount} transação(ões)</strong> `+
+    `(passadas, atuais e futuras) e <strong>despesas fixas</strong> vinculadas a esse cartão. `+
+    `Essa ação não pode ser desfeita.</span>`;
+  showConfirm(msg, ()=>{
+    // Remove todas as transações vinculadas ao cartão (todos os meses)
+    const antes = TODAS_TX.length;
+    TODAS_TX.splice(0, TODAS_TX.length, ...TODAS_TX.filter(t=>t.cartao!==nome));
+    // Reindexar
+    TODAS_TX.forEach((t,idx)=>t.idx=idx);
+    salvarTxsLocal();
+    // Remove despesas fixas vinculadas
+    const fixasBefore = FIXAS.length;
+    FIXAS.splice(0, FIXAS.length, ...FIXAS.filter(f=>f.cartao!==nome));
+    if(FIXAS.length !== fixasBefore) salvarFixas();
+    // Remove entradas de fatura paga para esse cartão
+    Object.keys(FATURAS_PAGAS).forEach(k=>{ if(k.startsWith(nome+'_')) delete FATURAS_PAGAS[k]; });
+    saveUser('faturas_pagas', FATURAS_PAGAS);
+    // Remove o cartão
+    CARTOES.splice(i,1);
+    salvarCartoes();
+    voltarListaCartoes();
+    autoRefresh();
+    toast(`🗑️ Cartão e ${antes-TODAS_TX.length} transação(ões) removidos`,'info');
+  }, '🗑️', 'Excluir tudo', 'bd');
+}
 
 // ════════════════════════════════════════════════
 // DESPESAS FIXAS
