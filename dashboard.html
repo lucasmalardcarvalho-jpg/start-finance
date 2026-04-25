@@ -4721,8 +4721,8 @@ function normalizeTx(t){
   // Compatibilidade retroativa: normaliza campos de transações antigas
   return {
     ...t,
-    emoji: t.emoji || getEmojiCat(t.categoria),
-    cor:   t.cor   || getCorCat(t.categoria),
+    emoji: getEmojiCat(t.categoria) || t.emoji || '📦',
+    cor:   getCorCat(t.categoria)  || t.cor   || '#9CA3AF',
     metodo: t.metodo || t.metodo_pagamento || '',
     parcelas: t.parcelas!=null ? t.parcelas : (t.total_parcelas||0),
     descricao: t.descricao||'',
@@ -9672,6 +9672,19 @@ function salvarEdicaoCategoria(){
   }
   salvarCats();
   atualizarSelectCats();
+
+  // Propaga emoji/cor/nome para TODAS as transações com essa categoria
+  let txChanged = false;
+  TODAS_TX.forEach((t, i) => {
+    if(t.categoria === nome || t.categoria === novoNome){
+      TODAS_TX[i] = {...t, categoria: novoNome, emoji, cor};
+      txChanged = true;
+    }
+  });
+  // Propaga também para Despesas Fixas e Recorrências
+  FIXAS.forEach((f, i) => { if(f.categoria===nome||f.categoria===novoNome){ FIXAS[i]={...f,categoria:novoNome}; } });
+  RECORRENCIAS.forEach((r, i) => { if(r.categoria===nome||r.categoria===novoNome){ RECORRENCIAS[i]={...r,categoria:novoNome}; } });
+  if(txChanged){ salvarTxsLocal(); }
 
   CM('ovEditCat');
   renderCats();
