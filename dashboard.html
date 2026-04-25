@@ -4117,7 +4117,17 @@ function editTx(idx){
   document.getElementById('txDesc').value=t.descricao||'';
   document.getElementById('txLocal').value=t.localizacao||'';
   document.getElementById('txMetodo').value=t.metodo||'';
-  document.getElementById('txParc').value=t.parcelas||0;
+  // Parcelamento — restaura estado completo do toggle antes de abrir o modal
+  const _parcN = parseInt(t.parcelas)||0;
+  TX_PARC_SEL = _parcN > 1 ? _parcN : 0;
+  document.getElementById('txParc').value = _parcN;
+  const _isParcEl  = document.getElementById('txIsParc');
+  const _isParcArea= document.getElementById('txIsParcArea');
+  const _isParcRow = document.getElementById('txParcRow');
+  if(_isParcEl)   _isParcEl.checked = _parcN > 1;
+  if(_isParcArea) _isParcArea.style.display = '';
+  if(_isParcRow)  _isParcRow.style.display  = _parcN > 1 ? '' : 'none';
+  if(_parcN > 1)  atualizarValorParc();
   // Cartão
   txMetChange();
   if(t.cartao){
