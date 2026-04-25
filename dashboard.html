@@ -2507,22 +2507,33 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </div>
         <button class="btn bg btn-sm" onclick="importReset()">← Trocar arquivo</button>
       </div>
-      <!-- Banco detectado + cartão destino -->
-      <div id="importBancoInfo" style="background:var(--azul-l);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-        <div style="font-size:12px;color:var(--azul);font-weight:700" id="importBancoLabel">🏦 Banco: —</div>
-        <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-wrap:wrap">
-          <label style="font-size:11px;font-weight:700;color:var(--txt2)">Cartão de destino:</label>
-          <select id="importCartaoSel" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt);font-family:inherit;cursor:pointer">
-            <option value="">— Nenhum (avulso) —</option>
-          </select>
+      <!-- Banco detectado + cartão destino + mês da fatura -->
+      <div id="importBancoInfo" style="background:var(--azul-l);border-radius:var(--r-sm);padding:10px 14px;margin-bottom:10px">
+        <div style="font-size:12px;color:var(--azul);font-weight:700;margin-bottom:8px" id="importBancoLabel">🏦 Banco: —</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:3px">💳 Cartão <span style="color:var(--verm)">*</span></label>
+            <select id="importCartaoSel" onchange="importOnCartaoChange()" style="font-size:12px;padding:5px 8px;border:2px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt);font-family:inherit;cursor:pointer;width:100%">
+              <option value="">— Selecione o cartão —</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:700;color:var(--txt2);display:block;margin-bottom:3px">📅 Mês da fatura <span style="color:var(--verm)">*</span></label>
+            <select id="importMesSel" style="font-size:12px;padding:5px 8px;border:2px solid var(--border);border-radius:6px;background:var(--card);color:var(--txt);font-family:inherit;cursor:pointer;width:100%"></select>
+          </div>
         </div>
       </div>
+      <!-- Aviso de categorias -->
+      <div style="background:#FEF9C3;border:1px solid #FDE68A;border-radius:var(--r-sm);padding:8px 12px;margin-bottom:10px;font-size:11px;color:#713F12">
+        💡 <strong>Revise as categorias</strong> de cada transação antes de importar — foram detectadas automaticamente e podem estar incorretas.
+      </div>
       <!-- Filtros de seleção -->
-      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <button class="btn bg btn-sm" onclick="importSelAll(true)">☑️ Selecionar todos</button>
-        <button class="btn bg btn-sm" onclick="importSelAll(false)">⬜ Desmarcar todos</button>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn bg btn-sm" onclick="importSelAll(true)">☑️ Todos</button>
+        <button class="btn bg btn-sm" onclick="importSelAll(false)">⬜ Nenhum</button>
         <button class="btn bg btn-sm" onclick="importSelTipo('gasto')">💸 Só gastos</button>
         <button class="btn bg btn-sm" onclick="importSelTipo('receita')">💰 Só receitas</button>
+        <button class="btn bg btn-sm" onclick="importFlipTipos()" title="Inverter gastos↔receitas de todas as transações">🔄 Inverter tipos</button>
         <span style="font-size:11px;color:var(--muted);align-self:center;margin-left:auto" id="importSelCount">0 selecionados</span>
       </div>
       <!-- Tabela preview -->
@@ -9995,9 +10006,81 @@ function mapearBancoParaCartao(banco){
 function importPreencherCartaoSel(autoCartao){
   const sel = document.getElementById('importCartaoSel');
   if(!sel) return;
-  sel.innerHTML = '<option value="">— Nenhum (avulso) —</option>' +
+  sel.innerHTML = '<option value="">— Selecione o cartão —</option>' +
     CARTOES.map(c => `<option value="${esc(c.nome)}">${esc(c.nome)}${c.banco?' ('+esc(c.banco)+')':''}</option>`).join('');
   if(autoCartao) sel.value = autoCartao.nome;
+}
+
+function importPreencherMesSel(){
+  const sel = document.getElementById('importMesSel');
+  if(!sel) return;
+  const now = new Date();
+  const opts = [];
+  for(let i = -2; i <= 14; i++){
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const chave = `${MESES_PT[d.getMonth()]}/${d.getFullYear()}`;
+    opts.push(`<option value="${chave}"${i===0?' selected':''}>${chave}</option>`);
+  }
+  sel.innerHTML = opts.join('');
+}
+
+function importOnCartaoChange(){
+  const nome = document.getElementById('importCartaoSel')?.value;
+  const cartao = CARTOES.find(c => c.nome === nome);
+  const sel = document.getElementById('importCartaoSel');
+  if(sel) sel.style.border = nome ? '2px solid var(--border)' : '2px solid var(--border)';
+  if(cartao && cartao.fech && IMPORT_ROWS.length){
+    const antesReceita = IMPORT_ROWS.filter(r => r.tipo === 'receita').length;
+    IMPORT_ROWS.forEach(r => { if(r.tipo === 'receita') r.tipo = 'gasto'; });
+    if(antesReceita > 0){ renderImportTable(); toast('💳 Cartão de crédito — lançamentos ajustados para gasto', 'info'); }
+  }
+}
+
+function importFlipTipos(){
+  IMPORT_ROWS.forEach(r => { r.tipo = r.tipo === 'gasto' ? 'receita' : 'gasto'; });
+  renderImportTable();
+  toast('↔️ Tipos invertidos', 'info');
+}
+
+function renderImportTable(){
+  const tbody = document.getElementById('importTableBody');
+  if(!tbody) return;
+  const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
+  tbody.innerHTML = IMPORT_ROWS.map((r, i) => {
+    const isParc = (r.parcelas||1) > 1;
+    const futuras = isParc ? (r.parcelas - r.parcela_atual) : 0;
+    const badges = [
+      r.duplicata ? `<span style="font-size:9px;background:#FEF3C7;color:#D97706;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">⚠️ Duplicada</span>` : '',
+      isParc ? `<span style="font-size:9px;background:#DBEAFE;color:#2563EB;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">🔄 ${r.parcela_atual}/${r.parcelas}${futuras>0?` +${futuras} futuras`:''}</span>` : ''
+    ].join('');
+    return `
+    <tr id="importRow_${i}" style="${!r.selecionado?'opacity:.45':''}${r.duplicata?';background:#FFFBEB':''}" title="${r.duplicata?'Possível duplicata':''}">
+      <td><input type="checkbox" ${r.selecionado?'checked':''} onchange="importToggle(${i},this.checked)" style="cursor:pointer"></td>
+      <td style="white-space:nowrap;font-size:11px">${esc(r.data)}</td>
+      <td>
+        <input type="text" value="${esc(r.descricao)}" onchange="IMPORT_ROWS[${i}].descricao=this.value"
+          style="border:none;background:transparent;width:100%;font-size:12px;color:var(--txt);font-family:inherit;outline:none;padding:2px 0">
+        ${badges}
+      </td>
+      <td id="importValCell_${i}" style="font-weight:800;color:${r.tipo==='receita'?'var(--verde)':'var(--verm)'}">
+        ${r.tipo==='receita'?'+':'−'} ${fmt(r.valor)}
+      </td>
+      <td>
+        <select onchange="IMPORT_ROWS[${i}].tipo=this.value;const vc=document.getElementById('importValCell_${i}');if(vc){vc.style.color=this.value==='receita'?'var(--verde)':'var(--verm)';vc.textContent=(this.value==='receita'?'+ ':'− ')+fmt(IMPORT_ROWS[${i}].valor);}importToggle(${i},null)"
+          style="border:none;background:transparent;font-size:11px;color:var(--txt);cursor:pointer;font-family:inherit">
+          <option value="gasto" ${r.tipo==='gasto'?'selected':''}>💸 Gasto</option>
+          <option value="receita" ${r.tipo==='receita'?'selected':''}>💰 Receita</option>
+        </select>
+      </td>
+      <td>
+        <select onchange="IMPORT_ROWS[${i}].categoria=this.value"
+          style="border:none;background:transparent;font-size:11px;color:var(--txt);cursor:pointer;font-family:inherit;max-width:110px">
+          ${allCats.map(c=>`<option${c===r.categoria?' selected':''}>${esc(c)}</option>`).join('')}
+        </select>
+      </td>
+    </tr>`;
+  }).join('');
+  importUpdateCount();
 }
 
 function parseOFXExtrato(txt){
@@ -10196,7 +10279,6 @@ function renderImportPreview(fileName, rows){
   document.getElementById('importConfirmBtn').style.display = '';
   document.getElementById('importFileName').textContent = fileName;
 
-  // Marca duplicatas antes de renderizar
   importDetectarDuplicatas(rows);
   const nDup = rows.filter(r=>r.duplicata).length;
   const nParc = rows.filter(r=>(r.parcelas||1)>1).length;
@@ -10210,47 +10292,16 @@ function renderImportPreview(fileName, rows){
   if(bancoEl) bancoEl.textContent = IMPORT_BANCO_DETECTADO
     ? `🏦 Banco detectado: ${IMPORT_BANCO_DETECTADO}`
     : '🏦 Banco: não detectado — selecione o cartão manualmente';
+
   importPreencherCartaoSel(autoCartao);
+  importPreencherMesSel();
 
-  const tbody = document.getElementById('importTableBody');
-  const allCats = [...CATS_PADRAO_EXTRA.map(c=>c.nome), ...CATS_CUSTOM.map(c=>c.nome)].sort();
+  // Cartão de crédito detectado: faturas mostram gastos como positivos → inverte receita→gasto
+  if(autoCartao && autoCartao.fech){
+    rows.forEach(r => { if(r.tipo === 'receita') r.tipo = 'gasto'; });
+  }
 
-  tbody.innerHTML = rows.map((r, i) => {
-    const isParc = (r.parcelas||1) > 1;
-    const futuras = isParc ? (r.parcelas - r.parcela_atual) : 0;
-    const badges = [
-      r.duplicata ? `<span style="font-size:9px;background:#FEF3C7;color:#D97706;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">⚠️ Duplicada</span>` : '',
-      isParc ? `<span style="font-size:9px;background:#DBEAFE;color:#2563EB;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">🔄 ${r.parcela_atual}/${r.parcelas}${futuras>0?` +${futuras} futuras`:''}</span>` : ''
-    ].join('');
-    return `
-    <tr id="importRow_${i}" style="${!r.selecionado?'opacity:.45':''}${r.duplicata?';background:#FFFBEB':''}" title="${r.duplicata?'Possível duplicata — já existe transação similar no sistema':''}">
-      <td><input type="checkbox" ${r.selecionado?'checked':''} onchange="importToggle(${i},this.checked)" style="cursor:pointer"></td>
-      <td style="white-space:nowrap;font-size:11px">${esc(r.data)}</td>
-      <td>
-        <input type="text" value="${esc(r.descricao)}" onchange="IMPORT_ROWS[${i}].descricao=this.value"
-          style="border:none;background:transparent;width:100%;font-size:12px;color:var(--txt);font-family:inherit;outline:none;padding:2px 0">
-        ${badges}
-      </td>
-      <td style="font-weight:800;color:${r.tipo==='receita'?'var(--verde)':'var(--verm)'}">
-        ${r.tipo==='receita'?'+':'−'} ${fmt(r.valor)}
-      </td>
-      <td>
-        <select onchange="IMPORT_ROWS[${i}].tipo=this.value;importToggle(${i},null)"
-          style="border:none;background:transparent;font-size:11px;color:var(--txt);cursor:pointer;font-family:inherit">
-          <option value="gasto" ${r.tipo==='gasto'?'selected':''}>💸 Gasto</option>
-          <option value="receita" ${r.tipo==='receita'?'selected':''}>💰 Receita</option>
-        </select>
-      </td>
-      <td>
-        <select onchange="IMPORT_ROWS[${i}].categoria=this.value"
-          style="border:none;background:transparent;font-size:11px;color:var(--txt);cursor:pointer;font-family:inherit;max-width:110px">
-          ${allCats.map(c=>`<option${c===r.categoria?' selected':''}>${esc(c)}</option>`).join('')}
-        </select>
-      </td>
-    </tr>`;
-  }).join('');
-
-  importUpdateCount();
+  renderImportTable();
 }
 
 function importToggle(i, checked){
@@ -10282,51 +10333,68 @@ function importConfirm(){
   const sels = IMPORT_ROWS.filter(r => r.selecionado);
   if(!sels.length){ toast('Nenhuma transação selecionada.', 'warning'); return; }
 
+  // Cartão obrigatório
   const cartaoNome = document.getElementById('importCartaoSel')?.value || '';
+  if(!cartaoNome){
+    toast('Selecione o cartão de destino antes de importar.', 'warning');
+    const sel = document.getElementById('importCartaoSel');
+    if(sel){ sel.style.border='2px solid var(--verm)'; setTimeout(()=>{ sel.style.border='2px solid var(--border)'; },2500); }
+    return;
+  }
+
   const cartaoObj = CARTOES.find(c => c.nome === cartaoNome);
-  const metodo = cartaoNome ? (cartaoObj && cartaoObj.fech ? 'Cartão crédito' : 'Débito') : 'Importado';
+  const metodo = cartaoObj && cartaoObj.fech ? 'Cartão crédito' : 'Débito';
+
+  // Mês da fatura selecionado pelo usuário
+  const faturaChave = document.getElementById('importMesSel')?.value || getMesChave();
+  const [fatMesStr, fatAnoStr] = faturaChave.split('/');
+  const fatMesIdx = MESES_PT.indexOf(fatMesStr);  // 0-based
+  const fatAnoNum = parseInt(fatAnoStr);
 
   let importadas = 0, futurasGeradas = 0;
   const base = Date.now();
 
   sels.forEach(r => {
     const dm = r.data.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-    const baseDate = dm ? new Date(+dm[3], +dm[2]-1, +dm[1]) : new Date();
-    const mesAno = `${MESES_PT[baseDate.getMonth()]}/${baseDate.getFullYear()}`;
     const valor = r.tipo === 'gasto' ? -Math.abs(r.valor) : Math.abs(r.valor);
     const pa = r.parcela_atual || 1;
     const pt = r.parcelas || 1;
+    const txTipo = r.tipo === 'receita' ? 'Receita' : 'Gasto';
 
+    // Parcela atual: data original da compra, mes_ano = mês da fatura selecionado
     TODAS_TX.push({
       data: r.data, hora: '00:00',
       descricao: r.descricao,
       categoria: r.categoria || 'Outros',
       valor, metodo, cartao: cartaoNome,
       parcelas: pt, parcela_atual: pa,
-      tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
-      local: '', mes_ano: mesAno,
+      tipo: txTipo,
+      local: '', mes_ano: faturaChave,
       idx: base + importadas
     });
     aprenderCategoria(r.descricao, r.categoria);
     importadas++;
 
-    // Gera parcelas futuras automaticamente
-    if(pt > pa && dm){
+    // Gera parcelas futuras: mes_ano = mês da fatura + N meses
+    if(pt > pa){
+      const diaOrigem = dm ? parseInt(dm[1]) : 1;
       for(let p = pa + 1; p <= pt; p++){
         const mesesAhead = p - pa;
-        const fd = new Date(+dm[3], +dm[2]-1 + mesesAhead, +dm[1]);
-        const futData = `${String(fd.getDate()).padStart(2,'0')}/${String(fd.getMonth()+1).padStart(2,'0')}/${fd.getFullYear()}`;
-        const futMes = `${MESES_PT[fd.getMonth()]}/${fd.getFullYear()}`;
-        const futDesc = r.descricao.replace(/[(\[]\s*[Pp]arcela\s+\d+\s+de\s+\d+\s*[)\]]/,
-          `(Parcela ${p} de ${pt})`);
+        const futDate = new Date(fatAnoNum, fatMesIdx + mesesAhead, 1);
+        const futMesChave = `${MESES_PT[futDate.getMonth()]}/${futDate.getFullYear()}`;
+        // Data da parcela futura: mesmo dia da compra original, no mês correto
+        const diasNoMes = new Date(futDate.getFullYear(), futDate.getMonth()+1, 0).getDate();
+        const diaFut = Math.min(diaOrigem, diasNoMes);
+        const futData = `${String(diaFut).padStart(2,'0')}/${String(futDate.getMonth()+1).padStart(2,'0')}/${futDate.getFullYear()}`;
+        const futDesc = r.descricao.replace(/[(\[]\s*[Pp]arcela\s+\d+\s+de\s+\d+\s*[)\]]/, `(Parcela ${p} de ${pt})`);
         TODAS_TX.push({
           data: futData, hora: '00:00',
           descricao: futDesc,
           categoria: r.categoria || 'Outros',
           valor, metodo, cartao: cartaoNome,
           parcelas: pt, parcela_atual: p,
-          tipo: r.tipo === 'receita' ? 'Receita' : 'Gasto',
-          local: '', mes_ano: futMes,
+          tipo: txTipo,
+          local: '', mes_ano: futMesChave,
           idx: base + importadas
         });
         importadas++;
