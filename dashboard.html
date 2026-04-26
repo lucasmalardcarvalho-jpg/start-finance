@@ -88,9 +88,13 @@ body.dark #loading{background:linear-gradient(135deg,#06030f,#1a0718)}
 .dark-toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
 .dark-toggle-track.on .dark-toggle-thumb{left:16px}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Cabinet Grotesk',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;overscroll-behavior-y:contain}
-button,a,[role="button"]{touch-action:manipulation}
+body{font-family:'Cabinet Grotesk',sans-serif;background:var(--bg);color:var(--txt);overflow-x:hidden;overscroll-behavior-y:contain;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 button,input,select,textarea{font-family:'Cabinet Grotesk',sans-serif}
+/* Evita que iOS/Android ajustem automaticamente o tamanho de fonte */
+input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
+/* Remove highlight azul em tap no Android */
+*{-webkit-tap-highlight-color:transparent}
 
 /* LOADING */
 #loading{position:fixed;inset:0;background:linear-gradient(135deg,#130039,#ee206e);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:18px;transition:opacity .5s}
@@ -591,7 +595,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     margin:10px auto 0;flex-shrink:0;
   }
   .mh{flex-shrink:0!important}
-  .mb2{flex:1!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important}
+  .mb2{flex:1!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch!important;overscroll-behavior:contain!important;scroll-padding-bottom:80px}
   .mf{
     flex-shrink:0!important;
     display:flex!important;
@@ -605,8 +609,8 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .fi{margin-bottom:10px}
   .fi label{font-size:12px;margin-bottom:4px;display:block}
   .fi input,.fi select,.fi textarea{font-size:16px!important;padding:10px 12px;min-height:44px} /* font-size:16px prevents zoom on iOS */
-  /* Forms */
-  .fr,.fr.one{flex-direction:column;gap:8px}
+  /* Forms — colapsa TODOS os grids de formulário em coluna única no mobile */
+  .fr,.fr.one,.fr.three{grid-template-columns:1fr!important;gap:8px}
   .parc-btn{padding:7px 12px;font-size:12px;min-height:44px}
   /* Tables — hide on mobile, use cards instead */
   .tw{display:none!important}
@@ -632,9 +636,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .tx-mcard-val.pos{color:var(--verde)}
   .tx-mcard-actions{display:flex;gap:5px;margin-top:2px}
   .tx-mcard-actions button{
-    width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;
-    font-size:13px;display:flex;align-items:center;justify-content:center;
-    -webkit-tap-highlight-color:transparent;
+    width:36px;height:36px;border-radius:8px;border:none;cursor:pointer;
+    font-size:14px;display:flex;align-items:center;justify-content:center;
+    -webkit-tap-highlight-color:transparent;min-width:36px;
   }
   .tx-mcard-actions .btn-edit{background:var(--azul-l);color:var(--azul)}
   .tx-mcard-actions .btn-del{background:var(--verm-l);color:var(--verm)}
@@ -704,7 +708,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   .fx-mcard-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
   .fx-mcard-val{font-size:15px;font-weight:800;color:var(--verm)}
   .fx-mcard-actions{display:flex;gap:4px}
-  .fx-mcard-actions button{width:30px;height:30px;border-radius:8px;border:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
+  .fx-mcard-actions button{width:36px;height:36px;border-radius:8px;border:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;min-width:36px}
   /* "Marcar todas pagas" button full-width on mobile */
   .tf .btn{width:100%;justify-content:center;margin-top:4px}
   #ctMobileAdd{display:flex!important;flex-direction:column;gap:8px}
@@ -1056,7 +1060,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
             <button type="button" class="parc-btn" onclick="selParc(12)">12x</button>
             <button type="button" class="parc-btn" onclick="selParc(18)">18x</button>
             <button type="button" class="parc-btn" onclick="selParc(24)">24x</button>
-            <input type="number" class="fi" id="txParcCustom" placeholder="Outro" min="2" max="96"
+            <input type="number" class="fi" id="txParcCustom" placeholder="Outro" min="2" max="96" inputmode="numeric"
               style="width:80px;font-size:13px" oninput="selParc(parseInt(this.value)||0)">
           </div>
         </div>
@@ -1086,7 +1090,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
             </select>
           </div>
           <div class="fg"><label class="fl">Quantidade</label>
-            <input type="number" class="fi" id="txGanhoQtd" min="2" max="60" placeholder="12" value="12" oninput="txGanhoRecToggle()">
+            <input type="number" class="fi" id="txGanhoQtd" min="2" max="60" placeholder="12" value="12" inputmode="numeric" oninput="txGanhoRecToggle()">
           </div>
         </div>
         <div id="txGanhoRecInfo" style="font-size:12px;color:var(--azul);font-weight:600;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
@@ -1095,7 +1099,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <!-- Campos extras para Despesa Fixa -->
     <div id="txFxExtras" style="display:none">
       <div class="fr">
-        <div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="txFxVenc" min="1" max="31" placeholder="Ex: 10"></div>
+        <div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="txFxVenc" min="1" max="31" placeholder="Ex: 10" inputmode="numeric"></div>
         <div class="fg"><label class="fl">Prioridade</label><select class="fs" id="txFxPrior"><option value="">Normal</option><option>Alta</option><option>Baixa</option></select></div>
       </div>
     </div>
@@ -1115,7 +1119,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
             </select>
           </div>
           <div class="fg"><label class="fl">Quantidade</label>
-            <input type="number" class="fi" id="txGastoQtd" min="2" max="60" placeholder="12" value="12" oninput="txGastoRecToggle()">
+            <input type="number" class="fi" id="txGastoQtd" min="2" max="60" placeholder="12" value="12" inputmode="numeric" oninput="txGastoRecToggle()">
           </div>
         </div>
         <div id="txGastoRecInfo" style="font-size:12px;color:var(--verm);font-weight:600;background:var(--verm-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
@@ -1230,7 +1234,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="fr"><div class="fg"><label class="fl">Descrição</label><input class="fi" id="fxDesc" placeholder="Ex: Aluguel, Luz..."></div><div class="fg"><label class="fl">Valor (R$)</label><input type="text" class="fi valor-input" id="fxValor" inputmode="decimal" placeholder="0,00"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Categoria</label><select class="fs" id="fxCat"></select></div><div class="fg"><label class="fl">Método de Pagamento</label><select class="fs" id="fxMetodo" onchange="fxMetodoChange()"><option value="">— Nenhum —</option><option>Pix</option><option>Débito automático</option><option>Boleto</option><option>Cartão crédito</option><option>Cartão débito</option><option>Dinheiro</option><option>TED/DOC</option></select></div></div>
     <div id="fxCartaoRow" style="display:none"><div class="fr one"><div class="fg"><label class="fl">Cartão</label><select class="fs" id="fxCartaoSel"><option value="">— Selecione o cartão —</option></select></div></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div><div class="fg"><label class="fl">Prioridade</label><select class="fs" id="fxPrior"><option value="">Normal</option><option>Alta</option><option>Baixa</option></select></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="fxVenc" min="1" max="31" placeholder="5" inputmode="numeric"></div><div class="fg"><label class="fl">Status</label><select class="fs" id="fxStatus"><option>A pagar</option><option>Pago</option><option>Em atraso</option></select></div><div class="fg"><label class="fl">Prioridade</label><select class="fs" id="fxPrior"><option value="">Normal</option><option>Alta</option><option>Baixa</option></select></div></div>
     <!-- Recorrência -->
     <div class="fr one"><div class="fg">
       <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg);border-radius:var(--r-sm);border:1px solid var(--border)">
@@ -1246,7 +1250,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
           </select>
         </div>
         <div class="fg"><label class="fl">Quantidade</label>
-          <input type="number" class="fi" id="fxQtd" min="2" max="60" placeholder="12" value="12" oninput="fxRepeteToggle()">
+          <input type="number" class="fi" id="fxQtd" min="2" max="60" placeholder="12" value="12" inputmode="numeric" oninput="fxRepeteToggle()">
         </div>
       </div>
       <div id="fxRepeteInfo" style="font-size:12px;color:var(--azul);font-weight:600;background:var(--azul-l);border-radius:var(--r-xs);padding:8px 12px;margin-bottom:6px"></div>
@@ -1264,7 +1268,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome do Cartão</label><input class="fi" id="ctNome" placeholder="Ex: Nubank Roxinho, Itaú..."></div><div class="fg"><label class="fl">Bandeira</label><select class="fs" id="ctBand"><option>Visa</option><option>Mastercard</option><option>American Express (Amex)</option><option>Diners Club</option><option>Discover</option><option>Elo</option><option>Hipercard</option><option>Banescard</option><option>Cabal</option><option>Sodexo</option><option>Ticket</option><option>Alelo</option></select></div></div>
     <div class="fr"><div class="fg"><label class="fl">Banco Emissor</label><select class="fs" id="ctBanco"><option value="">— Selecione —</option><option>Agibank</option><option>Banco do Brasil</option><option>Banrisul</option><option>BMG</option><option>Bradesco</option><option>BRB</option><option>BTG</option><option>BV</option><option>C6</option><option>Caixa</option><option>Crefisa</option><option>HSBC</option><option>Inter</option><option>Itaú</option><option>Mercado Pago</option><option>Neon</option><option>Next</option><option>Nubank</option><option>Original</option><option>Pagbank</option><option>Pan</option><option>PicPay</option><option>Porto</option><option>Safra</option><option>Santander</option><option>Sicoob</option><option>Sicredi</option><option>Willbank</option><option>XP</option><option>Cora</option><option>Wise</option><option>Nomad</option><option>Digio</option><option>Outro</option></select></div><div class="fg"></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="text" class="fi valor-input" id="ctLim" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Limite Total (R$)</label><input type="text" class="fi valor-input" id="ctLim" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Fechamento (dia)</label><input type="number" class="fi" id="ctFech" min="1" max="31" inputmode="numeric"></div><div class="fg"><label class="fl">Vencimento (dia)</label><input type="number" class="fi" id="ctVenc" min="1" max="31" inputmode="numeric"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Final do Cartão (4 dígitos)</label><input type="text" class="fi" id="ctFinal" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" placeholder="Ex: 1234" oninput="this.value=this.value.replace(/\D/g,'').slice(0,4)"></div><div class="fg"></div></div>
     <div class="fr one"><div class="fg" style="padding:12px 0 4px">
       <label style="display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none">
@@ -1297,13 +1301,13 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mh"><div class="mt" id="dvTitle">Nova Dívida</div><button class="mc" onclick="CM('ovDv')">✕</button></div>
   <div class="mb2">
     <div class="fr"><div class="fg"><label class="fl">Nome da Dívida</label><input class="fi" id="dvNome" placeholder="Ex: Financiamento do carro..."></div><div class="fg"><label class="fl">Para Quem Devo?</label><input class="fi" id="dvCredor" placeholder="Ex: Banco Itaú, Amigo João..."></div></div>
-    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="text" class="fi valor-input" id="dvTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="text" class="fi valor-input" id="dvMensal" inputmode="decimal" placeholder="0,00"></div></div>
-    <div class="fr"><div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="dvPagas" min="0" value="0"></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="dvVenc" min="1" max="31" value="5"></div></div>
+    <div class="fr three"><div class="fg"><label class="fl">Valor Total</label><input type="text" class="fi valor-input" id="dvTotal" inputmode="decimal" placeholder="0,00"></div><div class="fg"><label class="fl">Nº Parcelas</label><input type="number" class="fi" id="dvParc" min="1" inputmode="numeric"></div><div class="fg"><label class="fl">Valor Mensal</label><input type="text" class="fi valor-input" id="dvMensal" inputmode="decimal" placeholder="0,00"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="dvPagas" min="0" value="0" inputmode="numeric"></div><div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="dvVenc" min="1" max="31" value="5" inputmode="numeric"></div></div>
     <!-- Campos adicionais opcionais -->
     <div style="margin:8px 0 4px;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Informações Adicionais <span style="font-weight:400;font-style:italic">(opcional)</span></div>
     <div class="fr three">
       <div class="fg"><label class="fl">Tabela da Dívida</label><select class="fs" id="dvTabela"><option value="">— Nenhuma —</option><option value="Price">Price (parcelas fixas)</option><option value="SAC">SAC (parcelas decrescentes)</option></select></div>
-      <div class="fg"><label class="fl">Taxa Mensal (%)</label><input type="number" class="fi" id="dvTaxa" min="0" step="0.01" placeholder="Ex: 1,99"></div>
+      <div class="fg"><label class="fl">Taxa Mensal (%)</label><input type="number" class="fi" id="dvTaxa" min="0" step="0.01" placeholder="Ex: 1,99" inputmode="decimal"></div>
       <div class="fg"><label class="fl">Indexador</label><select class="fs" id="dvIndexador"><option value="">— Nenhum —</option><option>IPCA</option><option>CDI</option><option>Selic</option><option>IGP-M</option><option>INPC</option><option>TR</option><option>TJLP</option><option>Pré-fixado</option></select></div>
     </div>
     <input type="hidden" id="dvIdx" value="-1">
@@ -1570,7 +1574,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <span id="drawerUserChevron" style="color:rgba(255,255,255,.35);font-size:13px;flex-shrink:0;transition:transform .25s">▼</span>
     </div>
     <!-- Opções expandíveis da conta -->
-    <div id="drawerUserMenu" style="display:none;margin-top:8px;display:none">
+    <div id="drawerUserMenu" style="display:none;margin-top:8px">
       <button onclick="closeMobileDrawer();OM('ovPerfil')" style="width:100%;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;cursor:pointer;color:#fff;font-family:'Cabinet Grotesk',sans-serif;font-size:13px;font-weight:600;min-height:44px;margin-bottom:6px">
         ✏️ Editar perfil
       </button>
@@ -2576,7 +2580,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div class="fr">
       <div class="fg"><label class="fl">Valor (R$) *</label><input type="text" class="fi valor-input" id="rcValor" inputmode="decimal" placeholder="0,00"></div>
-      <div class="fg"><label class="fl">Dia do mês *</label><input type="number" class="fi" id="rcDia" min="1" max="31" placeholder="1-31"></div>
+      <div class="fg"><label class="fl">Dia do mês *</label><input type="number" class="fi" id="rcDia" min="1" max="31" placeholder="1-31" inputmode="numeric"></div>
     </div>
     <div class="fr"><div class="fg"><label class="fl">Método de pagamento</label>
       <select class="fs" id="rcMetodo">
@@ -2787,10 +2791,47 @@ function OM(id){
   // Close drawer if open (mobile: modals should appear above drawer)
   const dr=document.getElementById('mobileDrawer');
   if(dr&&dr.classList.contains('open')) closeMobileDrawer();
-  document.getElementById(id).classList.add('open');
+  const el=document.getElementById(id);
+  el.classList.add('open');
+  // Trava scroll do body (iOS Safari: impede scroll de fundo por baixo do modal)
+  document.body.style.overflow='hidden';
+  // Sempre reseta scroll do corpo do modal ao topo (evita abrir no meio no mobile)
+  const body=el.querySelector('.mb2');
+  if(body) requestAnimationFrame(()=>{ body.scrollTop=0; });
 }
-function CM(id){document.getElementById(id).classList.remove('open')}
-document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open')}));
+function CM(id){
+  document.getElementById(id).classList.remove('open');
+  // Libera scroll do body se não há mais modais abertos (iOS Safari fix)
+  if(!document.querySelector('.ov.open')) document.body.style.overflow='';
+}
+document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{
+  if(e.target===o){
+    o.classList.remove('open');
+    if(!document.querySelector('.ov.open')) document.body.style.overflow='';
+  }
+}));
+
+// ── iOS: campo de formulário dentro de modal — scroll para visível quando teclado abre ──
+document.addEventListener('focusin',e=>{
+  if(window.innerWidth>768) return; // apenas mobile
+  const field=e.target;
+  if(!['INPUT','SELECT','TEXTAREA'].includes(field.tagName)) return;
+  const modal=field.closest('.mb2');
+  if(!modal) return;
+  // Pequeno delay para o iOS terminar de abrir o teclado
+  setTimeout(()=>{ field.scrollIntoView({block:'center',behavior:'smooth'}); }, 320);
+});
+
+// ── Orientação / resize: re-renderiza quando cruza o breakpoint 768px ──
+let _lastMobileBreak = window.innerWidth <= 768;
+window.addEventListener('resize', ()=>{
+  const isMobile = window.innerWidth <= 768;
+  if(isMobile !== _lastMobileBreak){
+    _lastMobileBreak = isMobile;
+    // Redesenha a aba ativa para usar layout correto (card vs table)
+    if(typeof autoRefresh === 'function') autoRefresh();
+  }
+});
 
 // ── Sync ao retornar ao app (mobile: switch de aba, lock screen, etc.) ──
 document.addEventListener('visibilitychange',()=>{
@@ -4686,11 +4727,19 @@ function abrirDP(){
 
   renderDP();
 
-  // Posiciona abaixo do input
+  // Posiciona abaixo do input (position:fixed → coords de viewport, sem scrollY)
   const input = document.getElementById('txData');
   const rect = input.getBoundingClientRect();
-  pop.style.top  = (rect.bottom + 4 + window.scrollY) + 'px';
-  pop.style.left = rect.left + 'px';
+  const popH = 320; // altura estimada do picker
+  const popW = 288;
+  // Abre para cima se não cabe abaixo
+  const top = (rect.bottom + 4 + popH > window.innerHeight)
+    ? Math.max(4, rect.top - popH - 4)
+    : rect.bottom + 4;
+  // Clampa na borda direita
+  const left = Math.min(rect.left, window.innerWidth - popW - 8);
+  pop.style.top  = top + 'px';
+  pop.style.left = Math.max(8, left) + 'px';
   pop.classList.add('open');
 
   // Fecha ao clicar fora
@@ -5445,11 +5494,11 @@ function saveFx(){
   } else {
     FIXAS.push(f);
   }
-  salvarFixas(); CM('ovFx'); renderFixas(); renderDash();
+  salvarFixas(); CM('ovFx'); calcularMes(); renderFixas(); renderDash();
   if(!repete) toast('✅ Salva!','success');
 }
 function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';salvarFixas();renderFixas();}
-function delFx(i){showConfirm(`Remover <strong>${esc(FIXAS[i]?.desc)}</strong>?`,()=>{FIXAS.splice(i,1);salvarFixas();renderFixas();toast('🗑️ Removida','info')},'🗑️','Remover')}
+function delFx(i){showConfirm(`Remover <strong>${esc(FIXAS[i]?.desc)}</strong>?`,()=>{FIXAS.splice(i,1);salvarFixas();calcularMes();renderFixas();renderDash();toast('🗑️ Removida','info')},'🗑️','Remover')}
 function marcarTodasPagas(){FIXAS.forEach(f=>f.status='Pago');salvarFixas();renderFixas();toast('✅ Todas pagas!','success')}
 
 function renderFxCards(){
@@ -5533,10 +5582,10 @@ function saveDv(){
   const d={nome:document.getElementById('dvNome').value,credor:document.getElementById('dvCredor').value||'',total:parseBRL(document.getElementById('dvTotal').value)||0,parcelas:parseInt(document.getElementById('dvParc').value)||1,mensal:parseBRL(document.getElementById('dvMensal').value)||0,pagas:parseInt(document.getElementById('dvPagas').value)||0,venc:document.getElementById('dvVenc').value,tabela:document.getElementById('dvTabela').value||'',taxa:parseFloat(document.getElementById('dvTaxa').value)||0,indexador:document.getElementById('dvIndexador').value||''};
   if(!d.nome||!d.total)return toast('Preencha nome e valor','warning');
   if(i>=0)DIVIDAS[i]=d;else DIVIDAS.push(d);
-  salvarDividas();CM('ovDv');renderDividas();renderDash();toast('✅ Salva!','success');
+  salvarDividas();CM('ovDv');calcularMes();renderDividas();renderDash();toast('✅ Salva!','success');
 }
-function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();renderDividas();renderDash();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
-function delDv(i){showConfirm(`Remover <strong>${esc(DIVIDAS[i]?.nome)}</strong>?`,()=>{DIVIDAS.splice(i,1);salvarDividas();renderDividas();toast('🗑️ Removida','info')},'🗑️','Remover')}
+function pagarParc(i){if(DIVIDAS[i].pagas<DIVIDAS[i].parcelas){DIVIDAS[i].pagas++;salvarDividas();calcularMes();renderDividas();renderDash();toast('✅ Parcela paga!','success');}else toast('Dívida quitada!','info')}
+function delDv(i){showConfirm(`Remover <strong>${esc(DIVIDAS[i]?.nome)}</strong>?`,()=>{DIVIDAS.splice(i,1);salvarDividas();calcularMes();renderDividas();renderDash();toast('🗑️ Removida','info')},'🗑️','Remover')}
 
 // ── Estado do Endividamento ──
 let ENDIV_TAB = 'ambos';
