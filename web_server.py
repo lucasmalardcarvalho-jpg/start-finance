@@ -7,6 +7,7 @@ START FINANCE — Web Server v4.1
 
 import os, json, logging, threading, time
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, jsonify, request, send_file
 import httpx
 from sheets_manager import SheetsManager, get_mes_ano, MESES_PT, parsear_valor
@@ -118,8 +119,41 @@ def _normalizar_quote(q, fallback_symbol=""):
     }
 
 
+def _fetch_um_ticker(ticker, token, now):
+    """Busca cotação de UM ticker da Brapi. Plano free só aceita 1 por request."""
+    try:
+        url = f"https://brapi.dev/api/quote/{ticker}"
+        params = {"token": token} if token else {}
+        r = httpx.get(url, params=params, timeout=8.0,
+                      headers={"User-Agent": "PenseFinances/1.0"})
+        if r.status_code == 200:
+            data = r.json()
+            results_list = data.get("results", []) or []
+            for q in results_list:
+                parsed = _normalizar_quote(q, fallback_symbol=ticker)
+                if parsed["symbol"]:
+                    with _COTACAO_LOCK:
+                        _COTACAO_CACHE[parsed["symbol"]] = (now, parsed)
+                    return parsed
+            # 200 mas sem results → não cacheia falha (pode ser intermitência)
+            return None
+        else:
+            logger.warning(f"Brapi {r.status_code} para {ticker}")
+            with _COTACAO_LOCK:
+                _COTACAO_CACHE[ticker] = (now, None)
+            return None
+    except Exception as e:
+        logger.warning(f"Erro ao buscar {ticker}: {e}")
+        with _COTACAO_LOCK:
+            _COTACAO_CACHE[ticker] = (now, None)
+        return None
+
+
 def _fetch_cotacoes(tickers):
-    """Busca cotações via Brapi (com cache). Retorna dict {ticker: data}."""
+    """Busca cotações via Brapi (com cache, em paralelo, 1 ticker por request).
+    Plano free da Brapi só aceita 1 ativo por chamada — fazemos N requests
+    paralelas com ThreadPoolExecutor pra latência ficar ~igual a 1 chamada.
+    """
     if not tickers:
         return {}
     now = time.time()
@@ -145,38 +179,18 @@ def _fetch_cotacoes(tickers):
         return result
 
     token = os.environ.get("BRAPI_TOKEN", "").strip()
-    # Brapi aceita até ~10 tickers por chamada na URL — vai em chunks pra ser seguro
-    for i in range(0, len(a_buscar), 10):
-        chunk = a_buscar[i:i + 10]
-        try:
-            url = f"https://brapi.dev/api/quote/{','.join(chunk)}"
-            params = {"token": token} if token else {}
-            r = httpx.get(url, params=params, timeout=8.0,
-                          headers={"User-Agent": "PenseFinances/1.0"})
-            if r.status_code == 200:
-                data = r.json()
-                results_list = data.get("results", []) or []
-                returned_syms = set()
-                for q in results_list:
-                    parsed = _normalizar_quote(q)
-                    if parsed["symbol"]:
-                        returned_syms.add(parsed["symbol"])
-                        result[parsed["symbol"]] = parsed
-                        with _COTACAO_LOCK:
-                            _COTACAO_CACHE[parsed["symbol"]] = (now, parsed)
-                # Tickers que não vieram NÃO são cacheados como falha — pode ser
-                # intermitência da Brapi. Próxima call tenta de novo.
-            else:
-                logger.warning(f"Brapi {r.status_code} para {chunk}")
-                # Apenas erros HTTP reais cacheiam falha curta (10s)
-                for sym in chunk:
-                    with _COTACAO_LOCK:
-                        _COTACAO_CACHE[sym] = (now, None)
-        except Exception as e:
-            logger.warning(f"Erro ao buscar cotações {chunk}: {e}")
-            for sym in chunk:
-                with _COTACAO_LOCK:
-                    _COTACAO_CACHE[sym] = (now, None)
+    # Paralelismo: até 8 requests simultâneas (Brapi tolera mais que isso facilmente)
+    max_workers = min(8, len(a_buscar))
+    with ThreadPoolExecutor(max_workers=max_workers) as ex:
+        futures = {ex.submit(_fetch_um_ticker, t, token, now): t for t in a_buscar}
+        for fut in futures:
+            t = futures[fut]
+            try:
+                data = fut.result(timeout=12.0)
+                if data:
+                    result[t] = data
+            except Exception as e:
+                logger.warning(f"Future {t} falhou: {e}")
 
     return result
 
