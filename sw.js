@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v1.6 (seletor de mês unificado + month picker)
-const CACHE = 'pf-v1.6';
+// PenseFinances — Service Worker v1.7 (cartões: limite reativo + sem seletor local)
+const CACHE = 'pf-v1.7';
 const STATIC = [
   '/',
   '/dashboard',

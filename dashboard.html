@@ -2040,9 +2040,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       </div>
       <!-- RIGHT: extrato -->
       <div class="card" style="padding:0;overflow:hidden">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px">
           <div style="font-size:15px;font-weight:800">Extrato</div>
-          <select class="sf-f" id="ctDetailMes" onchange="renderExtratoCartao()" style="width:auto;font-size:12px"></select>
+          <div id="ctDetailMesLabel" style="font-size:12px;font-weight:700;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:5px 10px;white-space:nowrap">—</div>
         </div>
         <div id="ctDetailExtrato" style="max-height:600px;overflow-y:auto"></div>
         <div id="ctDetailExtratoFooter" style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:13px;font-weight:700"></div>
@@ -2934,7 +2934,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2948,7 +2948,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -3022,12 +3022,15 @@ function calcularMes(){
 
 function round2(v){return Math.round(v*100)/100}
 
-// Computa o total de limite de cartão comprometido (mês atual + parcelas futuras)
-// usando TODAS_TX diretamente — mais confiável do que depender de MES_DATA cacheado
-function calcCartoesLimiteUso(){
-  const today = getMesChave(0); // mês real atual (ignorar MES_OFF)
+// Computa o total de limite de cartão comprometido a partir do mês de referência
+// (selecionado pelo seletor global) + todas as parcelas futuras NÃO PAGAS.
+// Lógica: ao avançar o mês, faturas anteriores já caíram da janela; faturas
+// marcadas como pagas via toggleFaturaPaga também são descontadas.
+// Aceita parâmetro opcional `refChave` ('abr./2026') — default = getMesChave().
+function calcCartoesLimiteUso(refChave){
+  const ref0 = refChave || getMesChave();
   const parse = s => { const p=(s||'').split('/'); return {m:MESES_PT.indexOf(p[0]),y:parseInt(p[1])||0}; };
-  const ref = parse(today);
+  const ref = parse(ref0);
   const result = {};
   TODAS_TX.forEach(tx=>{
     if(!tx.cartao||!tx.cartao.trim()||parseFloat(tx.valor||0)>=0) return;
@@ -3036,6 +3039,9 @@ function calcCartoesLimiteUso(){
     if(m<0) return; // mês inválido
     if(y<ref.y || (y===ref.y && m<ref.m)) return; // mês já passou
     const ct = tx.cartao.trim();
+    // Se a fatura desse cartão+mês foi marcada como PAGA, não conta no comprometido
+    const faturaKey = `${ct}_${tx.mes_ano}`;
+    if(FATURAS_PAGAS && FATURAS_PAGAS[faturaKey]?.pago) return;
     result[ct] = (result[ct]||0) + Math.abs(parseFloat(tx.valor||0));
   });
   return result;
@@ -3061,7 +3067,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -3246,7 +3252,7 @@ async function pullDataFromServer(){
     renderDash();
     const cur = document.querySelector('.page.active')?.id?.replace('page-','');
     if(cur && cur !== 'dashboard'){
-      const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderRel};
+      const fns={transacoes:()=>{renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderRel};
       if(fns[cur]) fns[cur]();
     }
   }catch(e){}
@@ -3277,7 +3283,7 @@ function go(page, _skipHistory=false){
   }
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
+  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
   // Empurra estado para histórico do browser (habilita botão back do Android)
   if(!_skipHistory) try{ history.pushState({page:targetPage}, '', '#'+targetPage); }catch{}
@@ -3862,7 +3868,7 @@ function renderCartoesDash(){
   if(!CARTOES.length){el.innerHTML='<div style="padding:14px 0;text-align:center;color:var(--muted);font-size:12px"><div style="font-size:22px;margin-bottom:6px">💳</div><p>Nenhum cartão</p><button class="btn bp btn-sm" style="margin-top:8px" onclick="go(\'cartoes\')">Adicionar cartão</button></div>';return;}
   const rawG=MES_DATA.gastosPorCartao||{};
   const gastos=Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
-  const limUsoD=calcCartoesLimiteUso();
+  const limUsoD=calcCartoesLimiteUso(getMesChave());
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
     const fatMes=gastos[c.nome]||0;
     const comprometido=limUsoD[c.nome.trim()]||fatMes;
@@ -5201,7 +5207,8 @@ let CT_DETAIL_IDX = -1; // índice do cartão em detalhe
 function renderCartoes(){
   const rawG = MES_DATA.gastosPorCartao||{};
   const gastos = Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
-  const limUso = calcCartoesLimiteUso();
+  // Comprometido recalculado em função do mês selecionado globalmente
+  const limUso = calcCartoesLimiteUso(getMesChave());
 
   const fatTotal = Object.values(gastos).reduce((s,v)=>s+v,0);
   const limTotal = CARTOES.reduce((s,c)=>s+parseFloat(c.limite||0),0);
@@ -5351,23 +5358,7 @@ function abrirDetalheCartao(i){
       <span style="font-size:13px;font-weight:700;color:var(--txt)">${esc(String(r.value))}</span>
     </div>`).join('');
 
-  // Popula selector de meses
-  const mesSel = document.getElementById('ctDetailMes');
-  if(mesSel){
-    const mesesDisp = [...new Set(TODAS_TX.filter(t=>t.cartao===c.nome).map(t=>t.mes_ano))].filter(Boolean);
-    // Garante que o mês atual aparece
-    const mesAtual = getMesChave();
-    if(!mesesDisp.includes(mesAtual)) mesesDisp.unshift(mesAtual);
-    // Ordena do mais recente para o mais antigo
-    const MESES_PT_LOCAL=['jan.','fev.','mar.','abr.','mai.','jun.','jul.','ago.','set.','out.','nov.','dez.'];
-    mesesDisp.sort((a,b)=>{
-      const parseM = m => { const parts=m.split('/'); return parseInt(parts[1]||0)*12+MESES_PT_LOCAL.findIndex(x=>m.toLowerCase().startsWith(x)); };
-      return parseM(b)-parseM(a);
-    });
-    mesSel.innerHTML = mesesDisp.map(m=>`<option value="${esc(m)}" ${m===mesAtual?'selected':''}>${esc(m)}</option>`).join('');
-  }
-
-  // Renderiza extrato
+  // Renderiza extrato (usa o mês selecionado globalmente no topo)
   renderExtratoCartao();
 }
 
@@ -5377,17 +5368,17 @@ function renderExtratoCartao(){
   const c = CARTOES[i];
   if(!c) return;
 
-  const mes = document.getElementById('ctDetailMes')?.value || getMesChave();
+  // Usa o mês selecionado globalmente no topo
+  const mes = getMesChave();
+  const lbl = document.getElementById('ctDetailMesLabel');
+  if(lbl) lbl.textContent = mesChaveToLabel(mes);
   const txs = TODAS_TX
     .filter(t=>t.cartao===c.nome && t.mes_ano===mes)
     .sort((a,b)=>{ const da=a.data.split('/').reverse().join('-'); const db=b.data.split('/').reverse().join('-'); return db.localeCompare(da); });
 
-  // Summary
-  const rawG = MES_DATA.gastosPorCartao||{};
-  const gastos = Object.fromEntries(Object.entries(rawG).map(([k,v])=>[k.trim(),v]));
+  // Summary — comprometido a partir do mês selecionado, sem faturas pagas
   const fatMes = txs.filter(t=>parseFloat(t.valor||0)<0).reduce((s,t)=>s+Math.abs(parseFloat(t.valor||0)),0);
-  // Use total committed limit (all installments), not just this month's bill
-  const comprometido = calcCartoesLimiteUso()[c.nome.trim()] || fatMes;
+  const comprometido = calcCartoesLimiteUso(mes)[c.nome.trim()] || fatMes;
   const disponivel = Math.max(parseFloat(c.limite||0)-comprometido,0);
 
   const sumEl = document.getElementById('ctDetailSummary');
@@ -7600,8 +7591,8 @@ function renderRel(){
   const cartoesBody = document.getElementById('relCartoesBody');
   const cartoesSub = document.getElementById('relCartoesSub');
   if(cartoesBody){
-    // Limite REAL consumido = fatura corrente + todas as parcelas futuras já compromissadas
-    const limUsoMap = calcCartoesLimiteUso();
+    // Limite REAL consumido a partir do mês selecionado (já desconta faturas pagas)
+    const limUsoMap = calcCartoesLimiteUso(mesSel);
     const totFat = CARTOES.reduce((s,c)=>{
       const fat = Math.abs(txG.filter(t=>t.cartao===c.nome).reduce((a,t)=>a+parseFloat(t.valor||0),0));
       return s+fat;
@@ -9940,7 +9931,7 @@ function autoRefresh(){
   // Re-renderiza a aba ativa se não for dashboard
   const cur = document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur && cur !== 'dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur]) fns[cur]();
   }
 }
@@ -11275,7 +11266,7 @@ function _mpPick(monthIdx, year){
   if(curPage && curPage !== 'dashboard'){
     const fns = {
       transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},
-      cartoes:renderCartoes,
+      cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },
       vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},
       categorias:()=>{renderCats();},
       limites:()=>{renderCats();},
