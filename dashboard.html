@@ -113,12 +113,71 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 .logo-vr{font-size:9px;font-weight:700;background:rgba(238,32,110,.2);color:#ee206e;padding:2px 7px;border-radius:100px}
 .mes-ctrl{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:var(--r-sm);padding:0;overflow:hidden}
 .mes-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px}
-.mes-nm{font-size:13px;font-weight:800;color:rgba(255,255,255,.9)}
+.mes-nm{font-size:13px;font-weight:800;color:rgba(255,255,255,.9);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px;transition:background .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.mes-nm:hover{background:rgba(255,255,255,.08)}
+.mes-nm::after{content:'▾';font-size:10px;opacity:.55;transition:transform .2s}
+.mes-nm.open::after{transform:rotate(180deg)}
 .mes-btns{display:flex;gap:2px}
 .mes-btn{background:none;border:none;color:rgba(255,255,255,.45);cursor:pointer;font-size:13px;padding:2px 6px;border-radius:5px;transition:all .15s;min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center}
 .mes-btn:hover{background:rgba(255,255,255,.1);color:#fff}
 .mes-hoje{width:100%;padding:5px;background:none;border:none;border-top:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:600;color:rgba(255,255,255,.45);cursor:pointer;transition:all .15s}
 .mes-hoje:hover{background:rgba(238,32,110,.15);color:#ee206e}
+
+/* ── Month Picker — popover global de seleção de mês ── */
+#monthPicker{
+  position:fixed;z-index:1500;display:none;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:14px;padding:14px;width:280px;
+  box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(238,32,110,.15);
+  font-family:'Cabinet Grotesk',sans-serif;
+}
+#monthPicker.open{display:block;animation:mpIn .2s cubic-bezier(.23,1,.32,1)}
+@keyframes mpIn{from{opacity:0;transform:translateY(-6px)}}
+.mp-year{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding:0 4px}
+.mp-year-nav{
+  width:32px;height:32px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--txt2);cursor:pointer;font-size:13px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.mp-year-nav:hover{background:var(--bg);color:var(--txt);border-color:var(--azul)}
+.mp-year-nav:disabled{opacity:.3;cursor:not-allowed}
+.mp-year-label{font-size:16px;font-weight:900;color:var(--txt);letter-spacing:-.01em}
+.mp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.mp-cell{
+  padding:10px 6px;border-radius:8px;
+  background:var(--bg);border:1px solid var(--border);
+  font-size:12px;font-weight:700;color:var(--txt2);
+  cursor:pointer;transition:all .15s;text-align:center;
+  font-family:inherit;
+}
+.mp-cell:hover{background:var(--azul-l);color:var(--azul);border-color:var(--azul)}
+.mp-cell.has-data{color:var(--txt);border-color:rgba(238,32,110,.2)}
+.mp-cell.has-data::after{content:'';display:block;width:4px;height:4px;border-radius:50%;background:var(--azul);margin:3px auto 0}
+.mp-cell.current{background:rgba(16,185,129,.15);color:var(--verde);border-color:rgba(16,185,129,.4);font-weight:900}
+.mp-cell.selected{background:linear-gradient(135deg,var(--azul),var(--azul-d))!important;color:#fff!important;border-color:transparent!important;box-shadow:0 0 12px rgba(238,32,110,.4)}
+.mp-cell.selected::after{background:#fff}
+.mp-cell.disabled{opacity:.25;cursor:not-allowed;pointer-events:none}
+.mp-foot{display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--border)}
+.mp-foot button{
+  flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);
+  background:transparent;color:var(--txt2);cursor:pointer;font-size:11px;font-weight:700;
+  transition:all .15s;font-family:inherit;
+}
+.mp-foot button:hover{background:var(--azul-l);color:var(--azul);border-color:var(--azul)}
+.mp-foot button.primary{background:linear-gradient(135deg,var(--azul),var(--azul-d));color:#fff;border-color:transparent}
+.mp-foot button.primary:hover{filter:brightness(1.1)}
+#monthPickerBackdrop{position:fixed;inset:0;z-index:1499;background:transparent;display:none}
+#monthPickerBackdrop.open{display:block}
+
+/* Mobile topbar month name clicável */
+#mobileTopbar .mt-month-nm{cursor:pointer;padding:2px 4px;border-radius:5px;transition:background .15s}
+#mobileTopbar .mt-month-nm:hover{background:rgba(255,255,255,.08)}
+#mobileTopbar .mt-month-nm::after{content:' ▾';font-size:9px;opacity:.55}
+
+/* Drawer month name clicável */
+#drawerMonthNm{cursor:pointer;padding:2px 6px;border-radius:5px;transition:background .15s;display:inline-flex;align-items:center;gap:4px}
+#drawerMonthNm:hover{background:rgba(255,255,255,.1)}
+#drawerMonthNm::after{content:'▾';font-size:9px;opacity:.55}
 
 .sb-nav{flex:1;overflow-y:auto;padding:8px 8px;scrollbar-width:thin}
 .nsec{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.3);padding:9px 8px 4px}
@@ -1492,7 +1551,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </div>
     <div class="mes-ctrl">
       <div class="mes-header">
-        <span class="mes-nm" id="mesNm">Março 2026</span>
+        <button class="mes-nm" id="mesNm" onclick="openMonthPicker(this)">Março 2026</button>
         <div class="mes-btns">
           <button class="mes-btn" onclick="mudaMes(-1)">◀</button>
           <button class="mes-btn" onclick="mudaMes(1)">▶</button>
@@ -1538,7 +1597,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="mt-logo"><span>Pense</span>Finances</div>
     <div class="mt-month">
       <button class="mt-month-btn" onclick="mudaMes(-1)">◀</button>
-      <span class="mt-month-nm" id="mobileMonthNm">—</span>
+      <span class="mt-month-nm" id="mobileMonthNm" onclick="openMonthPicker(this)">—</span>
       <button class="mt-month-btn" onclick="mudaMes(1)">▶</button>
     </div>
     <div class="mt-avatar" id="mobileUserAvatar" onclick="toggleMobileDrawer()">🙂</div>
@@ -1604,7 +1663,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <!-- Month switcher -->
     <div style="display:flex;align-items:center;justify-content:space-between;background:rgba(255,255,255,.07);border-radius:8px;padding:8px 10px;margin-top:8px;border:1px solid rgba(255,255,255,.1)">
       <button onclick="mudaMes(-1)" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:2px 8px;border-radius:5px;min-width:32px;min-height:32px">◀</button>
-      <span id="drawerMonthNm" style="font-size:13px;font-weight:800;color:#fff">—</span>
+      <span id="drawerMonthNm" onclick="openMonthPicker(this)" style="font-size:13px;font-weight:800;color:#fff">—</span>
       <button onclick="mudaMes(1)" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:16px;cursor:pointer;padding:2px 8px;border-radius:5px;min-width:32px;min-height:32px">▶</button>
     </div>
     <button onclick="voltaHoje();closeMobileDrawer()" style="width:100%;margin-top:6px;padding:6px;background:none;border:none;border-top:1px solid rgba(255,255,255,.08);font-size:11px;font-weight:600;color:rgba(255,255,255,.45);cursor:pointer;border-radius:6px;font-family:'Cabinet Grotesk',sans-serif">↩ Voltar ao mês atual</button>
@@ -1726,7 +1785,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="card">
       <div class="ch">
         <div><div class="ct">Evolução Mensal</div><div class="cs" id="dashChartSub">Janeiro → Dezembro — passe o mouse para detalhes</div></div>
-        <button class="btn bg btn-sm" onclick="go('planejamento')">Anual →</button>
+        <button class="btn bg btn-sm" onclick="go('relatorios')">Ver relatórios →</button>
       </div>
       <div class="chart-period-bar">
         <button class="cpb" onclick="setChartPeriod('3m',this)">3 meses</button>
@@ -2090,8 +2149,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   </div>
 </div>
 
-<!-- ═══ PLANEJAMENTO ═══ -->
-<div class="page" id="page-planejamento"></div>
+<!-- Planejamento foi consolidado dentro de Relatórios — div removido -->
 
 <!-- ═══ CATEGORIAS & LIMITES (UNIFICADO) ═══ -->
 <div class="page" id="page-categorias">
@@ -2398,8 +2456,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <p id="relSubtitle">Análise completa</p>
     </div>
     <div class="pa">
-      <!-- Month selector -->
-      <select class="sf-f" id="relMesSel" onchange="renderRel()" style="font-weight:700;min-width:120px"></select>
+      <!-- Mês controlado pelo seletor global do topo -->
       <button class="btn bs" onclick="reload(true)">🔄</button>
       <button class="btn bg btn-sm" onclick="exportRelCSV()">⬇️ CSV</button>
       <button class="btn bp" onclick="gerarRelatorioPDF()">🖨️ PDF</button>
@@ -2525,21 +2582,6 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
         </table>
       </div>
     </div>
-  </div>
-
-  <!-- TAB: PLANEJAMENTO ANUAL -->
-  <div id="relPanelPlan" style="display:none">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-      <p style="font-size:13px;color:var(--muted);font-weight:600;margin:0">Visão completa do ano — receitas, gastos e saldo mês a mês</p>
-      <div id="planControls"></div>
-    </div>
-    <div class="g4 mb" id="planKpis"></div>
-    <div class="g2e mb">
-      <div class="card"><div class="ch"><div><div class="ct">Evolução Anual</div></div></div><div class="cw" id="planChart" style="padding:12px 0"></div></div>
-      <div class="card"><div class="ch"><div><div class="ct">🏆 Maiores Gastos por Categoria</div></div></div><div id="planTopCats" style="padding:0 18px 16px"></div></div>
-    </div>
-    <div id="planTable" style="margin-top:4px"></div>
-    <div id="planTabela"></div>
   </div>
 
   <!-- TAB: FLUXO DE CAIXA (unchanged) -->
@@ -2892,7 +2934,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2906,7 +2948,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -3019,7 +3061,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -3204,7 +3246,7 @@ async function pullDataFromServer(){
     renderDash();
     const cur = document.querySelector('.page.active')?.id?.replace('page-','');
     if(cur && cur !== 'dashboard'){
-      const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderPlan};
+      const fns={transacoes:()=>{renderTxPage();},cartoes:renderCartoes,relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderRel};
       if(fns[cur]) fns[cur]();
     }
   }catch(e){}
@@ -3235,7 +3277,7 @@ function go(page, _skipHistory=false){
   }
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:()=>{renderRel();setTimeout(()=>switchRelTab('plan'),60);},fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
+  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
   // Empurra estado para histórico do browser (habilita botão back do Android)
   if(!_skipHistory) try{ history.pushState({page:targetPage}, '', '#'+targetPage); }catch{}
@@ -7213,27 +7255,18 @@ function saveLimits(){salvarLimsLocal();renderLimits();renderCats();renderDash()
 // RELATÓRIOS — COMPLETO COM DADOS REAIS
 // ════════════════════════════════════════════════
 function switchRelTab(tab){
-  const panels = {analise:'relPanelAnalise', fluxo:'relPanelFluxo', plan:'relPanelPlan'};
-  const tabs    = {analise:'relTabAnalise',   fluxo:'relTabFluxo',   plan:'relTabPlan'};
+  // 'plan' removido — sempre redireciona para 'analise' caso seja chamado por código legado
+  if(tab==='plan') tab='analise';
+  const panels = {analise:'relPanelAnalise', fluxo:'relPanelFluxo'};
+  const tabs    = {analise:'relTabAnalise',   fluxo:'relTabFluxo'};
   Object.entries(panels).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.style.display = k===tab?'':'none'; });
   Object.entries(tabs).forEach(([k,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', k===tab); });
   if(tab==='fluxo') renderFluxo();
-  if(tab==='plan')  renderPlan();
 }
 
-function populateRelMesSel(){
-  const sel = document.getElementById('relMesSel');
-  if(!sel) return;
-  const prevVal = sel.value; // preserva seleção do usuário
-  const meses = [...new Set(TODAS_TX.map(t=>t.mes_ano).filter(Boolean))].sort().reverse();
-  const curr = getMesChave();
-  if(!meses.includes(curr)) meses.unshift(curr);
-  const valToSelect = (prevVal && meses.includes(prevVal)) ? prevVal : curr;
-  sel.innerHTML = meses.map(m => {
-    const label = mesChaveToLabel(m);
-    return `<option value="${m}" ${m===valToSelect?'selected':''}>${label}</option>`;
-  }).join('');
-}
+// populateRelMesSel removida — o mês agora é controlado pelo seletor global do topo.
+// Mantida como no-op para compatibilidade caso código legado chame.
+function populateRelMesSel(){ /* no-op */ }
 
 function getHistAno(ano){
   return Array.from({length:12},(_,m)=>{
@@ -9907,7 +9940,7 @@ function autoRefresh(){
   // Re-renderiza a aba ativa se não for dashboard
   const cur = document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur && cur !== 'dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderPlan,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:renderCartoes,vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
     if(fns[cur]) fns[cur]();
   }
 }
@@ -11110,6 +11143,160 @@ function gerarRelatorioPDF(){
     setTimeout(()=>{ printDiv.style.display='none'; printDiv.innerHTML=''; }, 1000);
   }, 200);
 }
+
+// ════════════════════════════════════════════════
+// MONTH PICKER — Popover global de seleção de mês
+// ════════════════════════════════════════════════
+let _mpYear = new Date().getFullYear();
+let _mpTrigger = null;
+
+function _mpEnsure(){
+  if(document.getElementById('monthPicker')) return;
+  const bd = document.createElement('div');
+  bd.id = 'monthPickerBackdrop';
+  bd.onclick = closeMonthPicker;
+  document.body.appendChild(bd);
+  const mp = document.createElement('div');
+  mp.id = 'monthPicker';
+  mp.innerHTML = `
+    <div class="mp-year">
+      <button class="mp-year-nav" id="mpPrevYear" onclick="_mpChangeYear(-1)">‹</button>
+      <div class="mp-year-label" id="mpYearLabel">2026</div>
+      <button class="mp-year-nav" id="mpNextYear" onclick="_mpChangeYear(1)">›</button>
+    </div>
+    <div class="mp-grid" id="mpGrid"></div>
+    <div class="mp-foot">
+      <button onclick="voltaHoje();closeMonthPicker()">↩ Hoje</button>
+      <button class="primary" onclick="closeMonthPicker()">Fechar</button>
+    </div>`;
+  document.body.appendChild(mp);
+  // Fecha com ESC
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape' && document.getElementById('monthPicker').classList.contains('open')) closeMonthPicker();
+  });
+}
+
+function openMonthPicker(triggerEl){
+  _mpEnsure();
+  const mp = document.getElementById('monthPicker');
+  const bd = document.getElementById('monthPickerBackdrop');
+  // Se já estava aberto pelo mesmo trigger, alterna
+  if(mp.classList.contains('open') && _mpTrigger === triggerEl){
+    closeMonthPicker();
+    return;
+  }
+  _mpTrigger = triggerEl;
+  // Define ano inicial baseado no mês ativo
+  const today = new Date();
+  const cur = new Date(today.getFullYear(), today.getMonth() + (typeof MES_OFF==='number'?MES_OFF:0), 1);
+  _mpYear = cur.getFullYear();
+  _mpRender();
+  // Posicionamento próximo ao trigger
+  mp.classList.add('open');
+  bd.classList.add('open');
+  if(triggerEl){
+    triggerEl.classList?.add('open');
+    requestAnimationFrame(()=>{
+      const r = triggerEl.getBoundingClientRect();
+      const w = mp.offsetWidth;
+      const h = mp.offsetHeight;
+      let left = r.left + r.width/2 - w/2;
+      let top  = r.bottom + 6;
+      // Clamp dentro do viewport
+      left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+      // Se não couber abaixo, abre acima
+      if(top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+      mp.style.left = left + 'px';
+      mp.style.top  = top  + 'px';
+    });
+  } else {
+    // Centraliza
+    mp.style.left = '50%';
+    mp.style.top  = '50%';
+    mp.style.transform = 'translate(-50%,-50%)';
+  }
+}
+
+function closeMonthPicker(){
+  const mp = document.getElementById('monthPicker');
+  const bd = document.getElementById('monthPickerBackdrop');
+  if(mp) mp.classList.remove('open');
+  if(bd) bd.classList.remove('open');
+  // Remove o estado 'open' de qualquer trigger
+  document.querySelectorAll('#mesNm.open').forEach(el=>el.classList.remove('open'));
+  _mpTrigger = null;
+}
+
+function _mpChangeYear(delta){
+  _mpYear += delta;
+  _mpRender();
+}
+
+function _mpRender(){
+  const grid = document.getElementById('mpGrid');
+  const lbl  = document.getElementById('mpYearLabel');
+  if(!grid || !lbl) return;
+  lbl.textContent = _mpYear;
+  // Mês atual real (para destacar como "current")
+  const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth();
+  // Mês selecionado (baseado em MES_OFF)
+  const selDate = new Date(todayY, todayM + (typeof MES_OFF==='number'?MES_OFF:0), 1);
+  const selY = selDate.getFullYear();
+  const selM = selDate.getMonth();
+  // Meses com dados (set para lookup rápido)
+  const mesesComDados = new Set((TODAS_TX||[]).map(t=>t.mes_ano).filter(Boolean));
+  const NMS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  grid.innerHTML = NMS.map((nm, i)=>{
+    const chave = `${MESES_PT[i]}/${_mpYear}`; // formato salvo (ex: "abr./2026")
+    const hasData = mesesComDados.has(chave);
+    const isCur = (_mpYear === todayY && i === todayM);
+    const isSel = (_mpYear === selY && i === selM);
+    const cls = ['mp-cell'];
+    if(hasData) cls.push('has-data');
+    if(isCur)   cls.push('current');
+    if(isSel)   cls.push('selected');
+    return `<button class="${cls.join(' ')}" onclick="_mpPick(${i},${_mpYear})">${nm}</button>`;
+  }).join('');
+}
+
+function _mpPick(monthIdx, year){
+  // Calcula MES_OFF necessário pra chegar no mês escolhido
+  const today = new Date();
+  const newOff = (year - today.getFullYear()) * 12 + (monthIdx - today.getMonth());
+  if(newOff === MES_OFF){ closeMonthPicker(); return; }
+  MES_OFF = newOff;
+  atualizaMesUI();
+  calcularMes();
+  renderDash();
+  // Re-renderiza a aba ativa
+  const curPage = document.querySelector('.page.active')?.id?.replace('page-','');
+  if(curPage && curPage !== 'dashboard'){
+    const fns = {
+      transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},
+      cartoes:renderCartoes,
+      vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},
+      categorias:()=>{renderCats();},
+      limites:()=>{renderCats();},
+      relatorios:renderRel,
+      planejamento:renderRel,
+      fixas:renderFixas,
+      dividas:renderDividas,
+      metas:renderMetas,
+      investimentos:renderInv,
+      familia:renderFamilia
+    };
+    if(fns[curPage]) fns[curPage]();
+  }
+  closeMonthPicker();
+}
+
+// Fecha o picker em resize/orientationchange pra evitar posição quebrada
+window.addEventListener('resize', ()=>{
+  const mp = document.getElementById('monthPicker');
+  if(mp && mp.classList.contains('open')) closeMonthPicker();
+});
 
 </script>
 </body>

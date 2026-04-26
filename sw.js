@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v1.5 (rotas: / = dashboard, /vendas = landing)
-const CACHE = 'pf-v1.5';
+// PenseFinances — Service Worker v1.6 (seletor de mês unificado + month picker)
+const CACHE = 'pf-v1.6';
 const STATIC = [
   '/',
   '/dashboard',
