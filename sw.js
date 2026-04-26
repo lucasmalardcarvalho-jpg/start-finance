@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v1.8 (toggleFaturaPaga propaga + fallback ?? 0)
-const CACHE = 'pf-v1.8';
+// PenseFinances — Service Worker v1.9 (lançamento em ano passado: fix mes_ano dropdown)
+const CACHE = 'pf-v1.9';
 const STATIC = [
   '/',
   '/dashboard',

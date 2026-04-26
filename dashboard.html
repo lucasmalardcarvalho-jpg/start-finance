@@ -4261,28 +4261,38 @@ function populateMesSelector(){
   const sel=document.getElementById('txMesAno');
   if(!sel) return;
   const now=new Date();
-  const ano=now.getFullYear();
+  const anoAtual=now.getFullYear();
   const opts=[];
 
-  // 6 meses passados (ano anterior)
-  for(let i=5;i>=0;i--){
-    const d=new Date(now.getFullYear(),now.getMonth()-6+i,1);
-    if(d.getFullYear()<ano){
-      opts.push({val:`${MESES_PT[d.getMonth()]}/${d.getFullYear()}`,nome:`${MESES_NM[d.getMonth()]} ${d.getFullYear()}`});
+  // 3 anos passados completos + ano atual + 2 anos futuros (todos os meses)
+  // Permite lançamento retroativo amplo (ex: 2023, 2024, 2025) sem fricção.
+  for(let dy=-3; dy<=2; dy++){
+    const ano = anoAtual + dy;
+    for(let m=0; m<12; m++){
+      opts.push({val:`${MESES_PT[m]}/${ano}`, nome:`${MESES_NM[m]} ${ano}`});
     }
   }
-  // 12 meses a partir de Janeiro do ano atual
-  for(let m=0;m<12;m++){
-    opts.push({val:`${MESES_PT[m]}/${ano}`,nome:`${MESES_NM[m]} ${ano}`});
-  }
-  // 12 meses do próximo ano
-  for(let m=0;m<12;m++){
-    opts.push({val:`${MESES_PT[m]}/${ano+1}`,nome:`${MESES_NM[m]} ${ano+1}`});
-  }
 
-  // Remove duplicatas mantendo ordem
+  // Inclui também TODOS os meses que já têm transações no histórico
+  // (útil pra usuários com dados antigos fora da janela default)
+  const mesesUsados = [...new Set((TODAS_TX||[]).map(t=>t.mes_ano).filter(Boolean))];
+  mesesUsados.forEach(chave=>{
+    const [mNm, yStr] = chave.split('/');
+    const idx = MESES_PT.indexOf(mNm);
+    if(idx>=0 && yStr){
+      opts.push({val:chave, nome:`${MESES_NM[idx]} ${yStr}`});
+    }
+  });
+
+  // Remove duplicatas mantendo ordem cronológica (do mais antigo ao mais recente)
   const seen=new Set();
-  const unique=opts.filter(o=>{if(seen.has(o.val))return false;seen.add(o.val);return true;});
+  const unique=opts.filter(o=>{if(seen.has(o.val))return false;seen.add(o.val);return true;})
+    .sort((a,b)=>{
+      const pa = a.val.split('/'); const pb = b.val.split('/');
+      const ya = parseInt(pa[1]), yb = parseInt(pb[1]);
+      if(ya!==yb) return ya-yb;
+      return MESES_PT.indexOf(pa[0]) - MESES_PT.indexOf(pb[0]);
+    });
 
   sel.innerHTML=unique.map(o=>`<option value="${o.val}">${o.nome}</option>`).join('');
 
@@ -4384,14 +4394,27 @@ function editTx(idx){
   const t=normalizeTx(TX_FILT[idx]);
   document.getElementById('txTitle').textContent='✏️ Editar Transação';
   document.getElementById('txIdx').value=t.idx;// índice real no Sheets
-  // Seleciona o mês correto no dropdown
+  // Popula dropdown ANTES de tentar selecionar (caso contrário a chamada posterior
+  // a populateMesSelector na linha ~4442 sobrescrevia a seleção feita aqui).
+  populateMesSelector();
   const selMesEdit=document.getElementById('txMesAno');
-  if(selMesEdit){
+  if(selMesEdit && t.mes_ano){
     let foundEdit=false;
     for(let i=0;i<selMesEdit.options.length;i++){
       if(selMesEdit.options[i].value===t.mes_ano){selMesEdit.selectedIndex=i;foundEdit=true;break;}
     }
-    if(!foundEdit) selMesEdit.value=t.mes_ano;
+    // Se o mês não estiver na lista (ex: tx muito antiga), adiciona dinamicamente
+    if(!foundEdit){
+      const [mNm, yStr] = t.mes_ano.split('/');
+      const mIdx = MESES_PT.indexOf(mNm);
+      if(mIdx>=0 && yStr){
+        const opt = document.createElement('option');
+        opt.value = t.mes_ano;
+        opt.textContent = `${MESES_NM[mIdx]} ${yStr}`;
+        selMesEdit.appendChild(opt);
+        selMesEdit.value = t.mes_ano;
+      }
+    }
   }
   document.getElementById('txData').value=t.data;
   document.getElementById('txHora').value=t.hora;
@@ -4429,7 +4452,6 @@ function editTx(idx){
   const projEl=document.getElementById('txProjeto');
   if(projEl) projEl.value=t.projeto||'';
   document.getElementById('txCat').value=t.categoria||'';
-  populateMesSelector();
   OM('ovTx');
 }
 
@@ -4853,9 +4875,54 @@ function dpConfirmar(){
   const y = DP_DATE.getFullYear();
   document.getElementById('txData').value = `${d}/${m}/${y}`;
   fecharDP();
+  // Sincroniza o dropdown "Mês de referência" com o ano/mês escolhido na data.
+  // Sem isso, escolher 15/06/2025 mas com dropdown em "jun./2026" salvava a tx
+  // no mês errado (junho do ano corrente em vez de 2025).
+  syncTxMesAnoComData();
   // Reavalia corte do cartão com a nova data
   const met = document.getElementById('txMetodo').value;
   if(met==='Cartão crédito') txCartaoChange();
+}
+
+// Atualiza #txMesAno de acordo com a data escolhida em #txData.
+// Se o mês/ano selecionado não existir como option, adiciona dinamicamente.
+function syncTxMesAnoComData(){
+  const sel = document.getElementById('txMesAno');
+  if(!sel) return;
+  const dateVal = document.getElementById('txData')?.value || '';
+  const m = dateVal.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(!m) return;
+  const monthIdx = parseInt(m[2]) - 1;
+  const year     = parseInt(m[3]);
+  if(monthIdx<0 || monthIdx>11) return;
+  const chave = `${MESES_PT[monthIdx]}/${year}`;
+  // Se a opção não existir no dropdown, cria
+  let exists = false;
+  for(let i=0; i<sel.options.length; i++){
+    if(sel.options[i].value === chave){ exists = true; break; }
+  }
+  if(!exists){
+    const opt = document.createElement('option');
+    opt.value = chave;
+    opt.textContent = `${MESES_NM[monthIdx]} ${year}`;
+    // Inserir em ordem cronológica
+    let inserted = false;
+    for(let i=0; i<sel.options.length; i++){
+      const oVal = sel.options[i].value;
+      const [oM, oY] = oVal.split('/');
+      const oYear = parseInt(oY);
+      const oMonth = MESES_PT.indexOf(oM);
+      if(oYear>year || (oYear===year && oMonth>monthIdx)){
+        sel.insertBefore(opt, sel.options[i]);
+        inserted = true;
+        break;
+      }
+    }
+    if(!inserted) sel.appendChild(opt);
+  }
+  sel.value = chave;
+  // Dispara onchange handlers que dependem do mês (ex: corte do cartão)
+  if(typeof onMesAnoChange === 'function') onMesAnoChange();
 }
 
 function dpSelDia(dia){
