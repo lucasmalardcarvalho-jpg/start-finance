@@ -7567,6 +7567,8 @@ function renderRel(){
   const cartoesBody = document.getElementById('relCartoesBody');
   const cartoesSub = document.getElementById('relCartoesSub');
   if(cartoesBody){
+    // Limite REAL consumido = fatura corrente + todas as parcelas futuras já compromissadas
+    const limUsoMap = calcCartoesLimiteUso();
     const totFat = CARTOES.reduce((s,c)=>{
       const fat = Math.abs(txG.filter(t=>t.cartao===c.nome).reduce((a,t)=>a+parseFloat(t.valor||0),0));
       return s+fat;
@@ -7574,16 +7576,19 @@ function renderRel(){
     if(cartoesSub) cartoesSub.textContent = `${CARTOES.length} cartões · Fatura ${fmt(totFat)}`;
     cartoesBody.innerHTML = CARTOES.length ? CARTOES.slice(0,4).map(c=>{
       const fat = Math.abs(txG.filter(t=>t.cartao===c.nome).reduce((a,t)=>a+parseFloat(t.valor||0),0));
+      // Comprometido = total que está "preso" no limite (mês atual + futuro)
+      const comprometido = limUsoMap[(c.nome||'').trim()] || fat;
       const lim = parseFloat(c.limite||0);
-      const pct = lim>0?Math.min(fat/lim*100,100):0;
+      const pct = lim>0?Math.min(comprometido/lim*100,100):0;
       const cor = pct>=80?'var(--verm)':pct>=60?'var(--lara)':'var(--azul)';
-      return `<div style="padding:5px 0;border-bottom:1px solid var(--border)">
+      const futuro = comprometido - fat;
+      return `<div style="padding:6px 0;border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
           <div style="width:10px;height:10px;border-radius:2px;background:${c.cor||'#3B6FF0'};flex-shrink:0"></div>
           <span style="font-size:11px;font-weight:700;flex:1">${esc(c.nome)}</span>
           <span style="font-size:11px;font-weight:800;color:${cor}">${fmt(fat)}</span>
         </div>
-        ${lim>0?`<div style="height:3px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div></div><div style="font-size:9px;color:var(--muted);margin-top:2px">${pct.toFixed(0)}% do limite de ${fmt(lim)}</div>`:''}
+        ${lim>0?`<div style="height:4px;background:var(--border);border-radius:100px;overflow:hidden"><div style="height:100%;width:${pct.toFixed(0)}%;background:${cor};border-radius:100px"></div></div><div style="font-size:9px;color:var(--muted);margin-top:3px;display:flex;justify-content:space-between;gap:6px"><span>${pct.toFixed(0)}% comprometido (${fmt(comprometido)} de ${fmt(lim)})</span>${futuro>0?`<span style="color:var(--lara);font-weight:700">+ ${fmt(futuro)} futuro</span>`:''}</div>`:''}
       </div>`;
     }).join('') : '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">Sem cartões</div>';
   }
