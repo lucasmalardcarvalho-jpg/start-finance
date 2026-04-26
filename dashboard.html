@@ -202,7 +202,8 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 .dw{padding:5px 18px 16px;display:flex;align-items:center;gap:18px}
 .dl{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--txt2);padding:3px 0;cursor:pointer}
 .dl:hover{opacity:.75}
-.dc{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dl span:last-child{color:var(--txt)!important;font-weight:800}
+.dc{width:9px;height:9px;border-radius:50%;flex-shrink:0;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
 
 /* TABELAS */
 .tw{background:var(--card);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
@@ -3555,6 +3556,7 @@ function renderEvolucaoAnual(el, h, histParam){
 
   el.style.height='auto';
   el.style.padding='0';
+  const _ck=document.body.classList.contains('dark'); // dark-mode flag para cores hardcoded do SVG
 
   // Totais: inclui meses futuros que já têm transações pré-lançadas
   const comDados = hist.filter(hh=>!hh.futuro || hh.entradas>0 || hh.saidas>0);
@@ -3570,7 +3572,7 @@ function renderEvolucaoAnual(el, h, histParam){
       <div style="font-size:9px;font-weight:800;color:#3B6FF0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Receitas ${anoLabel}</div>
       <div style="font-size:13px;font-weight:900;color:#3B6FF0">${fmt(totE)}</div>
     </div>
-    <div style="flex:1;padding:6px 10px;border-left:3px solid #ee206e;margin-right:10px;background:#fce4ef;border-radius:0 var(--r-sm) var(--r-sm) 0">
+    <div style="flex:1;padding:6px 10px;border-left:3px solid #ee206e;margin-right:10px;background:var(--azul-l);border-radius:0 var(--r-sm) var(--r-sm) 0">
       <div style="font-size:9px;font-weight:800;color:#ee206e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px">Gastos ${anoLabel}</div>
       <div style="font-size:13px;font-weight:900;color:#ee206e">− ${fmt(totS)}</div>
     </div>
@@ -3623,14 +3625,14 @@ function renderEvolucaoAnual(el, h, histParam){
       bars+=`<rect x="${(cx+gap/2).toFixed(1)}" y="${gby}" width="${barW.toFixed(1)}" height="${gh}" rx="4" fill="none" stroke="#ee206e" stroke-width="1" stroke-dasharray="3 2" stroke-opacity="0.28"/>`;
     }
 
-    const labelCor=hh.atual?'#3B6FF0':(hh.futuro?'#D1D5DB':'#6B7280');
+    const labelCor=hh.atual?'#3B6FF0':(hh.futuro?(_ck?'#4B5563':'#D1D5DB'):(_ck?'#8899a6':'#6B7280'));
     const labelTxt=hh.label.replace('.','').toUpperCase();
     bars+=`<text x="${cx}" y="${H-7}" text-anchor="middle" font-size="${n>9?8:9}" fill="${labelCor}" font-weight="${hh.atual?'800':'600'}" font-family="Cabinet Grotesk">${labelTxt}</text>`;
   });
 
   const svgHtml=`<div style="padding:4px 16px 0;overflow-x:auto">
     <svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;min-width:280px" id="chartSvg">
-      <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="#E8EBE4" stroke-width="1.5"/>
+      <line x1="${PL}" y1="${PT+chartH}" x2="${W-PR}" y2="${PT+chartH}" stroke="${_ck?'#2A2D3E':'#E8EBE4'}" stroke-width="1.5"/>
       ${bars}
     </svg>
   </div>`;
@@ -3716,9 +3718,14 @@ function renderDonut(elId,cats){
   }
   const top=cats.slice(0,5),tot=top.reduce((s,c)=>s+c.gasto,0)||1,totAll=cats.reduce((s,c)=>s+c.gasto,0);
   const circ=2*Math.PI*40;let off=0;
-  let svg=`<svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="#F3F4F6" stroke-width="14"/>`;
+  // Detecta modo escuro para adaptar cores do SVG (SVG não herda CSS variables)
+  const _dk=document.body.classList.contains('dark');
+  const _trackStroke=_dk?'#2A2D3E':'#F3F4F6';
+  const _txtFill=_dk?'#F1F5F9':'#111827';
+  const _subFill=_dk?'#94A3B8':'#6B7280';
+  let svg=`<svg width="100" height="100" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="40" fill="none" stroke="${_trackStroke}" stroke-width="14"/>`;
   top.forEach(c=>{const pct=c.gasto/tot;const dash=pct*circ;svg+=`<circle cx="50" cy="50" r="40" fill="none" stroke="${c.cor}" stroke-width="14" stroke-dasharray="${dash.toFixed(1)} ${(circ-dash).toFixed(1)}" stroke-dashoffset="${(-off*circ).toFixed(1)}" transform="rotate(-90 50 50)"/>`;off+=pct;});
-  svg+=`<text x="50" y="46" text-anchor="middle" font-size="9" font-weight="800" fill="#111" font-family="Cabinet Grotesk">Total</text><text x="50" y="58" text-anchor="middle" font-size="8" fill="#6B7280" font-family="Cabinet Grotesk">${fmtSm(totAll)}</text></svg>`;
+  svg+=`<text x="50" y="46" text-anchor="middle" font-size="9" font-weight="800" fill="${_txtFill}" font-family="Cabinet Grotesk">Total</text><text x="50" y="58" text-anchor="middle" font-size="8" fill="${_subFill}" font-family="Cabinet Grotesk">${fmtSm(totAll)}</text></svg>`;
   let leg=`<div style="flex:1;display:flex;flex-direction:column;gap:5px">`;
   top.forEach(c=>{const p=Math.round(c.gasto/totAll*100);leg+=`<div class="dl" onclick="go('categorias')"><div class="dc" style="background:${c.cor}"></div>${c.emoji} ${esc(c.nome)}<span style="margin-left:auto;color:var(--muted);font-size:11px">${p}%</span><span style="font-size:11px;font-weight:800;margin-left:6px">${fmt(c.gasto)}</span></div>`;});
   leg+=`</div>`;
@@ -3778,9 +3785,10 @@ function renderCatListDash(cats){
 
 function renderDashTxs(txMes){
   const el=document.getElementById('dashTxs');if(!el)return;
-  // Ordena pelas mais recentes (data DD/MM/YYYY + hora HH:MM desc)
-  const toSortKey=t=>{const[d='00',m='00',y='0000']=(t.data||'').split('/');return`${y}/${m}/${d} ${t.hora||'00:00'}`;};
-  const recentes=[...txMes].sort((a,b)=>toSortKey(b).localeCompare(toSortKey(a))).slice(0,6);
+  // Ordena mais recentes primeiro: converte DD/MM/YYYY HH:MM → inteiro YYYYMMDDHHMI
+  // Usa número puro para evitar bug de string "8:30" > "10:17" em localeCompare
+  const toNum=t=>{const[d='0',m='0',y='0']=(t.data||'').split('/');const[h='0',mi='0']=(t.hora||'0:0').split(':');return parseInt(y)*100000000+parseInt(m)*1000000+parseInt(d)*10000+parseInt(h)*100+parseInt(mi||0);};
+  const recentes=[...txMes].sort((a,b)=>{const diff=toNum(b)-toNum(a);return diff!==0?diff:(b.idx||0)-(a.idx||0);}).slice(0,6);
   if(!recentes.length){el.innerHTML='<div class="empty" style="padding:24px"><p>Sem transações neste mês</p></div>';return;}
   el.innerHTML=recentes.map(t=>{
     const neg=t.valor<0;
@@ -4129,6 +4137,12 @@ function toggleDarkMode(){
   applyDarkMode(isDark);
   const lbl=document.getElementById('drawerDarkLabel');
   if(lbl)lbl.textContent=isDark?'Ativo':'Ativar';
+  // Re-renderiza gráficos SVG — suas cores são calculadas no momento do render,
+  // não herdam CSS variables, então precisam ser reconstruídos ao trocar o tema
+  if(MES_DATA.mes){
+    renderHistChart('dashChart',60);
+    renderDonut('dashDonut', MES_DATA.categorias);
+  }
 }
 
 // ════ MOBILE DRAWER ════
