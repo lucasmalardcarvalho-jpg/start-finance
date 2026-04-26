@@ -1562,8 +1562,31 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <option value="Internacional">🌎 Internacional</option>
       <option value="Previdência">🛡️ Previdência</option>
       <option value="Poupança">🐷 Poupança</option>
+      <option value="Consórcio">🚗 Consórcio</option>
       <option value="Outros">📦 Outros</option>
     </select></div></div>
+
+    <!-- Campos exclusivos de CONSÓRCIO -->
+    <div id="ivConsorcioRow" style="display:none">
+      <div class="fr three">
+        <div class="fg"><label class="fl">Carta de Crédito (R$)</label><input type="text" class="fi valor-input" id="ivConCarta" inputmode="decimal" placeholder="50.000,00"></div>
+        <div class="fg"><label class="fl">Valor da Parcela (R$)</label><input type="text" class="fi valor-input" id="ivConParcela" inputmode="decimal" placeholder="800,00" oninput="ivCalcConsorcio()"></div>
+        <div class="fg"><label class="fl">Total de Parcelas</label><input type="number" class="fi" id="ivConTotal" min="1" max="360" placeholder="60" oninput="ivCalcConsorcio()"></div>
+      </div>
+      <div class="fr three">
+        <div class="fg"><label class="fl">Parcelas Pagas</label><input type="number" class="fi" id="ivConPagas" min="0" placeholder="0" oninput="ivCalcConsorcio()"></div>
+        <div class="fg"><label class="fl">Dia do Vencimento</label><input type="number" class="fi" id="ivConDiaVenc" min="1" max="31" placeholder="10"></div>
+        <div class="fg"><label class="fl">Administradora</label><input class="fi" id="ivConAdm" placeholder="Ex: Embracon, Porto..."></div>
+      </div>
+      <div class="fr one">
+        <div class="fg" style="background:var(--azul-l);border-radius:var(--r-sm);padding:12px 14px;border:1px solid rgba(238,32,110,.2)">
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:13px;font-weight:700">
+            <input type="checkbox" id="ivConFixa" style="width:18px;height:18px;cursor:pointer">
+            <span>📌 Lançar como <strong>despesa fixa mensal</strong> (aparece em Vencimentos e cai automaticamente todo mês)</span>
+          </label>
+        </div>
+      </div>
+    </div>
     <div class="fr"><div class="fg"><label class="fl">Subtipo / Produto</label><select class="fs" id="ivSubtipo">
       <option value="">— Selecione —</option>
     </select></div><div class="fg"><label class="fl">Ticker / Código</label><input class="fi" id="ivTicker" placeholder="Ex: PETR4, MXRF11, BTC-USD..." style="text-transform:uppercase" oninput="onIvTickerChange()"></div></div>
@@ -5774,7 +5797,37 @@ function saveFx(){
   salvarFixas(); CM('ovFx'); calcularMes(); renderFixas(); renderDash();
   if(!repete) toast('✅ Salva!','success');
 }
-function toggleFx(i){FIXAS[i].status=FIXAS[i].status==='Pago'?'A pagar':'Pago';salvarFixas();renderFixas();}
+function toggleFx(i){
+  const f = FIXAS[i];
+  if(!f) return;
+  const eraPago = f.status==='Pago';
+  f.status = eraPago ? 'A pagar' : 'Pago';
+  // Se for fixa de consórcio, sincroniza contador de parcelas no investimento
+  if(f.origem==='consorcio' && f.consorcioId){
+    const idx = parseInt((f.consorcioId||'').replace('consorcio_',''));
+    const inv = INVESTIMENTOS[idx];
+    if(inv && inv.tipo==='Consórcio'){
+      const total = parseInt(inv.parcelasTotal||0);
+      const pagas = parseInt(inv.parcelasPagas||0);
+      if(eraPago){
+        // Estava pago e desmarcou → decrementa (mas não abaixo de 0)
+        inv.parcelasPagas = Math.max(pagas - 1, 0);
+      } else {
+        // Marcou como pago → incrementa (mas não acima do total)
+        if(total>0 && pagas < total) inv.parcelasPagas = pagas + 1;
+      }
+      inv.valor = parseFloat(inv.parcelaValor||0) * inv.parcelasPagas;
+      inv.atual = inv.valor;
+      f.obs = inv.administradora
+        ? `${inv.administradora} · ${inv.parcelasPagas}/${inv.parcelasTotal} parcelas`
+        : `${inv.parcelasPagas}/${inv.parcelasTotal} parcelas`;
+      salvarInv();
+    }
+  }
+  salvarFixas();
+  renderFixas();
+  renderDash();
+}
 function delFx(i){showConfirm(`Remover <strong>${esc(FIXAS[i]?.desc)}</strong>?`,()=>{FIXAS.splice(i,1);salvarFixas();calcularMes();renderFixas();renderDash();toast('🗑️ Removida','info')},'🗑️','Remover')}
 function marcarTodasPagas(){FIXAS.forEach(f=>f.status='Pago');salvarFixas();renderFixas();toast('✅ Todas pagas!','success')}
 
@@ -6433,11 +6486,12 @@ const IV_SUBTIPOS = {
   'Internacional':['ETF Internacional','Stock USA','REIT','BDR','Fundo Cambial'],
   'Previdência':['PGBL','VGBL','Previdência Privada'],
   'Poupança':['Poupança'],
+  'Consórcio':['Consórcio de Imóvel','Consórcio de Veículo','Consórcio de Serviço','Consórcio de Eletrodoméstico','Outros'],
   'Outros':['COE','Ouro/Commodities','Fundo Multimercado','Fundo Imobiliário','Criptoativo','Outro']
 };
 
 // ── Cores por tipo ──
-const TIPO_CORES2={'Renda Fixa':'#3B6FF0','Ações':'#10B981','FIIs':'#F59E0B','Cripto':'#F97316','Internacional':'#8B5CF6','Previdência':'#EC4899','Poupança':'#14B8A6','Outros':'#9CA3AF'};
+const TIPO_CORES2={'Renda Fixa':'#3B6FF0','Ações':'#10B981','FIIs':'#F59E0B','Cripto':'#F97316','Internacional':'#8B5CF6','Previdência':'#EC4899','Poupança':'#14B8A6','Consórcio':'#06B6D4','Outros':'#9CA3AF'};
 
 let INV_VIEW = 'cards'; // 'cards' | 'tabela'
 
@@ -6446,12 +6500,38 @@ function ivTipoChange(){
   const subs = IV_SUBTIPOS[tipo] || ['Outro'];
   const sel = document.getElementById('ivSubtipo');
   sel.innerHTML = '<option value="">— Selecione —</option>' + subs.map(s=>`<option>${s}</option>`).join('');
-  // Mostrar/ocultar ticker + quantidade (cotação automática só para ativos negociáveis)
+  // Ticker + quantidade — só ativos negociáveis
   const showTicker = ['Ações','FIIs','Cripto','Internacional'].includes(tipo);
   const tickerFg = document.getElementById('ivTicker').closest('.fg');
   if(tickerFg) tickerFg.style.display = showTicker ? '' : 'none';
   const qtdRow = document.getElementById('ivQtdRow');
   if(qtdRow) qtdRow.style.display = showTicker ? '' : 'none';
+  // Consórcio: mostra bloco específico e oculta valor/atual (calculados automaticamente)
+  const isConsorcio = (tipo === 'Consórcio');
+  const conRow = document.getElementById('ivConsorcioRow');
+  if(conRow) conRow.style.display = isConsorcio ? '' : 'none';
+  // Em consórcio, valor investido = parcelaValor × parcelasPagas (auto), então deixa
+  // o campo bloqueado pra evitar confusão
+  const valorEl = document.getElementById('ivValor');
+  const atualEl = document.getElementById('ivAtual');
+  if(valorEl){ valorEl.readOnly = isConsorcio; valorEl.style.background = isConsorcio?'var(--bg)':''; }
+  if(atualEl){ atualEl.readOnly = isConsorcio; atualEl.style.background = isConsorcio?'var(--bg)':''; }
+  if(isConsorcio) ivCalcConsorcio();
+}
+
+// Calcula valores do consórcio em tempo real conforme usuário digita
+function ivCalcConsorcio(){
+  const parcela = parseBRL(document.getElementById('ivConParcela')?.value)||0;
+  const total = parseInt(document.getElementById('ivConTotal')?.value)||0;
+  const pagas = parseInt(document.getElementById('ivConPagas')?.value)||0;
+  const investido = parcela * pagas;
+  const restante = parcela * Math.max(total-pagas, 0);
+  const valorEl = document.getElementById('ivValor');
+  const atualEl = document.getElementById('ivAtual');
+  const brl = n => (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(valorEl) valorEl.value = brl(investido);
+  if(atualEl) atualEl.value = brl(investido); // sem rendimento — apenas guarda
+  ivCalcRent();
 }
 
 // ── Busca cotação no servidor (cache 5 min via /api/cotacao) ──
@@ -6564,6 +6644,16 @@ function openIv(i=-1){
     document.getElementById('ivQtd').value=v.qtd||'';
     document.getElementById('ivValor').value=brl(v.valor);
     document.getElementById('ivAtual').value=brl(v.atual||v.valor);
+    // Campos de consórcio
+    if(v.tipo==='Consórcio'){
+      document.getElementById('ivConCarta').value = brl(v.cartaCredito||0);
+      document.getElementById('ivConParcela').value = brl(v.parcelaValor||0);
+      document.getElementById('ivConTotal').value = v.parcelasTotal||'';
+      document.getElementById('ivConPagas').value = v.parcelasPagas||0;
+      document.getElementById('ivConDiaVenc').value = v.diaVenc||'';
+      document.getElementById('ivConAdm').value = v.administradora||'';
+      document.getElementById('ivConFixa').checked = !!v.criarFixa;
+    }
     // Se já tem ticker, dispara busca de cotação para preencher visual
     if(v.ticker) setTimeout(()=>onIvTickerChange(), 100);
     document.getElementById('ivRent').value=v.rent||0;
@@ -6583,6 +6673,8 @@ function openIv(i=-1){
     ['ivNome','ivTicker','ivCorretora','ivNotas','ivQtd'].forEach(id=>document.getElementById(id).value='');
     ['ivSubtipo','ivObjetivo','ivIndexador','ivLiquidez','ivRisco'].forEach(id=>document.getElementById(id).value='');
     ['ivValor','ivAtual','ivDataEntrada','ivDataVenc'].forEach(id=>document.getElementById(id).value='');
+    ['ivConCarta','ivConParcela','ivConTotal','ivConPagas','ivConDiaVenc','ivConAdm'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+    const conFx = document.getElementById('ivConFixa'); if(conFx) conFx.checked = false;
     document.getElementById('ivRent').value='';
     document.getElementById('ivTitle').textContent='Novo Investimento';
     _setIvCotacaoUI(null);
@@ -6596,9 +6688,11 @@ function saveIv(){
   const valInv = parseBRL(document.getElementById('ivValor').value)||0;
   const valAt  = parseBRL(document.getElementById('ivAtual').value)||valInv;
   const rent   = valInv>0?((valAt-valInv)/valInv*100):parseFloat(document.getElementById('ivRent').value)||0;
+  const tipo = document.getElementById('ivTipo').value;
+  const isConsorcio = (tipo === 'Consórcio');
   const v={
     nome:document.getElementById('ivNome').value,
-    tipo:document.getElementById('ivTipo').value,
+    tipo:tipo,
     subtipo:document.getElementById('ivSubtipo').value||'',
     ticker:document.getElementById('ivTicker').value.toUpperCase()||'',
     qtd:parseFloat(document.getElementById('ivQtd').value)||0,
@@ -6612,9 +6706,68 @@ function saveIv(){
     risco:document.getElementById('ivRisco').value||'',
     notas:document.getElementById('ivNotas').value||''
   };
-  if(!v.nome||!v.valor) return toast('Preencha nome e valor investido','warning');
+  // ── Consórcio: campos específicos + recalcula valor automaticamente ──
+  if(isConsorcio){
+    v.cartaCredito  = parseBRL(document.getElementById('ivConCarta').value)||0;
+    v.parcelaValor  = parseBRL(document.getElementById('ivConParcela').value)||0;
+    v.parcelasTotal = parseInt(document.getElementById('ivConTotal').value)||0;
+    v.parcelasPagas = parseInt(document.getElementById('ivConPagas').value)||0;
+    v.diaVenc       = parseInt(document.getElementById('ivConDiaVenc').value)||0;
+    v.administradora= document.getElementById('ivConAdm').value||'';
+    v.criarFixa     = !!document.getElementById('ivConFixa').checked;
+    // Sobrescreve valor/atual com cálculo automático
+    v.valor = v.parcelaValor * v.parcelasPagas;
+    v.atual = v.valor; // consórcio não rende — só "guarda"
+    v.rent  = 0;
+    if(!v.parcelaValor || !v.parcelasTotal){
+      return toast('Preencha valor da parcela e total de parcelas','warning');
+    }
+  }
+  if(!v.nome) return toast('Preencha o nome','warning');
+  if(!isConsorcio && !v.valor) return toast('Preencha o valor investido','warning');
   if(i>=0) INVESTIMENTOS[i]=v; else INVESTIMENTOS.push(v);
-  salvarInv(); CM('ovIv'); renderInv(); renderDash(); toast('✅ Investimento salvo!','success');
+
+  // ── Sincronização com FIXAS (despesa fixa mensal) ──
+  if(isConsorcio){
+    _sincronizarFixaConsorcio(v, i>=0 ? i : INVESTIMENTOS.length-1);
+  }
+
+  salvarInv(); CM('ovIv'); renderInv(); renderDash();
+  toast(isConsorcio?'✅ Consórcio salvo!':'✅ Investimento salvo!','success');
+}
+
+// Cria/atualiza/remove a fixa vinculada ao consórcio conforme criarFixa
+function _sincronizarFixaConsorcio(v, idx){
+  const consId = `consorcio_${idx}`;
+  // Procura fixa existente vinculada
+  const fixaIdx = (FIXAS||[]).findIndex(f => f && f.origem==='consorcio' && f.consorcioId===consId);
+  if(v.criarFixa){
+    const fixaData = {
+      desc: `Consórcio · ${v.nome}`,
+      valor: v.parcelaValor,
+      cat: 'Investimentos',
+      metodo: 'Boleto',
+      cartao: '',
+      venc: String(v.diaVenc||1),
+      status: 'A pagar',
+      prioridade: 'Alta',
+      obs: v.administradora ? `${v.administradora} · ${v.parcelasPagas||0}/${v.parcelasTotal} parcelas` : `${v.parcelasPagas||0}/${v.parcelasTotal} parcelas`,
+      origem: 'consorcio',
+      consorcioId: consId,
+    };
+    if(fixaIdx>=0){
+      FIXAS[fixaIdx] = fixaData;
+    } else {
+      FIXAS.push(fixaData);
+    }
+    salvarFixas();
+  } else {
+    // Removeu o checkbox → remove a fixa vinculada se existia
+    if(fixaIdx>=0){
+      FIXAS.splice(fixaIdx, 1);
+      salvarFixas();
+    }
+  }
 }
 
 function delIv(i){
@@ -6916,6 +7069,54 @@ function renderInv(){
       const diff=(v.atual||v.valor)-v.valor; const pct=v.valor>0?diff/v.valor*100:0;
       const cor=TIPO_CORES2[v.tipo]||'#9CA3AF';
       const riscoClass=v.risco?`inv-risco-${v.risco.toLowerCase().replace(' ','').replace('ú','u').replace('é','e').replace('í','i')}`:null;
+      // ── Card especial para CONSÓRCIO ──
+      if(v.tipo === 'Consórcio'){
+        const carta = parseFloat(v.cartaCredito||0);
+        const parcela = parseFloat(v.parcelaValor||0);
+        const total = parseInt(v.parcelasTotal||0);
+        const pagas = parseInt(v.parcelasPagas||0);
+        const restantes = Math.max(total-pagas, 0);
+        const guardado = parcela * pagas;
+        const restante = parcela * restantes;
+        const pctP = total>0 ? Math.min(pagas/total*100, 100) : 0;
+        const isQuit = pagas>=total && total>0;
+        return `<div class="inv-card2" style="cursor:pointer" onclick="abrirDetalheInv(${i})">
+          <div class="inv-stripe" style="background:${cor}"></div>
+          <div style="padding-left:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span class="inv-tipo-badge" style="background:${cor}20;color:${cor}">🚗 Consórcio${isQuit?' <span style="margin-left:6px;background:var(--verde);color:#fff;padding:1px 6px;border-radius:100px;font-size:9px">✅ QUITADO</span>':''}</span>
+              ${v.administradora?`<span style="font-size:10px;color:var(--muted);font-weight:600">${esc(v.administradora)}</span>`:''}
+            </div>
+            <div class="inv-nome">${esc(v.nome)}</div>
+            <div class="inv-ticker">${esc(v.subtipo||'Consórcio')}${v.diaVenc?' · vence dia '+v.diaVenc:''}${v.criarFixa?' · 📌 fixa':''}</div>
+            ${carta>0?`<div style="font-size:11px;color:var(--muted);margin:6px 0 4px">💳 Carta de crédito: <strong style="color:var(--txt)">${fmt(carta)}</strong></div>`:''}
+            <!-- Barra de progresso -->
+            <div style="height:8px;background:var(--border);border-radius:100px;overflow:hidden;margin:8px 0 4px">
+              <div style="height:100%;width:${pctP.toFixed(1)}%;background:linear-gradient(90deg,${cor},#3B82F6);border-radius:100px;transition:width 1s cubic-bezier(.34,1.56,.64,1)"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-weight:700;margin-bottom:6px">
+              <span>${pagas}/${total} parcelas</span>
+              <span style="color:${cor}">${pctP.toFixed(1)}% pago</span>
+            </div>
+            <!-- Linha guardado / falta -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;padding:8px;background:var(--bg);border-radius:8px">
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Já guardado</div>
+                <div style="font-size:14px;font-weight:900;color:var(--verde);font-family:'JetBrains Mono',monospace">${fmt(guardado)}</div>
+              </div>
+              <div>
+                <div style="font-size:9px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em">Falta quitar</div>
+                <div style="font-size:14px;font-weight:900;color:${isQuit?'var(--verde)':'var(--txt)'};font-family:'JetBrains Mono',monospace">${isQuit?'✓ Quitado':fmt(restante)}</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:5px;margin-top:10px">
+              ${!isQuit?`<button class="btn bp btn-xs" style="flex:1" onclick="event.stopPropagation();pagarParcelaConsorcio(${i})" title="Marcar +1 parcela paga">✅ Pagar parcela</button>`:''}
+              <button class="btn bg btn-xs" onclick="event.stopPropagation();openIv(${i})">✏️</button>
+              <button class="btn bd btn-xs" onclick="event.stopPropagation();delIv(${i})">🗑️</button>
+            </div>
+          </div>
+        </div>`;
+      }
       // Variação do dia (cotação atual vs fechamento anterior) — só pra ativos com cotação automática
       const cot = v._cotacao || (v.ticker ? COTACOES_CACHE[v.ticker.toUpperCase().trim()] : null);
       const dayPct = cot ? cot.changePercent : null;
@@ -6949,6 +7150,41 @@ function renderInv(){
       </div>`;
     }).join('');
   }
+}
+
+// ════════════════════════════════════════════════
+// CONSÓRCIO — Pagar parcela (incrementa contador + atualiza fixa)
+// ════════════════════════════════════════════════
+function pagarParcelaConsorcio(idx){
+  const v = INVESTIMENTOS[idx];
+  if(!v || v.tipo!=='Consórcio') return;
+  const total = parseInt(v.parcelasTotal||0);
+  const pagas = parseInt(v.parcelasPagas||0);
+  if(pagas >= total){
+    toast('🎉 Consórcio já está quitado!','info');
+    return;
+  }
+  v.parcelasPagas = pagas + 1;
+  // Recalcula valor "guardado" (= parcela × pagas)
+  v.valor = parseFloat(v.parcelaValor||0) * v.parcelasPagas;
+  v.atual = v.valor;
+  // Atualiza fixa vinculada (se existir): marca como Pago e atualiza obs
+  if(v.criarFixa){
+    const consId = `consorcio_${idx}`;
+    const fixaIdx = (FIXAS||[]).findIndex(f => f && f.origem==='consorcio' && f.consorcioId===consId);
+    if(fixaIdx>=0){
+      FIXAS[fixaIdx].status = 'Pago';
+      FIXAS[fixaIdx].obs = v.administradora
+        ? `${v.administradora} · ${v.parcelasPagas}/${v.parcelasTotal} parcelas`
+        : `${v.parcelasPagas}/${v.parcelasTotal} parcelas`;
+      salvarFixas();
+    }
+  }
+  salvarInv();
+  renderInv();
+  renderDash();
+  const isQuit = v.parcelasPagas>=total;
+  toast(isQuit?'🎉 Consórcio QUITADO! Parabéns!':`✅ ${v.parcelasPagas}/${total} parcelas pagas`,'success');
 }
 
 // ════════════════════════════════════════════════
