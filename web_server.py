@@ -280,14 +280,14 @@ def api_cotacao():
         return jsonify({"erro": "Máximo 30 tickers por chamada"}), 400
 
     if debug:
-        # Bypass cache + retorna resposta crua da Brapi
+        # Bypass cache + executa o MESMO fluxo do _fetch_cotacoes, expondo cada etapa
         token = os.environ.get("BRAPI_TOKEN", "").strip()
         token_info = {
             "envVarSet": bool(token),
             "tokenLength": len(token) if token else 0,
             "tokenStart": token[:6] + "..." if token and len(token) > 6 else token,
         }
-        debug_info = {"token": token_info, "calls": []}
+        debug_info = {"token": token_info, "calls": [], "parsed": {}, "exceptions": []}
         for i in range(0, len(tickers), 10):
             chunk = [t.upper() for t in tickers[i:i + 10]]
             url = f"https://brapi.dev/api/quote/{','.join(chunk)}"
@@ -295,16 +295,37 @@ def api_cotacao():
                 params = {"token": token} if token else {}
                 r = httpx.get(url, params=params, timeout=8.0,
                               headers={"User-Agent": "PenseFinances/1.0"})
-                debug_info["calls"].append({
+                call_info = {
                     "url": url,
                     "params_sent": list(params.keys()),
                     "status_code": r.status_code,
-                    "body_preview": r.text[:500],
+                    "body_preview": r.text[:800],
                     "headers_sample": {
                         "content-type": r.headers.get("content-type", ""),
                         "x-ratelimit-remaining": r.headers.get("x-ratelimit-remaining", ""),
                     },
-                })
+                }
+                # Tenta parsear como faria a função real
+                if r.status_code == 200:
+                    try:
+                        data = r.json()
+                        results_list = data.get("results", []) or []
+                        call_info["results_count"] = len(results_list)
+                        call_info["results_keys_first"] = list(results_list[0].keys()) if results_list else []
+                        for q in results_list:
+                            try:
+                                parsed = _normalizar_quote(q)
+                                debug_info["parsed"][parsed["symbol"]] = parsed
+                            except Exception as pe:
+                                debug_info["exceptions"].append({
+                                    "stage": "normalizar",
+                                    "error": str(pe),
+                                    "type": type(pe).__name__,
+                                    "raw_keys": list(q.keys()) if isinstance(q, dict) else None,
+                                })
+                    except Exception as je:
+                        call_info["json_error"] = str(je)
+                debug_info["calls"].append(call_info)
             except Exception as e:
                 debug_info["calls"].append({
                     "url": url,
