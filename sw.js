@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.4 (detalhe customizado por tipo de ativo)
-const CACHE = 'pf-v2.4';
+// PenseFinances — Service Worker v2.5 (toggle de visibilidade da senha no login)
+const CACHE = 'pf-v2.5';
 const STATIC = [
   '/',
   '/dashboard',
