@@ -3778,7 +3778,9 @@ function renderCatListDash(cats){
 
 function renderDashTxs(txMes){
   const el=document.getElementById('dashTxs');if(!el)return;
-  const recentes=[...txMes].slice(0,6);
+  // Ordena pelas mais recentes (data DD/MM/YYYY + hora HH:MM desc)
+  const toSortKey=t=>{const[d='00',m='00',y='0000']=(t.data||'').split('/');return`${y}/${m}/${d} ${t.hora||'00:00'}`;};
+  const recentes=[...txMes].sort((a,b)=>toSortKey(b).localeCompare(toSortKey(a))).slice(0,6);
   if(!recentes.length){el.innerHTML='<div class="empty" style="padding:24px"><p>Sem transações neste mês</p></div>';return;}
   el.innerHTML=recentes.map(t=>{
     const neg=t.valor<0;
@@ -9500,7 +9502,8 @@ function renderVencimentos(){
     if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, diaV);
     const diff = Math.round((venc-hoje)/(1000*60*60*24));
     const fat = gastosTrim[c.nome.trim()]||0;
-    if(fat>0) items.push({tipo:'cartao', nome:`Fatura ${c.nome}`, valor:fat, venc, diff, emoji:'💳'});
+    // Inclui mesmo sem gasto — o vencimento é relevante independente da fatura atual
+    items.push({tipo:'cartao', nome:`Fatura ${c.nome}`, valor:fat, venc, diff, emoji:'💳'});
   });
 
   items.sort((a,b)=>a.diff-b.diff);
@@ -9527,7 +9530,7 @@ function renderVencimentos(){
             <div style="font-size:11px;color:var(--muted);margin-top:1px">${item.venc.toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})}</div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:14px;font-weight:800;color:${vPago?'var(--verde)':'var(--verm)'}">${vPago?'Pago':fmt(item.valor)}</div>
+            <div style="font-size:14px;font-weight:800;color:${vPago?'var(--verde)':item.valor>0?'var(--verm)':'var(--muted)'}">${vPago?'Pago':item.valor>0?fmt(item.valor):'—'}</div>
             <div style="font-size:10px;font-weight:800;color:${vPago?'var(--verde)':urgency};text-transform:uppercase;letter-spacing:.04em">${vPago?'—':label}</div>
           </div>
         </div>`;

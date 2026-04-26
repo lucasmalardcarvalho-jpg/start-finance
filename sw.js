@@ -1,5 +1,5 @@
 // PenseFinances — Service Worker v1.1 (mobile fixes)
-const CACHE = 'pf-v1.1';
+const CACHE = 'pf-v1.2';
 const STATIC = [
   '/',
   '/dashboard',
