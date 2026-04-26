@@ -85,7 +85,8 @@ registrar_rotas_auth(app)
 # Cache em memória: {ticker_upper: (timestamp, dict)}
 _COTACAO_CACHE = {}
 _COTACAO_TTL_OK = 300        # 5 min para sucesso
-_COTACAO_TTL_FAIL = 60       # 1 min para falha (evita martelar a API)
+_COTACAO_TTL_FAIL = 10       # 10s para falha (suficiente pra evitar martelar a API
+                             # mas curto o bastante pra recuperar de glitches)
 _COTACAO_LOCK = threading.Lock()
 
 
@@ -163,13 +164,11 @@ def _fetch_cotacoes(tickers):
                         result[parsed["symbol"]] = parsed
                         with _COTACAO_LOCK:
                             _COTACAO_CACHE[parsed["symbol"]] = (now, parsed)
-                # Tickers que não vieram → marca como falha temporária
-                for sym in chunk:
-                    if sym not in returned_syms:
-                        with _COTACAO_LOCK:
-                            _COTACAO_CACHE[sym] = (now, None)
+                # Tickers que não vieram NÃO são cacheados como falha — pode ser
+                # intermitência da Brapi. Próxima call tenta de novo.
             else:
                 logger.warning(f"Brapi {r.status_code} para {chunk}")
+                # Apenas erros HTTP reais cacheiam falha curta (10s)
                 for sym in chunk:
                     with _COTACAO_LOCK:
                         _COTACAO_CACHE[sym] = (now, None)
@@ -340,6 +339,21 @@ def api_cotacao():
         "cotacoes": cot,
         "naoEncontrados": naoencontrados,
         "updatedAt": int(time.time()),
+    })
+
+
+@app.route("/api/cotacao/clearcache", methods=["POST", "GET"])
+def api_cotacao_clearcache():
+    """Limpa todo o cache de cotações em memória (útil após mudar token, etc.)"""
+    with _COTACAO_LOCK:
+        n_cot = len(_COTACAO_CACHE)
+        _COTACAO_CACHE.clear()
+    n_hist = len(_HIST_CACHE)
+    _HIST_CACHE.clear()
+    return jsonify({
+        "cleared": True,
+        "cotacoes_removidas": n_cot,
+        "historicos_removidos": n_hist,
     })
 
 
