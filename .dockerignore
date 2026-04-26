@@ -1,0 +1,47 @@
+# Excluir tudo que não é necessário em runtime
+.git
+.gitignore
+.claude
+.env
+.env.*
+*.log
+
+# Documentação
+README.md
+*.md
+
+# Arquivos temporários
+temp_*
+*.tmp
+*.bak
+*.orig
+
+# SVGs duplicados/temporários (manter apenas logo.svg, logo-icon.svg, logo horizontal.svg)
+logo.png*
+logo (1024 x 1024 px)*
+"logo.png (1024 x 1024 px) (1).svg"
+"logo.png (1024 x 1024 px).svg"
+"logo.png.svg"
+"logo horizontal.svg"
+
+# Cache python
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+
+# IDE
+.vscode
+.idea
+
+# Userdata local (se existir)
+userdata/
+users.json
+
+# PDFs de teste
+temp_c6.pdf
+*.pdf
+
+# Página de vendas (não usada em produção do dashboard)
+# vendas.html  -- comentado pois é servido via /vendas
