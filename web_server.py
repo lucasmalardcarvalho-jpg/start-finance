@@ -187,13 +187,50 @@ def api_cotacao():
     """
     GET /api/cotacao?tickers=PETR4,VALE3,BTC-USD
     Retorna cotações com cache (5 min). Aceita tickers separados por vírgula.
+    debug=1 → ignora cache e retorna info de diagnóstico (status http, erro)
     """
     tickers_str = request.args.get("tickers", "")
+    debug = request.args.get("debug") == "1"
     tickers = [t.strip() for t in tickers_str.split(",") if t.strip()]
     if not tickers:
         return jsonify({"erro": "Informe ?tickers=SYMBOL1,SYMBOL2"}), 400
     if len(tickers) > 30:
         return jsonify({"erro": "Máximo 30 tickers por chamada"}), 400
+
+    if debug:
+        # Bypass cache + retorna resposta crua da Brapi
+        token = os.environ.get("BRAPI_TOKEN", "").strip()
+        token_info = {
+            "envVarSet": bool(token),
+            "tokenLength": len(token) if token else 0,
+            "tokenStart": token[:6] + "..." if token and len(token) > 6 else token,
+        }
+        debug_info = {"token": token_info, "calls": []}
+        for i in range(0, len(tickers), 10):
+            chunk = [t.upper() for t in tickers[i:i + 10]]
+            url = f"https://brapi.dev/api/quote/{','.join(chunk)}"
+            try:
+                params = {"token": token} if token else {}
+                r = httpx.get(url, params=params, timeout=8.0,
+                              headers={"User-Agent": "PenseFinances/1.0"})
+                debug_info["calls"].append({
+                    "url": url,
+                    "params_sent": list(params.keys()),
+                    "status_code": r.status_code,
+                    "body_preview": r.text[:500],
+                    "headers_sample": {
+                        "content-type": r.headers.get("content-type", ""),
+                        "x-ratelimit-remaining": r.headers.get("x-ratelimit-remaining", ""),
+                    },
+                })
+            except Exception as e:
+                debug_info["calls"].append({
+                    "url": url,
+                    "exception": str(e),
+                    "type": type(e).__name__,
+                })
+        return jsonify(debug_info)
+
     cot = _fetch_cotacoes(tickers)
     naoencontrados = [t for t in tickers if t.upper() not in cot]
     return jsonify({
