@@ -182,6 +182,81 @@ def _fetch_cotacoes(tickers):
     return result
 
 
+# Cache separado pra histórico (mais pesado, TTL maior)
+_HIST_CACHE = {}        # {(ticker, range, interval): (ts, payload)}
+_HIST_TTL = 3600        # 1 hora
+
+
+@app.route("/api/cotacao/historico/<ticker>")
+def api_cotacao_historico(ticker):
+    """
+    GET /api/cotacao/historico/PETR4?range=3mo&interval=1d
+    Range: 1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, ytd, max
+    Interval: 1d, 1wk, 1mo, 3mo (e intervalos menores em ranges curtos)
+    """
+    ticker_u = (ticker or "").upper().strip()
+    if not ticker_u:
+        return jsonify({"erro": "ticker vazio"}), 400
+    rng = request.args.get("range", "3mo")
+    interval = request.args.get("interval", "1d")
+    cache_key = (ticker_u, rng, interval)
+    now = time.time()
+    cached = _HIST_CACHE.get(cache_key)
+    if cached and (now - cached[0]) < _HIST_TTL:
+        return jsonify(cached[1])
+
+    token = os.environ.get("BRAPI_TOKEN", "").strip()
+    url = f"https://brapi.dev/api/quote/{ticker_u}"
+    params = {"range": rng, "interval": interval, "fundamental": "false"}
+    if token:
+        params["token"] = token
+    try:
+        r = httpx.get(url, params=params, timeout=12.0,
+                      headers={"User-Agent": "PenseFinances/1.0"})
+        if r.status_code != 200:
+            return jsonify({"erro": f"brapi {r.status_code}",
+                            "preview": r.text[:200]}), r.status_code
+        data = r.json()
+        results = data.get("results", []) or []
+        if not results:
+            return jsonify({"erro": "sem resultados"}), 404
+        item = results[0]
+        # Normaliza histórico: lista de {date(unix), close, high, low, open, volume}
+        hist_raw = item.get("historicalDataPrice", []) or []
+        hist = [{
+            "date": h.get("date"),
+            "close": float(h.get("close") or 0),
+            "open": float(h.get("open") or 0),
+            "high": float(h.get("high") or 0),
+            "low": float(h.get("low") or 0),
+            "volume": int(h.get("volume") or 0),
+        } for h in hist_raw if h.get("close") is not None]
+        payload = {
+            "symbol": item.get("symbol", ticker_u),
+            "name": item.get("longName") or item.get("shortName") or ticker_u,
+            "currency": item.get("currency") or "BRL",
+            "currentPrice": float(item.get("regularMarketPrice") or 0),
+            "previousClose": float(item.get("regularMarketPreviousClose") or 0),
+            "change": float(item.get("regularMarketChange") or 0),
+            "changePercent": float(item.get("regularMarketChangePercent") or 0),
+            "dayHigh": float(item.get("regularMarketDayHigh") or 0),
+            "dayLow": float(item.get("regularMarketDayLow") or 0),
+            "fiftyTwoWeekHigh": float(item.get("fiftyTwoWeekHigh") or 0),
+            "fiftyTwoWeekLow": float(item.get("fiftyTwoWeekLow") or 0),
+            "marketCap": item.get("marketCap"),
+            "volume": int(item.get("regularMarketVolume") or 0),
+            "logo": item.get("logourl") or "",
+            "history": hist,
+            "range": rng,
+            "interval": interval,
+            "updatedAt": int(now),
+        }
+        _HIST_CACHE[cache_key] = (now, payload)
+        return jsonify(payload)
+    except Exception as e:
+        return jsonify({"erro": str(e), "type": type(e).__name__}), 500
+
+
 @app.route("/api/cotacao")
 def api_cotacao():
     """

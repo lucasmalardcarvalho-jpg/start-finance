@@ -343,6 +343,28 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 .inv-risco-baixo{background:var(--verde-l);color:var(--verde-d)}
 .inv-risco-medio{background:var(--amar-l);color:#92400e}
 .inv-risco-alto{background:var(--verm-l);color:var(--verm)}
+/* Detalhe do investimento — range buttons */
+.ivd-range{padding:6px 12px;border-radius:7px;border:1px solid var(--border);background:transparent;color:var(--txt2);font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit}
+.ivd-range:hover{background:var(--bg);color:var(--txt);border-color:var(--azul)}
+.ivd-range.active{background:linear-gradient(135deg,var(--azul),var(--azul-d));color:#fff;border-color:transparent;box-shadow:0 0 12px rgba(238,32,110,.3)}
+/* Stat cells dentro do detalhe */
+.ivd-stat{padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--bg)}
+.ivd-stat .l{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
+.ivd-stat .v{font-size:14px;font-weight:900;color:var(--txt);font-family:'JetBrains Mono',monospace}
+@media(max-width:640px){
+  #ivdStats,#ivdPosicao{grid-template-columns:repeat(2,1fr)!important}
+}
+/* Linha de aporte */
+.ivd-aporte-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border);font-size:12px}
+.ivd-aporte-row .ic{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ivd-aporte-row .ic.in{background:rgba(16,185,129,.15);color:var(--verde)}
+.ivd-aporte-row .ic.out{background:rgba(239,68,68,.15);color:var(--verm)}
+.ivd-aporte-row .info{flex:1;min-width:0}
+.ivd-aporte-row .nm{font-weight:700;color:var(--txt);font-size:12px}
+.ivd-aporte-row .dt{font-size:10px;color:var(--muted);font-weight:500}
+.ivd-aporte-row .vl{font-weight:900;font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right}
+.ivd-aporte-row .del{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;border-radius:5px}
+.ivd-aporte-row .del:hover{background:var(--verm-l);color:var(--verm)}
 /* DÍVIDA CARD */
 .dv-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);cursor:default;transition:all .2s}
 .dv-card:hover{box-shadow:var(--sh-md);border-color:var(--verm)}
@@ -1461,6 +1483,57 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <input type="hidden" id="mtIdx" value="-1">
   </div>
   <div class="mf"><button class="btn bg" onclick="CM('ovMt')">Cancelar</button><button class="btn bp" onclick="saveMt()">💾 Salvar</button></div>
+</div></div>
+
+<!-- Modal Detalhe do Investimento (gráfico + stats) -->
+<div class="ov" id="ovIvDetail">
+<div class="modal" style="max-width:780px;width:96vw">
+  <div class="mh">
+    <div class="mt" id="ivdTitle">Detalhes do Ativo</div>
+    <button class="mc" onclick="CM('ovIvDetail')">✕</button>
+  </div>
+  <div class="mb2" style="padding:0">
+    <!-- Header: preço + variação -->
+    <div id="ivdHeader" style="padding:18px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap"></div>
+
+    <!-- Gráfico -->
+    <div style="padding:14px 22px 10px">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="ivdRangeBar">
+        <button class="ivd-range" data-r="5d">5D</button>
+        <button class="ivd-range" data-r="1mo">1M</button>
+        <button class="ivd-range active" data-r="3mo">3M</button>
+        <button class="ivd-range" data-r="6mo">6M</button>
+        <button class="ivd-range" data-r="1y">1A</button>
+        <button class="ivd-range" data-r="5y">5A</button>
+        <button class="ivd-range" data-r="max">MÁX</button>
+      </div>
+      <div id="ivdChart" style="position:relative;height:240px;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">⏳ Carregando histórico...</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div id="ivdStats" style="padding:0 22px 14px;display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+
+    <!-- Sua posição -->
+    <div style="padding:14px 22px;border-top:1px solid var(--border);background:var(--bg)">
+      <div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">📊 Sua Posição</div>
+      <div id="ivdPosicao" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+    </div>
+
+    <!-- Aportes -->
+    <div style="padding:14px 22px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em">💸 Aportes & Retiradas</div>
+        <button class="btn bp btn-sm" onclick="ivdAddAporte()" id="ivdAddBtn">+ Aporte/Retirada</button>
+      </div>
+      <div id="ivdAportes" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto"></div>
+    </div>
+  </div>
+  <div class="mf" style="border-top:1px solid var(--border)">
+    <button class="btn bg" onclick="CM('ovIvDetail')">Fechar</button>
+    <button class="btn bs" onclick="ivdEditAtivo()">✏️ Editar ativo</button>
+  </div>
 </div></div>
 
 <!-- Modal Investimento -->
@@ -6715,7 +6788,7 @@ function renderInv(){
       const dayPct = cot ? cot.changePercent : null;
       const liveBadge = cot ? `<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:${dayPct>=0?'rgba(16,185,129,.15)':'rgba(239,68,68,.15)'};color:${dayPct>=0?'var(--verde)':'var(--verm)'};margin-left:6px" title="Variação do dia">⚡ ${dayPct>=0?'+':''}${dayPct.toFixed(2)}%</span>` : '';
       const qtdInfo = (v.qtd && parseFloat(v.qtd)>0 && cot) ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${parseFloat(v.qtd)} × ${(cot.currency==='USD'?'US$ ':'R$ ')}${cot.price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>` : '';
-      return `<div class="inv-card2">
+      return `<div class="inv-card2" style="cursor:pointer" onclick="abrirDetalheInv(${i})">
         <div class="inv-stripe" style="background:${cor}"></div>
         <div style="padding-left:8px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -6732,13 +6805,298 @@ function renderInv(){
           ${v.objetivo?`<div style="font-size:10px;color:var(--muted);margin-top:4px">🎯 ${esc(v.objetivo)}</div>`:''}
           ${v.dataVenc?`<div style="font-size:10px;color:var(--muted)">📅 Vence: ${new Date(v.dataVenc).toLocaleDateString('pt-BR')}</div>`:''}
           <div style="display:flex;gap:5px;margin-top:10px">
-            <button class="btn bg btn-xs" style="flex:1" onclick="openIv(${i})">✏️ Editar</button>
-            <button class="btn bd btn-xs" onclick="delIv(${i})">🗑️</button>
+            <button class="btn bg btn-xs" style="flex:1" onclick="event.stopPropagation();openIv(${i})">✏️ Editar</button>
+            <button class="btn bd btn-xs" onclick="event.stopPropagation();delIv(${i})">🗑️</button>
+            <button class="btn bs btn-xs" onclick="event.stopPropagation();abrirDetalheInv(${i})" title="Ver gráfico e histórico">📊</button>
           </div>
         </div>
       </div>`;
     }).join('');
   }
+}
+
+// ════════════════════════════════════════════════
+// DETALHE DO INVESTIMENTO — modal com gráfico + aportes
+// ════════════════════════════════════════════════
+let IVD_IDX = -1;
+let IVD_RANGE = '3mo';
+let IVD_DATA = null; // payload completo do /api/cotacao/historico
+
+function abrirDetalheInv(idx){
+  const v = INVESTIMENTOS[idx];
+  if(!v) return;
+  IVD_IDX = idx;
+  IVD_RANGE = '3mo';
+  document.getElementById('ivdTitle').textContent = `📈 ${v.nome}`;
+  // Re-render header básico (mesmo sem cotação ainda)
+  _ivdRenderHeader(v, null);
+  _ivdRenderStats(v, null);
+  _ivdRenderPosicao(v, null);
+  _ivdRenderAportes(v);
+  // Range bar listeners
+  document.querySelectorAll('.ivd-range').forEach(b=>{
+    b.onclick = ()=>{
+      document.querySelectorAll('.ivd-range').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      IVD_RANGE = b.dataset.r;
+      _ivdLoadHistorico();
+    };
+  });
+  // Marca o range default visualmente
+  document.querySelectorAll('.ivd-range').forEach(b=>{
+    b.classList.toggle('active', b.dataset.r===IVD_RANGE);
+  });
+  OM('ovIvDetail');
+  // Carrega histórico (se ticker)
+  if(v.ticker){
+    _ivdLoadHistorico();
+  } else {
+    document.getElementById('ivdChart').innerHTML =
+      `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;text-align:center;padding:20px">📊 Sem ticker — gráfico disponível apenas para ativos negociáveis (Ações, FIIs, Cripto)</div>`;
+  }
+}
+
+async function _ivdLoadHistorico(){
+  const v = INVESTIMENTOS[IVD_IDX];
+  if(!v || !v.ticker) return;
+  const chartEl = document.getElementById('ivdChart');
+  chartEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">⏳ Carregando histórico...</div>`;
+  try{
+    const r = await fetch(`/api/cotacao/historico/${encodeURIComponent(v.ticker)}?range=${IVD_RANGE}&interval=1d`);
+    if(!r.ok){
+      chartEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--verm);font-size:12px">⚠️ Erro ao carregar histórico (${r.status})</div>`;
+      return;
+    }
+    IVD_DATA = await r.json();
+    _ivdRenderChart(IVD_DATA);
+    _ivdRenderHeader(v, IVD_DATA);
+    _ivdRenderStats(v, IVD_DATA);
+    _ivdRenderPosicao(v, IVD_DATA);
+  }catch(e){
+    chartEl.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--verm);font-size:12px">⚠️ Falha de rede</div>`;
+  }
+}
+
+function _ivdRenderHeader(v, data){
+  const hd = document.getElementById('ivdHeader');
+  if(!hd) return;
+  const cur = data?.currency==='USD' ? 'US$ ' : 'R$ ';
+  const price = data?.currentPrice || 0;
+  const pct = data?.changePercent || 0;
+  const change = data?.change || 0;
+  const up = pct >= 0;
+  hd.innerHTML = `
+    <div>
+      <div style="font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase">${esc(v.ticker||v.tipo)}</div>
+      <div style="font-size:14px;font-weight:600;color:var(--txt2);margin-top:1px;max-width:380px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(data?.name||v.nome)}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:28px;font-weight:900;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace">${data?cur+price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</div>
+      ${data?`<div style="font-size:13px;font-weight:800;color:${up?'var(--verde)':'var(--verm)'}">${up?'▲':'▼'} ${cur}${Math.abs(change).toFixed(2)} · ${up?'+':''}${pct.toFixed(2)}% hoje</div>`:''}
+    </div>`;
+}
+
+function _ivdRenderChart(data){
+  const el = document.getElementById('ivdChart');
+  if(!el) return;
+  const hist = data?.history || [];
+  if(!hist.length){
+    el.innerHTML = `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px">Sem histórico para este período</div>`;
+    return;
+  }
+  const W = el.clientWidth || 700;
+  const H = 240;
+  const PL = 40, PR = 14, PT = 14, PB = 24;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+  const closes = hist.map(h=>h.close);
+  const minV = Math.min(...closes);
+  const maxV = Math.max(...closes);
+  const range = (maxV - minV) || 1;
+  const minBuf = minV - range*0.05;
+  const maxBuf = maxV + range*0.05;
+  const span = (maxBuf - minBuf) || 1;
+  // Pontos
+  const pts = hist.map((h,i)=>{
+    const x = PL + (i/(hist.length-1||1)) * cw;
+    const y = PT + ch - ((h.close - minBuf)/span * ch);
+    return [x, y];
+  });
+  const path = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const areaPath = path + ` L ${pts[pts.length-1][0].toFixed(1)},${(PT+ch).toFixed(1)} L ${pts[0][0].toFixed(1)},${(PT+ch).toFixed(1)} Z`;
+  // Cor da linha — verde se subiu no período, vermelho se caiu
+  const first = closes[0], last = closes[closes.length-1];
+  const upPeriod = last >= first;
+  const cor = upPeriod ? '#10b981' : '#ef4444';
+  const corLight = upPeriod ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)';
+  const isDk = document.body.classList.contains('dark');
+  const gridStroke = isDk?'#2A2D3E':'#E8EBE4';
+  const labelColor = isDk?'#94a3b8':'#6b7280';
+  // Grid horizontal (4 linhas) + labels
+  let gridLines = '';
+  let yLabels = '';
+  for(let i=0;i<=4;i++){
+    const y = PT + (ch * i / 4);
+    gridLines += `<line x1="${PL}" y1="${y}" x2="${W-PR}" y2="${y}" stroke="${gridStroke}" stroke-width="0.5" stroke-dasharray="3,3"/>`;
+    const v = maxBuf - (span * i/4);
+    yLabels += `<text x="${PL-6}" y="${y+3}" text-anchor="end" font-size="9" fill="${labelColor}" font-family="JetBrains Mono,monospace">${v.toFixed(2)}</text>`;
+  }
+  // X labels: 4 datas distribuídas
+  let xLabels = '';
+  for(let i=0;i<4;i++){
+    const idx = Math.floor((hist.length-1) * i / 3);
+    const h = hist[idx];
+    if(!h?.date) continue;
+    const d = new Date(h.date * 1000);
+    const lbl = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+    const x = PL + (idx/(hist.length-1||1)) * cw;
+    xLabels += `<text x="${x.toFixed(1)}" y="${(H-6).toFixed(1)}" text-anchor="middle" font-size="9" fill="${labelColor}" font-family="JetBrains Mono,monospace">${lbl}</text>`;
+  }
+  // Último ponto destacado
+  const lastP = pts[pts.length-1];
+  el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" style="display:block">
+    <defs>
+      <linearGradient id="ivdGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${cor}" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="${cor}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${gridLines}
+    ${yLabels}
+    <path d="${areaPath}" fill="url(#ivdGrad)" stroke="none"/>
+    <path d="${path}" fill="none" stroke="${cor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lastP[0].toFixed(1)}" cy="${lastP[1].toFixed(1)}" r="4" fill="${cor}" stroke="${isDk?'#0F1117':'#fff'}" stroke-width="2"/>
+    ${xLabels}
+  </svg>`;
+}
+
+function _ivdRenderStats(v, data){
+  const el = document.getElementById('ivdStats');
+  if(!el) return;
+  if(!data){
+    el.innerHTML = '';
+    return;
+  }
+  const cur = data.currency==='USD' ? 'US$ ' : 'R$ ';
+  const fmtN = n => cur + (n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  el.innerHTML = `
+    <div class="ivd-stat"><div class="l">Máx 52 sem</div><div class="v" style="color:var(--verde)">${fmtN(data.fiftyTwoWeekHigh)}</div></div>
+    <div class="ivd-stat"><div class="l">Mín 52 sem</div><div class="v" style="color:var(--verm)">${fmtN(data.fiftyTwoWeekLow)}</div></div>
+    <div class="ivd-stat"><div class="l">Máx do dia</div><div class="v">${fmtN(data.dayHigh)}</div></div>
+    <div class="ivd-stat"><div class="l">Volume</div><div class="v">${(data.volume||0).toLocaleString('pt-BR')}</div></div>`;
+}
+
+function _ivdRenderPosicao(v, data){
+  const el = document.getElementById('ivdPosicao');
+  if(!el) return;
+  const qtd = parseFloat(v.qtd||0);
+  const investido = parseFloat(v.valor||0);
+  const cot = data?.currentPrice || (v._cotacao?.price) || 0;
+  const valorAtual = qtd>0 && cot ? qtd*cot : (v.atual||investido);
+  const lucro = valorAtual - investido;
+  const lucroPct = investido>0 ? (lucro/investido*100) : 0;
+  const precoMedio = qtd>0 ? investido/qtd : 0;
+  el.innerHTML = `
+    <div class="ivd-stat"><div class="l">Quantidade</div><div class="v">${qtd?qtd.toLocaleString('pt-BR'):'—'}</div></div>
+    <div class="ivd-stat"><div class="l">Preço médio</div><div class="v">${precoMedio?'R$ '+precoMedio.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'—'}</div></div>
+    <div class="ivd-stat"><div class="l">Total atual</div><div class="v">${fmt(valorAtual)}</div></div>
+    <div class="ivd-stat"><div class="l">Lucro/Prejuízo</div><div class="v" style="color:${lucro>=0?'var(--verde)':'var(--verm)'}">${lucro>=0?'+':''}${fmt(lucro)} · ${lucroPct>=0?'+':''}${lucroPct.toFixed(2)}%</div></div>`;
+}
+
+function _ivdRenderAportes(v){
+  const el = document.getElementById('ivdAportes');
+  if(!el) return;
+  const aportes = (v.aportes||[]).slice().sort((a,b)=>(b.data||'').localeCompare(a.data||''));
+  if(!aportes.length){
+    el.innerHTML = `<div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">Nenhum aporte registrado.<br><span style="font-size:10px">Use o botão acima para adicionar compras/vendas</span></div>`;
+    return;
+  }
+  el.innerHTML = aportes.map((a,i)=>{
+    const isOut = (a.tipo||'aporte')==='retirada';
+    const valor = parseFloat(a.valor||0);
+    const qtd = parseFloat(a.qtd||0);
+    const dt = a.data ? new Date(a.data).toLocaleDateString('pt-BR') : '';
+    const sign = isOut?'−':'+';
+    return `<div class="ivd-aporte-row">
+      <div class="ic ${isOut?'out':'in'}">${isOut?'↓':'↑'}</div>
+      <div class="info">
+        <div class="nm">${isOut?'Retirada':'Aporte'}${qtd>0?` · ${qtd.toLocaleString('pt-BR')} cotas`:''}</div>
+        <div class="dt">${dt}${a.preco?' · R$ '+parseFloat(a.preco).toFixed(2)+'/ud':''}</div>
+      </div>
+      <div class="vl" style="color:${isOut?'var(--verm)':'var(--verde)'}">${sign} ${fmt(valor)}</div>
+      <button class="del" onclick="ivdRemoveAporte(${i})" title="Remover">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function ivdAddAporte(){
+  const v = INVESTIMENTOS[IVD_IDX];
+  if(!v) return;
+  // Mini-prompt inline pra simplicidade — abrirá um diálogo nativo
+  const tipo = prompt('Tipo: digite "aporte" ou "retirada"', 'aporte');
+  if(!tipo) return;
+  const tipoNorm = tipo.toLowerCase().trim()==='retirada' ? 'retirada' : 'aporte';
+  const valorStr = prompt(`Valor em R$ (${tipoNorm}):`, '');
+  if(!valorStr) return;
+  const valor = parseFloat(valorStr.replace(',','.').replace(/[^\d.-]/g,''))||0;
+  if(valor<=0) return toast('Valor inválido','error');
+  const qtdStr = v.ticker ? prompt('Quantidade de cotas (deixe em branco se não souber):', '') : '';
+  const qtd = qtdStr ? parseFloat(qtdStr.replace(',','.'))||0 : 0;
+  const preco = qtd>0 ? valor/qtd : 0;
+  const dataStr = prompt('Data (DD/MM/AAAA, vazio = hoje):', '');
+  let dataISO = new Date().toISOString().split('T')[0];
+  if(dataStr){
+    const m = dataStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(m) dataISO = `${m[3]}-${m[2]}-${m[1]}`;
+  }
+  if(!v.aportes) v.aportes = [];
+  v.aportes.push({tipo:tipoNorm, valor, qtd, preco, data:dataISO, ts:Date.now()});
+  // Atualiza qtd total e valor investido baseado nos aportes
+  _ivdRecalcular(v);
+  salvarInv();
+  _ivdRenderAportes(v);
+  _ivdRenderPosicao(v, IVD_DATA);
+  renderInv();
+  toast(`✅ ${tipoNorm==='retirada'?'Retirada':'Aporte'} de ${fmt(valor)} registrado`,'success');
+}
+
+function ivdRemoveAporte(i){
+  const v = INVESTIMENTOS[IVD_IDX];
+  if(!v || !v.aportes) return;
+  showConfirm('Remover este movimento?', ()=>{
+    v.aportes.splice(i,1);
+    _ivdRecalcular(v);
+    salvarInv();
+    _ivdRenderAportes(v);
+    _ivdRenderPosicao(v, IVD_DATA);
+    renderInv();
+    toast('🗑️ Removido','info');
+  },'🗑️','Remover','bd');
+}
+
+// Recalcula qtd total e valor investido baseado nos aportes
+function _ivdRecalcular(v){
+  if(!v.aportes || !v.aportes.length) return;
+  let qtdNet = 0, valorNet = 0;
+  v.aportes.forEach(a=>{
+    const sinal = a.tipo==='retirada' ? -1 : 1;
+    qtdNet += sinal * (parseFloat(a.qtd||0));
+    valorNet += sinal * (parseFloat(a.valor||0));
+  });
+  if(qtdNet>0) v.qtd = qtdNet;
+  if(valorNet>0) v.valor = valorNet;
+  // Recalcula atual se tivermos cotação
+  const cot = v._cotacao || COTACOES_CACHE[(v.ticker||'').toUpperCase().trim()];
+  if(cot && v.qtd>0){
+    v.atual = v.qtd * cot.price;
+    v.rent = v.valor>0 ? ((v.atual-v.valor)/v.valor*100) : 0;
+  }
+}
+
+function ivdEditAtivo(){
+  const idx = IVD_IDX;
+  CM('ovIvDetail');
+  setTimeout(()=>openIv(idx), 200);
 }
 
 // ════════════════════════════════════════════════

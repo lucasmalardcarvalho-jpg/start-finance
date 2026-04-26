@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.0 (investimentos: cotações automáticas via Brapi)
-const CACHE = 'pf-v2.0';
+// PenseFinances — Service Worker v2.1 (investimentos: detalhe + gráfico histórico + aportes)
+const CACHE = 'pf-v2.1';
 const STATIC = [
   '/',
   '/dashboard',
