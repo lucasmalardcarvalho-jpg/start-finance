@@ -263,9 +263,16 @@ def api_cotacao():
     GET /api/cotacao?tickers=PETR4,VALE3,BTC-USD
     Retorna cotações com cache (5 min). Aceita tickers separados por vírgula.
     debug=1 → ignora cache e retorna info de diagnóstico (status http, erro)
+    nocache=1 → bypassa cache e força fetch fresh (útil pra debug)
     """
     tickers_str = request.args.get("tickers", "")
     debug = request.args.get("debug") == "1"
+    nocache = request.args.get("nocache") == "1"
+    if nocache:
+        # Limpa cache desses tickers antes de buscar
+        with _COTACAO_LOCK:
+            for t in [t.strip().upper() for t in tickers_str.split(",") if t.strip()]:
+                _COTACAO_CACHE.pop(t, None)
     tickers = [t.strip() for t in tickers_str.split(",") if t.strip()]
     if not tickers:
         return jsonify({"erro": "Informe ?tickers=SYMBOL1,SYMBOL2"}), 400
