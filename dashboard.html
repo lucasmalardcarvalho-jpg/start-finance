@@ -413,6 +413,10 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 
 /* ════ INSIGHT WIDGET ════ */
 .dica-card{background:linear-gradient(135deg,var(--amar-l),#fffde7);border:1px solid rgba(245,158,11,.25);border-radius:var(--r);padding:14px 18px;display:flex;align-items:flex-start;gap:12px}
+/* Dark mode: gradient escuro com tom dourado para a dica continuar legível */
+body.dark .dica-card{background:linear-gradient(135deg,#2a2008,#1a1d2e);border-color:rgba(245,158,11,.35)}
+body.dark .dica-text{color:#E5E7EB}
+body.dark .dica-title{color:#FCD34D}
 .dica-icon{font-size:22px;flex-shrink:0;margin-top:1px}
 .dica-title{font-size:12px;font-weight:800;color:var(--amar);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
 .dica-text{font-size:13px;color:var(--txt2);line-height:1.5}
@@ -784,19 +788,27 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     max-height:80vh!important;margin:0!important;
     animation:none!important;
   }
-  /* ── Calendário filtro (popup) ── */
+  /* ── Calendário filtro (popup) ──
+     z-index:500 fica acima do topbar (z:400) no iOS com notch
+     top usa safe-area-inset-top para não ser cortado pela barra de status
+     overflow-y:auto permite rolar quando mês tem 31 dias e ocupa 6 linhas */
   #calPop{
     position:fixed!important;
-    width:288px!important;
+    width:min(320px,calc(100vw - 24px))!important;
     left:50%!important;
     right:auto!important;
-    top:76px!important;
+    top:calc(60px + env(safe-area-inset-top,0px) + 8px)!important;
     transform:translateX(-50%);
+    z-index:500!important;
+    max-height:calc(100vh - 80px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))!important;
+    overflow-y:auto!important;
+    -webkit-overflow-scrolling:touch;
+    box-shadow:0 12px 48px rgba(0,0,0,.45)!important;
   }
-  .cal-day{height:32px;aspect-ratio:unset!important;min-height:unset!important;max-height:32px!important}
+  .cal-day{height:36px;aspect-ratio:unset!important;min-height:unset!important;max-height:36px!important;font-size:12px}
   /* ── Calendário filtro transações ── */
-  #calGrid{grid-auto-rows:32px!important}
-  #calGrid > div{aspect-ratio:unset!important;height:32px!important;min-height:unset!important;max-height:32px!important;overflow:hidden}
+  #calGrid{grid-auto-rows:36px!important}
+  #calGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important;max-height:36px!important;overflow:hidden}
   /* ── Calendário vencimentos ── */
   #vcalGrid{grid-auto-rows:36px!important}
   #vcalGrid > div{aspect-ratio:unset!important;height:36px!important;min-height:unset!important;max-height:36px!important;overflow:hidden}
@@ -4850,9 +4862,23 @@ function toggleCal(e){
   e.stopPropagation();
   const pop = document.getElementById('calPop');
   const isOpen = pop.style.display !== 'none';
-  if(isOpen){ pop.style.display='none'; return; }
+  if(isOpen){ pop.style.display='none'; _calRemoveBackdrop(); return; }
   buildCalendario();
   pop.style.display='block';
+  // Mobile: adiciona backdrop escuro para clarificar que é um popup
+  if(window.innerWidth<=768) _calAddBackdrop();
+}
+function _calAddBackdrop(){
+  if(document.getElementById('calBackdrop')) return;
+  const bd=document.createElement('div');
+  bd.id='calBackdrop';
+  bd.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);backdrop-filter:blur(2px);z-index:499';
+  bd.onclick=()=>{document.getElementById('calPop').style.display='none';_calRemoveBackdrop();};
+  document.body.appendChild(bd);
+}
+function _calRemoveBackdrop(){
+  const bd=document.getElementById('calBackdrop');
+  if(bd) bd.remove();
 }
 
 // Fecha ao clicar fora
@@ -4861,6 +4887,7 @@ document.addEventListener('click', e=>{
   if(wrap && !wrap.contains(e.target)){
     const pop = document.getElementById('calPop');
     if(pop) pop.style.display='none';
+    _calRemoveBackdrop();
   }
 });
 
@@ -4927,6 +4954,7 @@ function selecionarDia(diaStr){
   document.getElementById('calBtn').style.borderColor = 'var(--azul)';
   document.getElementById('calBtnIco').textContent = '📅';
   document.getElementById('calPop').style.display='none';
+  _calRemoveBackdrop();
   filterTx();
 }
 
@@ -4937,6 +4965,7 @@ function limparCalendario(){
   const btn = document.getElementById('calBtn');
   btn.style.background=''; btn.style.color=''; btn.style.borderColor='';
   document.getElementById('calPop').style.display='none';
+  _calRemoveBackdrop();
   filterTx();
 }
 
@@ -9450,24 +9479,27 @@ function renderVencimentos(){
   const items = [];
 
   // Fixas a pagar
-  FIXAS.filter(f=>f.status!=='Pago').forEach(f=>{
+  (FIXAS||[]).filter(f=>f && f.status!=='Pago').forEach(f=>{
     const dia = parseInt(f.venc||f.dia||0);
-    if(!dia) return;
+    if(!dia || dia<1 || dia>31) return;
     let venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
     if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, dia);
     const diff = Math.round((venc-hoje)/(1000*60*60*24));
     items.push({tipo:'fixa', nome:f.desc||f.nome||'—', valor:parseFloat(f.valor||0), venc, diff, emoji:'📌'});
   });
 
-  // Cartões
-  CARTOES.forEach(c=>{
+  // Cartões — usa lookup com .trim() para casar a chave do gastosPorCartao
+  const rawG = MES_DATA.gastosPorCartao||{};
+  const gastosTrim = {};
+  Object.keys(rawG).forEach(k=>{ gastosTrim[(k||'').trim()] = rawG[k]; });
+  (CARTOES||[]).forEach(c=>{
+    if(!c||!c.nome) return;
     const diaV = parseInt(c.venc||0);
-    if(!diaV) return;
+    if(!diaV || diaV<1 || diaV>31) return;
     let venc = new Date(hoje.getFullYear(), hoje.getMonth(), diaV);
     if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, diaV);
     const diff = Math.round((venc-hoje)/(1000*60*60*24));
-    const rawG = MES_DATA.gastosPorCartao||{};
-    const fat = rawG[c.nome]||0;
+    const fat = gastosTrim[c.nome.trim()]||0;
     if(fat>0) items.push({tipo:'cartao', nome:`Fatura ${c.nome}`, valor:fat, venc, diff, emoji:'💳'});
   });
 
