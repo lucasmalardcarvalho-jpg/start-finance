@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.3 (consórcio: investimento integrado a despesa fixa)
-const CACHE = 'pf-v2.3';
+// PenseFinances — Service Worker v2.4 (detalhe customizado por tipo de ativo)
+const CACHE = 'pf-v2.4';
 const STATIC = [
   '/',
   '/dashboard',
