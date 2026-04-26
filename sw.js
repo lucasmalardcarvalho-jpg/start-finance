@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v1.9 (lançamento em ano passado: fix mes_ano dropdown)
-const CACHE = 'pf-v1.9';
+// PenseFinances — Service Worker v2.0 (investimentos: cotações automáticas via Brapi)
+const CACHE = 'pf-v2.0';
 const STATIC = [
   '/',
   '/dashboard',

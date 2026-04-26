@@ -43,7 +43,7 @@ def add_security_headers(r):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
         "img-src 'self' data: https:; "
-        "connect-src 'self' https:;"
+        "connect-src 'self' https://brapi.dev https:;"
     )
     return r
 
@@ -77,6 +77,130 @@ def gerar_narrativa(entradas, saidas, saldo, n, top_cats, mes):
 
 # ── Auth routes ──────────────────────────────────────────────────────
 registrar_rotas_auth(app)
+
+
+# ════════════════════════════════════════════════════════════════════
+# COTAÇÕES — Proxy para Brapi.dev (B3, FIIs, ETFs, BDRs, Cripto)
+# ════════════════════════════════════════════════════════════════════
+# Cache em memória: {ticker_upper: (timestamp, dict)}
+_COTACAO_CACHE = {}
+_COTACAO_TTL_OK = 300        # 5 min para sucesso
+_COTACAO_TTL_FAIL = 60       # 1 min para falha (evita martelar a API)
+_COTACAO_LOCK = threading.Lock()
+
+
+def _normalizar_quote(q, fallback_symbol=""):
+    """Extrai os campos relevantes do formato Brapi para um shape canônico."""
+    sym = (q.get("symbol") or fallback_symbol or "").upper()
+    price = q.get("regularMarketPrice") or q.get("regularMarketPreviousClose") or 0
+    prev = q.get("regularMarketPreviousClose") or 0
+    change = q.get("regularMarketChange")
+    change_pct = q.get("regularMarketChangePercent")
+    # Calcula change/change_pct manualmente se não vierem
+    if change is None and prev:
+        change = price - prev
+    if change_pct is None and prev:
+        change_pct = ((price - prev) / prev * 100) if prev else 0
+    return {
+        "symbol": sym,
+        "price": float(price or 0),
+        "previousClose": float(prev or 0),
+        "change": float(change or 0),
+        "changePercent": float(change_pct or 0),
+        "high": float(q.get("regularMarketDayHigh") or 0),
+        "low": float(q.get("regularMarketDayLow") or 0),
+        "volume": int(q.get("regularMarketVolume") or 0),
+        "currency": q.get("currency") or "BRL",
+        "longName": q.get("longName") or q.get("shortName") or sym,
+        "logo": q.get("logourl") or "",
+        "updatedAt": int(time.time()),
+    }
+
+
+def _fetch_cotacoes(tickers):
+    """Busca cotações via Brapi (com cache). Retorna dict {ticker: data}."""
+    if not tickers:
+        return {}
+    now = time.time()
+    result = {}
+    a_buscar = []
+
+    with _COTACAO_LOCK:
+        for t in tickers:
+            t_norm = (t or "").upper().strip()
+            if not t_norm:
+                continue
+            cached = _COTACAO_CACHE.get(t_norm)
+            if cached:
+                ts, data = cached
+                ttl = _COTACAO_TTL_OK if data else _COTACAO_TTL_FAIL
+                if (now - ts) < ttl:
+                    if data:
+                        result[t_norm] = data
+                    continue
+            a_buscar.append(t_norm)
+
+    if not a_buscar:
+        return result
+
+    token = os.environ.get("BRAPI_TOKEN", "").strip()
+    # Brapi aceita até ~10 tickers por chamada na URL — vai em chunks pra ser seguro
+    for i in range(0, len(a_buscar), 10):
+        chunk = a_buscar[i:i + 10]
+        try:
+            url = f"https://brapi.dev/api/quote/{','.join(chunk)}"
+            params = {"token": token} if token else {}
+            r = httpx.get(url, params=params, timeout=8.0,
+                          headers={"User-Agent": "PenseFinances/1.0"})
+            if r.status_code == 200:
+                data = r.json()
+                results_list = data.get("results", []) or []
+                returned_syms = set()
+                for q in results_list:
+                    parsed = _normalizar_quote(q)
+                    if parsed["symbol"]:
+                        returned_syms.add(parsed["symbol"])
+                        result[parsed["symbol"]] = parsed
+                        with _COTACAO_LOCK:
+                            _COTACAO_CACHE[parsed["symbol"]] = (now, parsed)
+                # Tickers que não vieram → marca como falha temporária
+                for sym in chunk:
+                    if sym not in returned_syms:
+                        with _COTACAO_LOCK:
+                            _COTACAO_CACHE[sym] = (now, None)
+            else:
+                logger.warning(f"Brapi {r.status_code} para {chunk}")
+                for sym in chunk:
+                    with _COTACAO_LOCK:
+                        _COTACAO_CACHE[sym] = (now, None)
+        except Exception as e:
+            logger.warning(f"Erro ao buscar cotações {chunk}: {e}")
+            for sym in chunk:
+                with _COTACAO_LOCK:
+                    _COTACAO_CACHE[sym] = (now, None)
+
+    return result
+
+
+@app.route("/api/cotacao")
+def api_cotacao():
+    """
+    GET /api/cotacao?tickers=PETR4,VALE3,BTC-USD
+    Retorna cotações com cache (5 min). Aceita tickers separados por vírgula.
+    """
+    tickers_str = request.args.get("tickers", "")
+    tickers = [t.strip() for t in tickers_str.split(",") if t.strip()]
+    if not tickers:
+        return jsonify({"erro": "Informe ?tickers=SYMBOL1,SYMBOL2"}), 400
+    if len(tickers) > 30:
+        return jsonify({"erro": "Máximo 30 tickers por chamada"}), 400
+    cot = _fetch_cotacoes(tickers)
+    naoencontrados = [t for t in tickers if t.upper() not in cot]
+    return jsonify({
+        "cotacoes": cot,
+        "naoEncontrados": naoencontrados,
+        "updatedAt": int(time.time()),
+    })
 
 
 # ── Static assets ───────────────────────────────────────────────────

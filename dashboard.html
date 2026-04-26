@@ -1481,7 +1481,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     </select></div></div>
     <div class="fr"><div class="fg"><label class="fl">Subtipo / Produto</label><select class="fs" id="ivSubtipo">
       <option value="">— Selecione —</option>
-    </select></div><div class="fg"><label class="fl">Ticker / Código</label><input class="fi" id="ivTicker" placeholder="Ex: PETR4, MXRF11, BTC..." style="text-transform:uppercase"></div></div>
+    </select></div><div class="fg"><label class="fl">Ticker / Código</label><input class="fi" id="ivTicker" placeholder="Ex: PETR4, MXRF11, BTC-USD..." style="text-transform:uppercase" oninput="onIvTickerChange()"></div></div>
     <div class="fr"><div class="fg"><label class="fl">Corretora / Banco</label><input class="fi" id="ivCorretora" placeholder="Ex: XP, NuInvest, Rico, BTG..."></div><div class="fg"><label class="fl">Objetivo</label><select class="fs" id="ivObjetivo">
       <option value="">— Selecione —</option>
       <option>Reserva de emergência</option>
@@ -1494,10 +1494,24 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <option>Longo prazo</option>
       <option>Especulação</option>
     </select></div></div>
+    <!-- Quantidade (ativa cotação automática se preenchida com ticker) -->
+    <div class="fr" id="ivQtdRow" style="display:none">
+      <div class="fg" style="flex:1">
+        <label class="fl">Quantidade <span style="font-size:10px;color:var(--azul);font-weight:700">⚡ Ativa cotação automática</span></label>
+        <input type="number" class="fi" id="ivQtd" step="0.0001" min="0" placeholder="Ex: 100 (ações), 0.5 (BTC)" oninput="onIvQtdChange()">
+      </div>
+      <div class="fg" style="flex:1">
+        <label class="fl">Cotação atual</label>
+        <div style="display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);min-height:38px">
+          <span id="ivCotacaoVal" style="font-weight:800;font-size:14px;color:var(--txt)">—</span>
+          <span id="ivCotacaoDelta" style="font-size:11px;font-weight:700;margin-left:auto"></span>
+        </div>
+      </div>
+    </div>
     <!-- Valores -->
     <div class="fr three">
       <div class="fg"><label class="fl">Valor Investido (R$)</label><input type="text" class="fi valor-input" id="ivValor" inputmode="decimal" placeholder="0,00" oninput="ivCalcRent()"></div>
-      <div class="fg"><label class="fl">Valor Atual (R$)</label><input type="text" class="fi valor-input" id="ivAtual" inputmode="decimal" placeholder="0,00" oninput="ivCalcRent()"></div>
+      <div class="fg"><label class="fl">Valor Atual (R$) <span id="ivAtualHint" style="display:none;font-size:10px;color:var(--azul);font-weight:700">⚡ Auto</span></label><input type="text" class="fi valor-input" id="ivAtual" inputmode="decimal" placeholder="0,00" oninput="ivCalcRent()"></div>
       <div class="fg"><label class="fl">Rentabilidade %</label><input type="number" class="fi" id="ivRent" step="0.01" placeholder="0,00" style="color:var(--verde)" readonly></div>
     </div>
     <!-- Avançado toggle -->
@@ -2108,8 +2122,9 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
 
 <!-- ═══ INVESTIMENTOS ═══ -->
 <div class="page" id="page-investimentos">
-  <div class="ph"><div><h1>📈 Investimentos</h1><p>Sua carteira completa — do iniciante ao avançado</p></div>
+  <div class="ph"><div><h1>📈 Investimentos</h1><p>Sua carteira completa — do iniciante ao avançado <span id="ivLastUpdate" style="font-size:11px;color:var(--muted);margin-left:8px"></span></p></div>
   <div class="pa" style="display:flex;gap:8px">
+    <button class="btn bs btn-sm" id="invRefreshBtn" onclick="atualizarCotacoesInv(true)" title="Atualizar cotações da B3">🔄 Cotações</button>
     <button class="btn bs btn-sm" id="invViewBtn" onclick="invToggleView()" title="Alternar visualização">⊞ Cards</button>
     <button class="btn bp" onclick="openIv()">+ Novo</button>
   </div></div>
@@ -2934,7 +2949,7 @@ function mudaMes(dir){
   // Re-renderiza página atual se for diferente de dashboard
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },familia:renderFamilia};
     if(fns[curPage])fns[curPage]();
   }
 }
@@ -2948,7 +2963,7 @@ function voltaHoje(){
   // Também re-renderiza a aba ativa (igual ao mudaMes)
   const curPage=document.querySelector('.page.active')?.id?.replace('page-','');
   if(curPage&&curPage!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },familia:renderFamilia};
     if(fns[curPage]) fns[curPage]();
   }
 }
@@ -3067,7 +3082,7 @@ async function reload(manual=false){
   renderDash();
   const cur=document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur&&cur!=='dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },familia:renderFamilia};
     if(fns[cur])fns[cur]();
   }
   if(manual)toast('✅ Atualizado!','success');
@@ -3252,7 +3267,7 @@ async function pullDataFromServer(){
     renderDash();
     const cur = document.querySelector('.page.active')?.id?.replace('page-','');
     if(cur && cur !== 'dashboard'){
-      const fns={transacoes:()=>{renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia,categorias:renderCats,planejamento:renderRel};
+      const fns={transacoes:()=>{renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },relatorios:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },familia:renderFamilia,categorias:renderCats,planejamento:renderRel};
       if(fns[cur]) fns[cur]();
     }
   }catch(e){}
@@ -3283,7 +3298,7 @@ function go(page, _skipHistory=false){
   }
 
   if(page === 'limites') setTimeout(()=>switchCatTab('lims'),50);
-  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
+  const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },categorias:()=>{renderCats();},limites:()=>{switchCatTab('lims');},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },vencimentos:()=>{VCAL_DATE=new Date();renderVencimentosCal();},familia:renderFamilia};
   if(fns[page])fns[page]();
   // Empurra estado para histórico do browser (habilita botão back do Android)
   if(!_skipHistory) try{ history.pushState({page:targetPage}, '', '#'+targetPage); }catch{}
@@ -6325,10 +6340,81 @@ function ivTipoChange(){
   const subs = IV_SUBTIPOS[tipo] || ['Outro'];
   const sel = document.getElementById('ivSubtipo');
   sel.innerHTML = '<option value="">— Selecione —</option>' + subs.map(s=>`<option>${s}</option>`).join('');
-  // Mostrar/ocultar ticker
-  const tickerFg = document.getElementById('ivTicker').closest('.fg');
+  // Mostrar/ocultar ticker + quantidade (cotação automática só para ativos negociáveis)
   const showTicker = ['Ações','FIIs','Cripto','Internacional'].includes(tipo);
+  const tickerFg = document.getElementById('ivTicker').closest('.fg');
   if(tickerFg) tickerFg.style.display = showTicker ? '' : 'none';
+  const qtdRow = document.getElementById('ivQtdRow');
+  if(qtdRow) qtdRow.style.display = showTicker ? '' : 'none';
+}
+
+// ── Busca cotação no servidor (cache 5 min via /api/cotacao) ──
+async function ivBuscarCotacao(ticker){
+  if(!ticker) return null;
+  const t = ticker.toUpperCase().trim();
+  if(!t) return null;
+  try{
+    const r = await fetch(`/api/cotacao?tickers=${encodeURIComponent(t)}`);
+    if(!r.ok) return null;
+    const data = await r.json();
+    return (data.cotacoes && data.cotacoes[t]) || null;
+  }catch(e){ return null; }
+}
+
+// Quando o usuário digita o ticker no modal (com debounce), busca a cotação
+let _ivTickerDebounce = null;
+async function onIvTickerChange(){
+  const ticker = (document.getElementById('ivTicker').value||'').toUpperCase().trim();
+  document.getElementById('ivTicker').value = ticker; // força uppercase
+  clearTimeout(_ivTickerDebounce);
+  if(!ticker || ticker.length<3){
+    _setIvCotacaoUI(null);
+    return;
+  }
+  _ivTickerDebounce = setTimeout(async ()=>{
+    _setIvCotacaoUI({loading:true});
+    const q = await ivBuscarCotacao(ticker);
+    _setIvCotacaoUI(q);
+    // Se quantidade > 0, calcula valor atual automaticamente
+    if(q){
+      const qtd = parseFloat(document.getElementById('ivQtd').value)||0;
+      if(qtd>0){
+        document.getElementById('ivAtual').value = (qtd*q.price).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+        document.getElementById('ivAtualHint').style.display = '';
+        ivCalcRent();
+      }
+    }
+  }, 600);
+}
+
+// Quando muda quantidade, recalcula valor atual usando última cotação
+async function onIvQtdChange(){
+  const qtd = parseFloat(document.getElementById('ivQtd').value)||0;
+  const ticker = (document.getElementById('ivTicker').value||'').toUpperCase().trim();
+  if(qtd>0 && ticker.length>=3){
+    const q = await ivBuscarCotacao(ticker);
+    if(q){
+      document.getElementById('ivAtual').value = (qtd*q.price).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      document.getElementById('ivAtualHint').style.display = '';
+      ivCalcRent();
+    }
+  } else {
+    document.getElementById('ivAtualHint').style.display = 'none';
+  }
+}
+
+// Atualiza UI da cotação (preço atual + variação) no modal
+function _setIvCotacaoUI(q){
+  const valEl = document.getElementById('ivCotacaoVal');
+  const dEl   = document.getElementById('ivCotacaoDelta');
+  if(!valEl || !dEl) return;
+  if(!q){ valEl.textContent = '—'; dEl.textContent = ''; return; }
+  if(q.loading){ valEl.textContent = '⏳ buscando...'; dEl.textContent=''; return; }
+  const cur = q.currency==='USD'?'US$ ':'R$ ';
+  valEl.textContent = cur + q.price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const up = q.changePercent>=0;
+  dEl.textContent = (up?'↑ ':'↓ ') + Math.abs(q.changePercent).toFixed(2) + '%';
+  dEl.style.color = up?'var(--verde)':'var(--verm)';
 }
 
 function ivCalcRent(){
@@ -6369,8 +6455,11 @@ function openIv(i=-1){
     document.getElementById('ivTicker').value=v.ticker||'';
     document.getElementById('ivCorretora').value=v.corretora||'';
     document.getElementById('ivObjetivo').value=v.objetivo||'';
+    document.getElementById('ivQtd').value=v.qtd||'';
     document.getElementById('ivValor').value=brl(v.valor);
     document.getElementById('ivAtual').value=brl(v.atual||v.valor);
+    // Se já tem ticker, dispara busca de cotação para preencher visual
+    if(v.ticker) setTimeout(()=>onIvTickerChange(), 100);
     document.getElementById('ivRent').value=v.rent||0;
     document.getElementById('ivDataEntrada').value=v.dataEntrada||'';
     document.getElementById('ivDataVenc').value=v.dataVenc||'';
@@ -6385,11 +6474,13 @@ function openIv(i=-1){
     }
     document.getElementById('ivTitle').textContent='✏️ Editar Investimento';
   } else {
-    ['ivNome','ivTicker','ivCorretora','ivNotas'].forEach(id=>document.getElementById(id).value='');
+    ['ivNome','ivTicker','ivCorretora','ivNotas','ivQtd'].forEach(id=>document.getElementById(id).value='');
     ['ivSubtipo','ivObjetivo','ivIndexador','ivLiquidez','ivRisco'].forEach(id=>document.getElementById(id).value='');
     ['ivValor','ivAtual','ivDataEntrada','ivDataVenc'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ivRent').value='';
     document.getElementById('ivTitle').textContent='Novo Investimento';
+    _setIvCotacaoUI(null);
+    document.getElementById('ivAtualHint').style.display='none';
   }
   OM('ovIv');
 }
@@ -6404,6 +6495,7 @@ function saveIv(){
     tipo:document.getElementById('ivTipo').value,
     subtipo:document.getElementById('ivSubtipo').value||'',
     ticker:document.getElementById('ivTicker').value.toUpperCase()||'',
+    qtd:parseFloat(document.getElementById('ivQtd').value)||0,
     corretora:document.getElementById('ivCorretora').value||'',
     objetivo:document.getElementById('ivObjetivo').value||'',
     valor:valInv, atual:valAt, rent,
@@ -6423,6 +6515,82 @@ function delIv(i){
   showConfirm(`Remover <strong>${esc(INVESTIMENTOS[i]?.nome)}</strong> da carteira?`,()=>{
     INVESTIMENTOS.splice(i,1); salvarInv(); renderInv(); toast('🗑️ Removido','info');
   },'🗑️','🗑️ Remover','bd');
+}
+
+// ════════════════════════════════════════════════
+// COTAÇÕES — Auto-update da carteira via Brapi
+// ════════════════════════════════════════════════
+let COTACOES_CACHE = {};   // {ticker: {price, changePercent, ...}}
+let _ultimaAtuCotacao = 0; // timestamp ms
+let _atualizandoCotacoes = false;
+
+async function atualizarCotacoesInv(forcar=false){
+  if(_atualizandoCotacoes) return;
+  // Coleta tickers únicos com quantidade > 0 (precisa dos dois pra ser auto-atualizável)
+  const tickers = [...new Set(
+    (INVESTIMENTOS||[])
+      .filter(v=>v && v.ticker && parseFloat(v.qtd||0)>0)
+      .map(v=>v.ticker.toUpperCase().trim())
+  )];
+  if(!tickers.length){
+    _setLastUpdateLabel(null);
+    return;
+  }
+  // Cache local de 5 minutos — só refaz se forcar=true ou TTL expirado
+  if(!forcar && _ultimaAtuCotacao && (Date.now()-_ultimaAtuCotacao) < 5*60*1000){
+    return;
+  }
+  _atualizandoCotacoes = true;
+  const btn = document.getElementById('invRefreshBtn');
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ Atualizando...'; }
+  try{
+    const r = await fetch(`/api/cotacao?tickers=${encodeURIComponent(tickers.join(','))}`);
+    if(r.ok){
+      const data = await r.json();
+      COTACOES_CACHE = {...COTACOES_CACHE, ...(data.cotacoes||{})};
+      _ultimaAtuCotacao = Date.now();
+      // Atualiza valor 'atual' de cada investimento que tem qtd + ticker
+      let atualizou = 0;
+      (INVESTIMENTOS||[]).forEach(v=>{
+        if(!v || !v.ticker) return;
+        const q = COTACOES_CACHE[v.ticker.toUpperCase().trim()];
+        const qtd = parseFloat(v.qtd||0);
+        if(q && qtd>0){
+          v.atual = qtd * q.price;
+          v.rent  = v.valor>0 ? ((v.atual - v.valor)/v.valor*100) : 0;
+          v._cotacao = q; // anexa quote pra UI mostrar variação
+          atualizou++;
+        }
+      });
+      if(atualizou>0){
+        salvarInv();
+        renderInv();
+        renderDash();
+        const naoEnc = (data.naoEncontrados||[]).length;
+        if(forcar) toast(`✅ ${atualizou} cotação(ões) atualizada(s)${naoEnc?` · ${naoEnc} não encontrada(s)`:''}`,'success');
+      } else if(forcar){
+        toast('Nenhuma cotação retornada — verifique os tickers','warning');
+      }
+      _setLastUpdateLabel(_ultimaAtuCotacao);
+    } else if(forcar){
+      toast('Erro ao buscar cotações','error');
+    }
+  }catch(e){
+    if(forcar) toast('Falha de rede ao buscar cotações','error');
+  }finally{
+    _atualizandoCotacoes = false;
+    if(btn){ btn.disabled = false; btn.textContent = '🔄 Cotações'; }
+  }
+}
+
+function _setLastUpdateLabel(ts){
+  const el = document.getElementById('ivLastUpdate');
+  if(!el) return;
+  if(!ts){ el.textContent = ''; return; }
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2,'0');
+  const mm = String(d.getMinutes()).padStart(2,'0');
+  el.textContent = `· cotações ${hh}:${mm}`;
 }
 
 function renderInv(){
@@ -6542,16 +6710,22 @@ function renderInv(){
       const diff=(v.atual||v.valor)-v.valor; const pct=v.valor>0?diff/v.valor*100:0;
       const cor=TIPO_CORES2[v.tipo]||'#9CA3AF';
       const riscoClass=v.risco?`inv-risco-${v.risco.toLowerCase().replace(' ','').replace('ú','u').replace('é','e').replace('í','i')}`:null;
+      // Variação do dia (cotação atual vs fechamento anterior) — só pra ativos com cotação automática
+      const cot = v._cotacao || (v.ticker ? COTACOES_CACHE[v.ticker.toUpperCase().trim()] : null);
+      const dayPct = cot ? cot.changePercent : null;
+      const liveBadge = cot ? `<span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:100px;background:${dayPct>=0?'rgba(16,185,129,.15)':'rgba(239,68,68,.15)'};color:${dayPct>=0?'var(--verde)':'var(--verm)'};margin-left:6px" title="Variação do dia">⚡ ${dayPct>=0?'+':''}${dayPct.toFixed(2)}%</span>` : '';
+      const qtdInfo = (v.qtd && parseFloat(v.qtd)>0 && cot) ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">${parseFloat(v.qtd)} × ${(cot.currency==='USD'?'US$ ':'R$ ')}${cot.price.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>` : '';
       return `<div class="inv-card2">
         <div class="inv-stripe" style="background:${cor}"></div>
         <div style="padding-left:8px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-            <span class="inv-tipo-badge" style="background:${cor}20;color:${cor}">${esc(v.tipo)}</span>
+            <span class="inv-tipo-badge" style="background:${cor}20;color:${cor}">${esc(v.tipo)}${liveBadge}</span>
             ${v.risco&&riscoClass?`<span class="${riscoClass}" style="font-size:9px;font-weight:700;padding:1px 5px;border-radius:100px">${esc(v.risco)}</span>`:''}
           </div>
           <div class="inv-nome">${esc(v.nome)}</div>
           <div class="inv-ticker">${v.ticker?esc(v.ticker)+' · ':''} ${esc(v.subtipo||v.tipo)}${v.corretora?' · '+esc(v.corretora):''}</div>
           <div class="inv-val">${fmt(v.atual||v.valor)}</div>
+          ${qtdInfo}
           <div class="inv-rend" style="color:${pct>=0?'var(--verde)':'var(--verm)'}">
             ${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}% &nbsp;·&nbsp; ${diff>=0?'+':''}${fmt(diff)}
           </div>
@@ -10009,7 +10183,7 @@ function autoRefresh(){
   // Re-renderiza a aba ativa se não for dashboard
   const cur = document.querySelector('.page.active')?.id?.replace('page-','');
   if(cur && cur !== 'dashboard'){
-    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:renderInv,familia:renderFamilia};
+    const fns={transacoes:()=>{FAM_MEMBRO_FILTRO=null;renderTxPage();},cartoes:()=>{ renderCartoes(); if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao(); },vencimentos:()=>{renderVencimentosCal();},categorias:()=>{renderCats();},limites:()=>{renderCats();},relatorios:renderRel,planejamento:renderRel,fixas:renderFixas,dividas:renderDividas,metas:renderMetas,investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },familia:renderFamilia};
     if(fns[cur]) fns[cur]();
   }
 }
@@ -11353,7 +11527,7 @@ function _mpPick(monthIdx, year){
       fixas:renderFixas,
       dividas:renderDividas,
       metas:renderMetas,
-      investimentos:renderInv,
+      investimentos:()=>{ renderInv(); atualizarCotacoesInv(false); },
       familia:renderFamilia
     };
     if(fns[curPage]) fns[curPage]();
