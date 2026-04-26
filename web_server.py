@@ -270,6 +270,85 @@ def api_cotacao_historico(ticker):
         return jsonify({"erro": str(e), "type": type(e).__name__}), 500
 
 
+# Cache de dividendos (TTL 6h — dados não mudam intraday)
+_DIV_CACHE = {}
+_DIV_TTL = 6 * 3600
+
+
+@app.route("/api/cotacao/dividendos/<ticker>")
+def api_cotacao_dividendos(ticker):
+    """
+    GET /api/cotacao/dividendos/MXRF11
+    Retorna histórico de dividendos do ativo via brapi (param dividends=true).
+    Estrutura: {ticker, dividends:[{date, value, type}], totalLast12m, yieldEstimado}
+    """
+    ticker_u = (ticker or "").upper().strip()
+    if not ticker_u:
+        return jsonify({"erro": "ticker vazio"}), 400
+    now = time.time()
+    cached = _DIV_CACHE.get(ticker_u)
+    if cached and (now - cached[0]) < _DIV_TTL:
+        return jsonify(cached[1])
+    token = os.environ.get("BRAPI_TOKEN", "").strip()
+    url = f"https://brapi.dev/api/quote/{ticker_u}"
+    params = {"dividends": "true"}
+    if token:
+        params["token"] = token
+    try:
+        r = httpx.get(url, params=params, timeout=10.0,
+                      headers={"User-Agent": "PenseFinances/1.0"})
+        if r.status_code != 200:
+            return jsonify({"erro": f"brapi {r.status_code}", "preview": r.text[:200]}), r.status_code
+        data = r.json()
+        results = data.get("results", []) or []
+        if not results:
+            return jsonify({"erro": "ticker não encontrado"}), 404
+        item = results[0]
+        # Brapi retorna em "dividendsData" (variantes possíveis: cashDividends/stockDividends)
+        divs_data = item.get("dividendsData") or {}
+        cash = divs_data.get("cashDividends") or []
+        stock = divs_data.get("stockDividends") or []
+        all_divs = []
+        for d in cash:
+            all_divs.append({
+                "date": d.get("paymentDate") or d.get("approvedOn") or d.get("lastDatePrior"),
+                "value": float(d.get("rate") or 0),
+                "type": d.get("label") or "Dividendo",
+                "categoria": "cash",
+            })
+        for d in stock:
+            all_divs.append({
+                "date": d.get("paymentDate") or d.get("approvedOn"),
+                "value": float(d.get("factor") or 0),
+                "type": d.get("label") or "Bonificação",
+                "categoria": "stock",
+            })
+        # Ordena por data desc
+        all_divs.sort(key=lambda x: (x.get("date") or ""), reverse=True)
+        # Total dos últimos 12 meses (cash apenas, em valor monetário)
+        from datetime import datetime as _dt, timedelta as _td
+        cutoff = (_dt.utcnow() - _td(days=365)).strftime("%Y-%m-%d")
+        total_12m = sum(d["value"] for d in all_divs
+                        if d["categoria"] == "cash" and (d.get("date") or "") >= cutoff)
+        current_price = float(item.get("regularMarketPrice") or 0)
+        yield_estimado = (total_12m / current_price * 100) if current_price > 0 else 0
+        payload = {
+            "ticker": ticker_u,
+            "name": item.get("longName") or item.get("shortName") or ticker_u,
+            "currentPrice": current_price,
+            "currency": item.get("currency") or "BRL",
+            "dividends": all_divs[:50],  # limita pra resposta enxuta
+            "totalLast12m": round(total_12m, 4),
+            "dividendYield": round(yield_estimado, 2),  # em %
+            "totalCount": len(all_divs),
+            "updatedAt": int(now),
+        }
+        _DIV_CACHE[ticker_u] = (now, payload)
+        return jsonify(payload)
+    except Exception as e:
+        return jsonify({"erro": str(e), "type": type(e).__name__}), 500
+
+
 @app.route("/api/cotacao")
 def api_cotacao():
     """

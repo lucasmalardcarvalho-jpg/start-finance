@@ -340,6 +340,9 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 .inv-card2 .inv-ticker{font-size:11px;color:var(--muted);font-weight:600;margin-bottom:10px}
 .inv-card2 .inv-val{font-size:20px;font-weight:900;color:var(--txt)}
 .inv-card2 .inv-rend{font-size:12px;font-weight:700;margin-top:3px}
+.inv-spark{margin-top:10px;height:36px;width:100%;display:block;opacity:.92}
+.inv-spark.loading{height:36px;background:linear-gradient(90deg,var(--border) 0%,var(--bg) 50%,var(--border) 100%);background-size:200% 100%;border-radius:6px;animation:sparkShimmer 1.4s infinite}
+@keyframes sparkShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .inv-risco-baixo{background:var(--verde-l);color:var(--verde-d)}
 .inv-risco-medio{background:var(--amar-l);color:#92400e}
 .inv-risco-alto{background:var(--verm-l);color:var(--verm)}
@@ -1521,6 +1524,15 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
       <div id="ivdPosicao" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
     </div>
 
+    <!-- Dividendos -->
+    <div style="padding:14px 22px;border-top:1px solid var(--border);background:linear-gradient(180deg,var(--bg),transparent)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em">💰 Dividendos & Proventos</div>
+        <div id="ivdDivYield" style="font-size:11px;font-weight:800;color:var(--verde)"></div>
+      </div>
+      <div id="ivdDividendos" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto"></div>
+    </div>
+
     <!-- Aportes -->
     <div style="padding:14px 22px;border-top:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -2208,6 +2220,27 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div class="kpi g" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">📈</div></div><div class="kpi-v" id="ivTotAt">R$ 0,00</div><div class="kpi-l">Patrimônio atual</div></div>
     <div class="kpi" id="ivKpiRend" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💰</div></div><div class="kpi-v" id="ivRendR">R$ 0,00</div><div class="kpi-l">Rendimento (R$)</div></div>
     <div class="kpi" id="ivKpiPct" style="cursor:default"><div class="kpi-top"><div class="kpi-ic">💹</div></div><div class="kpi-v" id="ivRentTot">0,00%</div><div class="kpi-l">Rentabilidade total</div></div>
+  </div>
+
+  <!-- Benchmark vs IBOV (12 meses) -->
+  <div class="card mb" id="invBenchmark" style="padding:14px 18px;display:none">
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em;min-width:130px">📊 Vs IBOV (12 meses)</div>
+      <div style="flex:1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;align-items:center">
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">Sua carteira</div>
+          <div id="invBenchUser" style="font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">IBOV</div>
+          <div id="invBenchIbov" style="font-size:18px;font-weight:900;color:var(--muted2);font-family:'JetBrains Mono',monospace">—</div>
+        </div>
+        <div>
+          <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase">Diferença</div>
+          <div id="invBenchDelta" style="font-size:18px;font-weight:900;font-family:'JetBrains Mono',monospace">—</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Visão geral: Donut + Alocação + Destaques -->
@@ -6594,8 +6627,105 @@ function delIv(i){
 // COTAÇÕES — Auto-update da carteira via Brapi
 // ════════════════════════════════════════════════
 let COTACOES_CACHE = {};   // {ticker: {price, changePercent, ...}}
+let SPARKLINES_CACHE = {}; // {ticker: [closes...]}  últimos 30 dias
 let _ultimaAtuCotacao = 0; // timestamp ms
 let _atualizandoCotacoes = false;
+let _ultimaAtuSpark = 0;   // sparklines refresh menos frequente
+
+// Renderiza um SVG sparkline minimalista a partir de uma série de fechamentos
+function _sparkSvg(closes, opts){
+  if(!closes || closes.length<2) return '';
+  const W = (opts && opts.w) || 220;
+  const H = (opts && opts.h) || 36;
+  const PT = 3, PB = 3, PL = 0, PR = 0;
+  const cw = W - PL - PR;
+  const ch = H - PT - PB;
+  const minV = Math.min(...closes);
+  const maxV = Math.max(...closes);
+  const span = (maxV - minV) || 1;
+  const pts = closes.map((c,i)=>{
+    const x = PL + (i/(closes.length-1)) * cw;
+    const y = PT + ch - ((c - minV)/span * ch);
+    return [x, y];
+  });
+  const path = pts.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const areaPath = path + ` L ${pts[pts.length-1][0].toFixed(1)},${(PT+ch).toFixed(1)} L ${pts[0][0].toFixed(1)},${(PT+ch).toFixed(1)} Z`;
+  const upPeriod = closes[closes.length-1] >= closes[0];
+  const cor = upPeriod ? '#10b981' : '#ef4444';
+  const id = 'spk' + Math.floor(Math.random()*1e6);
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" class="inv-spark">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${cor}" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="${cor}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${areaPath}" fill="url(#${id})" stroke="none"/>
+    <path d="${path}" fill="none" stroke="${cor}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// Compara rentabilidade da carteira com IBOV nos últimos 12 meses
+let _ultimaAtuBench = 0;
+async function atualizarBenchmark(forcar=false){
+  if(!forcar && _ultimaAtuBench && (Date.now()-_ultimaAtuBench) < 60*60*1000) return;
+  if(!INVESTIMENTOS || !INVESTIMENTOS.length) return;
+  const benchEl = document.getElementById('invBenchmark');
+  if(!benchEl) return;
+  try{
+    const r = await fetch('/api/cotacao/historico/%5EBVSP?range=1y&interval=1mo'); // ^BVSP url-encoded
+    if(!r.ok) return;
+    const data = await r.json();
+    const hist = data.history || [];
+    if(hist.length<2) return;
+    const first = hist[0].close, last = hist[hist.length-1].close;
+    const ibovPct = first>0 ? ((last-first)/first*100) : 0;
+    // Rentabilidade da carteira (simplificada: rentabilidade total)
+    const totI = INVESTIMENTOS.reduce((s,v)=>s+(parseFloat(v.valor)||0),0);
+    const totA = INVESTIMENTOS.reduce((s,v)=>s+(parseFloat(v.atual||v.valor)||0),0);
+    const userPct = totI>0 ? ((totA-totI)/totI*100) : 0;
+    const delta = userPct - ibovPct;
+    const set = (id, txt, cor)=>{const el=document.getElementById(id);if(el){el.textContent=txt;if(cor)el.style.color=cor;}};
+    set('invBenchUser', (userPct>=0?'+':'')+userPct.toFixed(2)+'%', userPct>=0?'var(--verde)':'var(--verm)');
+    set('invBenchIbov', (ibovPct>=0?'+':'')+ibovPct.toFixed(2)+'%');
+    set('invBenchDelta', (delta>=0?'▲ +':'▼ ')+Math.abs(delta).toFixed(2)+'pp', delta>=0?'var(--verde)':'var(--verm)');
+    benchEl.style.display = '';
+    _ultimaAtuBench = Date.now();
+  }catch(e){ /* silently */ }
+}
+
+// Busca histórico de 1 mês para todos os tickers da carteira em paralelo
+async function atualizarSparklines(forcar=false){
+  const tickers = [...new Set(
+    (INVESTIMENTOS||[])
+      .filter(v=>v && v.ticker && parseFloat(v.qtd||0)>0)
+      .map(v=>v.ticker.toUpperCase().trim())
+  )];
+  if(!tickers.length) return;
+  // Cache 1h: histórico de 1mês não muda intraday
+  if(!forcar && _ultimaAtuSpark && (Date.now()-_ultimaAtuSpark) < 60*60*1000) return;
+  // Filtra só os que precisam
+  const a_buscar = tickers.filter(t=>!SPARKLINES_CACHE[t]);
+  if(!a_buscar.length){
+    _ultimaAtuSpark = Date.now();
+    return;
+  }
+  try{
+    const proms = a_buscar.map(t=>
+      fetch(`/api/cotacao/historico/${encodeURIComponent(t)}?range=1mo&interval=1d`)
+        .then(r=>r.ok ? r.json() : null)
+        .then(d=>{
+          if(d && Array.isArray(d.history) && d.history.length){
+            SPARKLINES_CACHE[t] = d.history.map(h=>h.close).filter(c=>c>0);
+          }
+        })
+        .catch(()=>{})
+    );
+    await Promise.all(proms);
+    _ultimaAtuSpark = Date.now();
+    // Re-render se a aba estiver visível
+    const cur = document.querySelector('.page.active')?.id?.replace('page-','');
+    if(cur === 'investimentos') renderInv();
+  }catch(e){ /* silently */ }
+}
 
 async function atualizarCotacoesInv(forcar=false){
   if(_atualizandoCotacoes) return;
@@ -6645,6 +6775,9 @@ async function atualizarCotacoesInv(forcar=false){
         toast('Nenhuma cotação retornada — verifique os tickers','warning');
       }
       _setLastUpdateLabel(_ultimaAtuCotacao);
+      // Dispara busca de sparklines + benchmark em background (não bloqueia)
+      atualizarSparklines(forcar);
+      atualizarBenchmark(forcar);
     } else if(forcar){
       toast('Erro ao buscar cotações','error');
     }
@@ -6802,6 +6935,9 @@ function renderInv(){
           <div class="inv-rend" style="color:${pct>=0?'var(--verde)':'var(--verm)'}">
             ${pct>=0?'▲':'▼'} ${Math.abs(pct).toFixed(2)}% &nbsp;·&nbsp; ${diff>=0?'+':''}${fmt(diff)}
           </div>
+          ${(v.ticker && SPARKLINES_CACHE[v.ticker.toUpperCase().trim()])
+            ? _sparkSvg(SPARKLINES_CACHE[v.ticker.toUpperCase().trim()])
+            : (v.ticker ? '<div class="inv-spark loading"></div>' : '')}
           ${v.objetivo?`<div style="font-size:10px;color:var(--muted);margin-top:4px">🎯 ${esc(v.objetivo)}</div>`:''}
           ${v.dataVenc?`<div style="font-size:10px;color:var(--muted)">📅 Vence: ${new Date(v.dataVenc).toLocaleDateString('pt-BR')}</div>`:''}
           <div style="display:flex;gap:5px;margin-top:10px">
@@ -6846,13 +6982,65 @@ function abrirDetalheInv(idx){
   document.querySelectorAll('.ivd-range').forEach(b=>{
     b.classList.toggle('active', b.dataset.r===IVD_RANGE);
   });
+  // Reset dividendos antes de carregar
+  document.getElementById('ivdDividendos').innerHTML =
+    v.ticker ? '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">⏳ Carregando dividendos...</div>'
+             : '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">Sem ticker — dividendos disponíveis para Ações/FIIs</div>';
+  document.getElementById('ivdDivYield').textContent = '';
   OM('ovIvDetail');
-  // Carrega histórico (se ticker)
+  // Carrega histórico + dividendos (se ticker)
   if(v.ticker){
     _ivdLoadHistorico();
+    _ivdLoadDividendos();
   } else {
     document.getElementById('ivdChart').innerHTML =
       `<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:12px;text-align:center;padding:20px">📊 Sem ticker — gráfico disponível apenas para ativos negociáveis (Ações, FIIs, Cripto)</div>`;
+  }
+}
+
+async function _ivdLoadDividendos(){
+  const v = INVESTIMENTOS[IVD_IDX];
+  if(!v || !v.ticker) return;
+  const el = document.getElementById('ivdDividendos');
+  const yEl = document.getElementById('ivdDivYield');
+  try{
+    const r = await fetch(`/api/cotacao/dividendos/${encodeURIComponent(v.ticker)}`);
+    if(!r.ok){
+      el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">Sem dados de dividendos para este ativo</div>';
+      return;
+    }
+    const data = await r.json();
+    if(data.erro){
+      el.innerHTML = `<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">${esc(data.erro)}</div>`;
+      return;
+    }
+    const divs = data.dividends || [];
+    if(!divs.length){
+      el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">📭 Nenhum dividendo registrado</div>';
+      return;
+    }
+    // Yield estimado + total 12m
+    const yieldP = data.dividendYield || 0;
+    const total12m = data.totalLast12m || 0;
+    const cur = data.currency==='USD' ? 'US$ ' : 'R$ ';
+    yEl.innerHTML = `${cur}${total12m.toFixed(2)} (12m) · DY <span style="color:${yieldP>=6?'var(--verde)':yieldP>=3?'var(--amar)':'var(--muted)'}">${yieldP.toFixed(2)}%</span>`;
+    // Posição do usuário → dividendos recebidos estimados (qtd × valor por cota)
+    const qtd = parseFloat(v.qtd||0);
+    el.innerHTML = divs.map(d=>{
+      const valTotal = qtd>0 && d.categoria==='cash' ? qtd * d.value : 0;
+      const dt = d.date ? new Date(d.date).toLocaleDateString('pt-BR') : '—';
+      const isCash = d.categoria === 'cash';
+      return `<div class="ivd-aporte-row">
+        <div class="ic ${isCash?'in':'out'}">${isCash?'💰':'🎁'}</div>
+        <div class="info">
+          <div class="nm">${esc(d.type||'Provento')}</div>
+          <div class="dt">${dt}${isCash?' · '+cur+d.value.toFixed(4)+'/cota':''}</div>
+        </div>
+        <div class="vl" style="color:var(--verde)">${qtd>0&&isCash?'+ '+cur+valTotal.toFixed(2):cur+(d.value||0).toFixed(4)}</div>
+      </div>`;
+    }).join('');
+  }catch(e){
+    el.innerHTML = '<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">⚠️ Erro ao carregar dividendos</div>';
   }
 }
 

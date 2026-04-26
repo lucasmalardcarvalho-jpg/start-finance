@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.1 (investimentos: detalhe + gráfico histórico + aportes)
-const CACHE = 'pf-v2.1';
+// PenseFinances — Service Worker v2.2 (investimentos: sparklines + dividendos + IBOV)
+const CACHE = 'pf-v2.2';
 const STATIC = [
   '/',
   '/dashboard',
