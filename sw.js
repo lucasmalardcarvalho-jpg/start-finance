@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v1.7 (cartões: limite reativo + sem seletor local)
-const CACHE = 'pf-v1.7';
+// PenseFinances — Service Worker v1.8 (toggleFaturaPaga propaga + fallback ?? 0)
+const CACHE = 'pf-v1.8';
 const STATIC = [
   '/',
   '/dashboard',

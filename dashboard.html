@@ -3871,7 +3871,7 @@ function renderCartoesDash(){
   const limUsoD=calcCartoesLimiteUso(getMesChave());
   el.innerHTML=CARTOES.slice(0,2).map(c=>{
     const fatMes=gastos[c.nome]||0;
-    const comprometido=limUsoD[c.nome.trim()]||fatMes;
+    const comprometido=limUsoD[c.nome.trim()] ?? 0;
     const usado=comprometido;
     const pct=c.limite>0?Math.min(comprometido/c.limite*100,100):0;
     const barCor=pct>80?'var(--verm)':pct>50?'var(--lara)':'var(--verde)';
@@ -5231,7 +5231,9 @@ function renderCartoes(){
 
   el.innerHTML = CARTOES.map((c,i)=>{
     const fatMes = gastos[c.nome.trim()]||0;
-    const comprometido = limUso[c.nome.trim()]||fatMes;
+    // Comprometido = retorno EXATO da função (já desconta paid). Sem fallback pra fatMes
+    // (que esconderia o efeito de marcar como pago quando não há parcelas futuras).
+    const comprometido = limUso[c.nome.trim()] ?? 0;
     const disponivel = Math.max(parseFloat(c.limite||0)-comprometido,0);
     const pct = parseFloat(c.limite||0)>0 ? Math.min(comprometido/parseFloat(c.limite||0)*100,100) : 0;
     const corBar = pct>85?'rgba(239,68,68,.9)':pct>60?'rgba(249,115,22,.8)':'rgba(255,255,255,.55)';
@@ -5303,10 +5305,19 @@ function toggleFaturaPaga(cartaoNome, mesAno){
     toast('Fatura desmarcada como paga','info');
   } else {
     FATURAS_PAGAS[key]={pago:true, data:new Date().toISOString()};
-    toast('✅ Fatura marcada como paga!','success');
+    toast('✅ Fatura marcada como paga! Limite atualizado.','success');
   }
   saveUser('faturas_pagas', FATURAS_PAGAS);
+  // Recalcula tudo — comprometido depende de FATURAS_PAGAS, então TODAS as
+  // views que mostram informações de cartão precisam ser re-renderizadas.
+  calcularMes();
+  renderDash();
   renderCartoes();
+  if(typeof CT_DETAIL_IDX==='number' && CT_DETAIL_IDX>=0) renderExtratoCartao();
+  // Re-renderiza Relatórios/Vencimentos se forem a página ativa
+  const curPage = document.querySelector('.page.active')?.id?.replace('page-','');
+  if(curPage === 'relatorios' || curPage === 'planejamento') renderRel();
+  if(curPage === 'vencimentos') { try{ renderVencimentosCal(); }catch(e){} }
 }
 
 function abrirDetalheCartao(i){
@@ -5378,7 +5389,7 @@ function renderExtratoCartao(){
 
   // Summary — comprometido a partir do mês selecionado, sem faturas pagas
   const fatMes = txs.filter(t=>parseFloat(t.valor||0)<0).reduce((s,t)=>s+Math.abs(parseFloat(t.valor||0)),0);
-  const comprometido = calcCartoesLimiteUso(mes)[c.nome.trim()] || fatMes;
+  const comprometido = calcCartoesLimiteUso(mes)[c.nome.trim()] ?? 0;
   const disponivel = Math.max(parseFloat(c.limite||0)-comprometido,0);
 
   const sumEl = document.getElementById('ctDetailSummary');
@@ -7600,8 +7611,8 @@ function renderRel(){
     if(cartoesSub) cartoesSub.textContent = `${CARTOES.length} cartões · Fatura ${fmt(totFat)}`;
     cartoesBody.innerHTML = CARTOES.length ? CARTOES.slice(0,4).map(c=>{
       const fat = Math.abs(txG.filter(t=>t.cartao===c.nome).reduce((a,t)=>a+parseFloat(t.valor||0),0));
-      // Comprometido = total que está "preso" no limite (mês atual + futuro)
-      const comprometido = limUsoMap[(c.nome||'').trim()] || fat;
+      // Comprometido = total que está "preso" no limite (atual + futuro, menos pagos)
+      const comprometido = limUsoMap[(c.nome||'').trim()] ?? 0;
       const lim = parseFloat(c.limite||0);
       const pct = lim>0?Math.min(comprometido/lim*100,100):0;
       const cor = pct>=80?'var(--verm)':pct>=60?'var(--lara)':'var(--azul)';
