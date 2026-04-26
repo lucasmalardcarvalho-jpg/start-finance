@@ -106,9 +106,25 @@ def serve_sw():
     return resp
 
 
-# ── Dashboard HTML ──────────────────────────────────────────────────
+# ── Landing Page (vendas) ──────────────────────────────────────────
 @app.route("/")
+@app.route("/vendas")
+@app.route("/lp")
+def landing():
+    try:
+        resp = send_file("vendas.html")
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
+    except FileNotFoundError:
+        # Fallback: se vendas.html não existir, serve o dashboard
+        return send_file("dashboard.html")
+
+
+# ── Dashboard HTML ──────────────────────────────────────────────────
 @app.route("/dashboard")
+@app.route("/app")
 def dashboard():
     try:
         resp = send_file("dashboard.html")

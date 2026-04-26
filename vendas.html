@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PenseFinances — Você não precisa ganhar mais. Precisa parar de perder.</title>
+<meta name="description" content="O brasileiro médio perde R$ 14.964/ano em gastos invisíveis. O PenseFinances mostra cada centavo em tempo real. +10.000 brasileiros já viram a diferença.">
+<meta property="og:title" content="PenseFinances — Pare de perder o que você já ganha">
+<meta property="og:description" content="Você não tem problema de dinheiro. Tem problema de visibilidade. Mostramos cada centavo em 30 dias.">
+<meta name="theme-color" content="#06030f">
+<link rel="icon" href="/logo-icon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Cabinet+Grotesk:wght@400;500;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#06030f;
+  --bg2:#0f0a1f;
+  --bg3:#16102b;
+  --pink:#ee206e;
+  --pink-d:#c91557;
+  --pink-l:#ff4d8f;
+  --purple:#7c3aed;
+  --cyan:#06b6d4;
+  --cyan-l:#22d3ee;
+  --green:#10b981;
+  --amber:#f59e0b;
+  --red:#ef4444;
+  --txt:#f1f5f9;
+  --txt2:#cbd5e1;
+  --muted:#64748b;
+  --muted2:#94a3b8;
+  --border:rgba(255,255,255,.08);
+  --border2:rgba(255,255,255,.14);
+  --glow-pink:0 0 40px rgba(238,32,110,.4),0 0 80px rgba(238,32,110,.2);
+  --glow-cyan:0 0 40px rgba(6,182,212,.4),0 0 80px rgba(6,182,212,.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+html{scroll-behavior:smooth}
+body{
+  font-family:'Cabinet Grotesk',sans-serif;
+  background:var(--bg);
+  color:var(--txt);
+  overflow-x:hidden;
+  line-height:1.5;
+  -webkit-text-size-adjust:100%;
+}
+img,svg{display:block;max-width:100%}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--pink);color:#fff}
+
+/* ═══════════════════════════════════════════
+   GRADIENT MESH BACKGROUND (animated)
+═══════════════════════════════════════════ */
+.mesh-bg{
+  position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
+  background:var(--bg);
+}
+.mesh-bg::before,.mesh-bg::after{
+  content:'';position:absolute;width:60vmax;height:60vmax;border-radius:50%;
+  filter:blur(120px);opacity:.55;
+}
+.mesh-bg::before{
+  background:radial-gradient(circle,var(--pink) 0%,transparent 70%);
+  top:-20vmax;left:-20vmax;
+  animation:meshFloat1 20s ease-in-out infinite;
+}
+.mesh-bg::after{
+  background:radial-gradient(circle,var(--purple) 0%,transparent 70%);
+  bottom:-20vmax;right:-20vmax;
+  animation:meshFloat2 25s ease-in-out infinite;
+}
+@keyframes meshFloat1{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(30vmax,15vmax) scale(1.2)}
+}
+@keyframes meshFloat2{
+  0%,100%{transform:translate(0,0) scale(1)}
+  50%{transform:translate(-20vmax,-10vmax) scale(1.3)}
+}
+
+/* Grid overlay sutil */
+.grid-overlay{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse at center,black 0%,transparent 70%);
+}
+
+/* Noise texture */
+.noise{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.04;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/></svg>");
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL PROGRESS BAR
+═══════════════════════════════════════════ */
+.scroll-progress{
+  position:fixed;top:0;left:0;right:0;height:3px;z-index:9999;
+  background:linear-gradient(90deg,var(--pink),var(--purple),var(--cyan));
+  transform:scaleX(0);transform-origin:left;
+  box-shadow:0 0 20px rgba(238,32,110,.6);
+  transition:transform .1s linear;
+}
+
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:18px 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  transition:all .3s;
+}
+nav.scrolled{
+  background:rgba(6,3,15,.7);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--border);
+  padding:12px 32px;
+}
+.nav-logo{
+  display:flex;align-items:center;gap:10px;font-weight:900;font-size:18px;letter-spacing:-.02em;
+}
+.nav-logo-mark{
+  width:32px;height:32px;border-radius:9px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:var(--glow-pink);
+}
+.nav-links{display:flex;gap:32px;align-items:center}
+.nav-links a{font-size:14px;color:var(--txt2);font-weight:600;transition:color .2s}
+.nav-links a:hover{color:var(--txt)}
+.nav-cta{
+  padding:9px 20px;border-radius:100px;
+  background:linear-gradient(135deg,var(--pink),var(--pink-d));
+  color:#fff;font-weight:800;font-size:13px;
+  box-shadow:var(--glow-pink);
+  transition:all .25s;
+}
+.nav-cta:hover{transform:translateY(-2px);box-shadow:0 0 60px rgba(238,32,110,.6)}
+.nav-burger{display:none;font-size:24px;cursor:pointer}
+@media(max-width:768px){
+  nav{padding:14px 20px}
+  .nav-links{display:none}
+  .nav-burger{display:block}
+  .nav-cta{padding:8px 16px;font-size:12px}
+}
+
+/* ═══════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════ */
+.hero{
+  min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+  padding:140px 32px 80px;position:relative;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  background:rgba(238,32,110,.1);border:1px solid rgba(238,32,110,.3);
+  font-size:12px;font-weight:700;color:var(--pink-l);
+  letter-spacing:.02em;margin-bottom:24px;
+  animation:badgePulse 2s ease-in-out infinite;
+}
+.hero-badge .dot{
+  width:7px;height:7px;border-radius:50%;background:var(--pink);
+  box-shadow:0 0 12px var(--pink);
+  animation:dotPulse 1.5s ease-in-out infinite;
+}
+@keyframes dotPulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes badgePulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(238,32,110,.4)}
+  50%{box-shadow:0 0 0 8px rgba(238,32,110,0)}
+}
+.hero-grid{
+  max-width:1280px;margin:0 auto;width:100%;
+  display:grid;grid-template-columns:1.1fr 1fr;gap:60px;align-items:center;
+}
+.hero-h1{
+  font-size:clamp(36px,6vw,72px);
+  font-weight:900;letter-spacing:-.035em;line-height:1.02;
+  margin-bottom:24px;
+}
+.hero-h1 .gradient{
+  background:linear-gradient(135deg,var(--pink) 0%,var(--purple) 50%,var(--cyan) 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  display:inline-block;
+}
+.hero-h1 .strike{
+  position:relative;display:inline-block;
+}
+.hero-h1 .strike::after{
+  content:'';position:absolute;top:50%;left:-4%;right:-4%;height:8px;
+  background:var(--pink);transform:rotate(-3deg);
+  border-radius:100px;
+}
+.hero-sub{
+  font-size:clamp(16px,2vw,20px);
+  color:var(--txt2);max-width:580px;margin-bottom:40px;line-height:1.55;font-weight:500;
+}
+.hero-sub strong{color:var(--txt);font-weight:800}
+.hero-ctas{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:32px}
+.btn-primary{
+  position:relative;padding:18px 32px;border-radius:100px;
+  background:linear-gradient(135deg,var(--pink),var(--pink-d));
+  color:#fff;font-weight:800;font-size:16px;
+  box-shadow:var(--glow-pink);
+  transition:all .25s;display:inline-flex;align-items:center;gap:10px;
+  overflow:hidden;
+}
+.btn-primary::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--pink-l),var(--pink));
+  opacity:0;transition:opacity .25s;
+}
+.btn-primary>*{position:relative;z-index:1}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 20px 60px rgba(238,32,110,.5)}
+.btn-primary:hover::before{opacity:1}
+.btn-secondary{
+  padding:18px 28px;border-radius:100px;
+  background:rgba(255,255,255,.05);border:1px solid var(--border2);
+  color:var(--txt);font-weight:700;font-size:15px;
+  transition:all .25s;display:inline-flex;align-items:center;gap:10px;
+  backdrop-filter:blur(10px);
+}
+.btn-secondary:hover{background:rgba(255,255,255,.1);border-color:var(--border2);transform:translateY(-2px)}
+.hero-trust{
+  display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  font-size:13px;color:var(--muted2);
+}
+.hero-trust .stars{color:var(--amber);letter-spacing:2px}
+.hero-trust strong{color:var(--txt);font-weight:800}
+.hero-trust .avs{display:flex}
+.hero-trust .av{
+  width:32px;height:32px;border-radius:50%;border:2px solid var(--bg);
+  margin-left:-10px;background-size:cover;background-position:center;
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;
+}
+.hero-trust .av:first-child{margin-left:0}
+.hero-trust .av:nth-child(1){background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff}
+.hero-trust .av:nth-child(2){background:linear-gradient(135deg,#06b6d4,#3b82f6);color:#fff}
+.hero-trust .av:nth-child(3){background:linear-gradient(135deg,#10b981,#06b6d4);color:#fff}
+.hero-trust .av:nth-child(4){background:linear-gradient(135deg,#7c3aed,#ec4899);color:#fff}
+
+/* Hero visual mockup */
+.hero-visual{position:relative;perspective:1500px}
+.dash-mock{
+  position:relative;
+  border-radius:20px;
+  background:linear-gradient(135deg,rgba(255,255,255,.05),rgba(255,255,255,.02));
+  border:1px solid var(--border2);
+  padding:14px;
+  backdrop-filter:blur(20px);
+  box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 60px rgba(238,32,110,.15);
+  transform:rotateY(-8deg) rotateX(5deg);
+  transition:transform .4s cubic-bezier(.23,1,.32,1);
+  animation:dashFloat 6s ease-in-out infinite;
+}
+@keyframes dashFloat{0%,100%{transform:rotateY(-8deg) rotateX(5deg) translateY(0)}50%{transform:rotateY(-6deg) rotateX(4deg) translateY(-12px)}}
+.dash-mock-bar{
+  display:flex;gap:5px;padding:4px 0 10px;
+}
+.dash-mock-bar span{width:9px;height:9px;border-radius:50%;background:var(--border2)}
+.dash-mock-bar span:first-child{background:#ef4444}
+.dash-mock-bar span:nth-child(2){background:#f59e0b}
+.dash-mock-bar span:nth-child(3){background:#10b981}
+.dash-mock-content{
+  background:linear-gradient(135deg,#0a0716,#15102b);
+  border-radius:14px;padding:18px;color:var(--txt);
+}
+.dash-mock-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.dash-mock-kpi{
+  padding:12px;border-radius:10px;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+}
+.dash-mock-kpi .l{font-size:9px;color:var(--muted2);text-transform:uppercase;font-weight:700;letter-spacing:.05em}
+.dash-mock-kpi .v{font-size:16px;font-weight:900;margin-top:4px;font-family:'JetBrains Mono',monospace}
+.dash-mock-kpi.g .v{color:var(--green)}
+.dash-mock-kpi.r .v{color:var(--red)}
+.dash-mock-kpi.b .v{color:var(--cyan)}
+.dash-mock-chart{
+  height:90px;display:flex;align-items:flex-end;gap:6px;padding:6px;
+  background:rgba(0,0,0,.3);border-radius:10px;border:1px solid var(--border);
+  margin-bottom:12px;
+}
+.dash-mock-chart .bar{
+  flex:1;background:linear-gradient(to top,var(--pink),var(--purple));
+  border-radius:3px 3px 0 0;
+  animation:barGrow 1.5s cubic-bezier(.23,1,.32,1) backwards;
+}
+.dash-mock-chart .bar:nth-child(1){height:30%;animation-delay:.1s}
+.dash-mock-chart .bar:nth-child(2){height:55%;animation-delay:.2s}
+.dash-mock-chart .bar:nth-child(3){height:40%;animation-delay:.3s}
+.dash-mock-chart .bar:nth-child(4){height:75%;animation-delay:.4s}
+.dash-mock-chart .bar:nth-child(5){height:60%;animation-delay:.5s}
+.dash-mock-chart .bar:nth-child(6){height:90%;animation-delay:.6s;background:linear-gradient(to top,var(--cyan),var(--green))}
+.dash-mock-chart .bar:nth-child(7){height:50%;animation-delay:.7s;opacity:.5}
+.dash-mock-chart .bar:nth-child(8){height:35%;animation-delay:.8s;opacity:.5}
+@keyframes barGrow{from{height:0}}
+.dash-mock-list{display:flex;flex-direction:column;gap:6px}
+.dash-mock-item{
+  display:flex;align-items:center;gap:8px;padding:8px;
+  border-radius:8px;background:rgba(255,255,255,.03);
+  font-size:11px;
+}
+.dash-mock-item .ic{
+  width:24px;height:24px;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+}
+.dash-mock-item .ic.r{background:rgba(239,68,68,.15);color:var(--red)}
+.dash-mock-item .ic.g{background:rgba(16,185,129,.15);color:var(--green)}
+.dash-mock-item .ic.b{background:rgba(6,182,212,.15);color:var(--cyan)}
+.dash-mock-item .name{flex:1;font-weight:700;color:var(--txt2)}
+.dash-mock-item .val{font-weight:800;font-family:'JetBrains Mono',monospace;font-size:11px}
+
+/* Floating badges around hero */
+.hero-float{
+  position:absolute;padding:10px 14px;border-radius:14px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border2);
+  backdrop-filter:blur(20px);
+  font-size:11px;font-weight:700;
+  display:flex;align-items:center;gap:8px;
+  box-shadow:0 10px 40px rgba(0,0,0,.4);
+  animation:floatBadge 5s ease-in-out infinite;
+}
+.hero-float.f1{top:-2%;right:-8%;animation-delay:0s;color:var(--green)}
+.hero-float.f2{top:60%;right:-12%;animation-delay:1.5s;color:var(--cyan)}
+.hero-float.f3{bottom:-5%;left:-5%;animation-delay:3s;color:var(--pink-l)}
+@keyframes floatBadge{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.hero-float .ic{font-size:16px}
+
+@media(max-width:1024px){
+  .hero-grid{grid-template-columns:1fr;gap:40px}
+  .hero{padding:110px 20px 60px}
+  .hero-float{display:none}
+}
+
+/* ═══════════════════════════════════════════
+   MARQUEE — prova social rolante
+═══════════════════════════════════════════ */
+.marquee-section{
+  padding:40px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  background:rgba(0,0,0,.3);overflow:hidden;
+}
+.marquee{
+  display:flex;gap:60px;
+  animation:marquee 40s linear infinite;
+  width:max-content;
+}
+.marquee-item{
+  display:flex;align-items:center;gap:14px;
+  font-size:18px;font-weight:800;color:var(--txt2);
+  white-space:nowrap;
+}
+.marquee-item .v{
+  font-size:24px;font-weight:900;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.marquee-item .sep{color:var(--muted);font-size:30px;font-weight:300}
+@keyframes marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ═══════════════════════════════════════════
+   SECTION BASE
+═══════════════════════════════════════════ */
+section{padding:120px 32px;position:relative}
+.container{max-width:1280px;margin:0 auto}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);
+  font-size:12px;font-weight:800;color:#a78bfa;
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:20px;
+}
+.section-h2{
+  font-size:clamp(32px,5vw,56px);
+  font-weight:900;letter-spacing:-.03em;line-height:1.05;
+  margin-bottom:18px;
+}
+.section-h2 .gradient{
+  background:linear-gradient(135deg,var(--pink),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.section-sub{
+  font-size:clamp(16px,1.6vw,19px);
+  color:var(--txt2);max-width:680px;line-height:1.55;font-weight:500;
+}
+@media(max-width:768px){section{padding:80px 20px}}
+
+/* Reveal on scroll */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 1s cubic-bezier(.23,1,.32,1),transform 1s cubic-bezier(.23,1,.32,1)}
+.reveal.in{opacity:1;transform:translateY(0)}
+.reveal-delay-1{transition-delay:.1s}
+.reveal-delay-2{transition-delay:.2s}
+.reveal-delay-3{transition-delay:.3s}
+.reveal-delay-4{transition-delay:.4s}
+
+/* ═══════════════════════════════════════════
+   PROBLEMA / AGITAÇÃO
+═══════════════════════════════════════════ */
+.problema{position:relative}
+.problema-h2{font-size:clamp(36px,6vw,68px);max-width:900px;margin-bottom:60px}
+.problema-list{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;max-width:1100px}
+.problema-item{
+  padding:32px;border-radius:20px;
+  background:linear-gradient(135deg,rgba(239,68,68,.05),rgba(239,68,68,.01));
+  border:1px solid rgba(239,68,68,.15);
+  position:relative;overflow:hidden;
+  transition:all .3s;
+}
+.problema-item:hover{transform:translateY(-4px);border-color:rgba(239,68,68,.4);box-shadow:0 20px 60px rgba(239,68,68,.15)}
+.problema-item .ic{
+  font-size:36px;margin-bottom:14px;
+  filter:drop-shadow(0 0 12px rgba(239,68,68,.4));
+}
+.problema-item h3{font-size:20px;font-weight:800;margin-bottom:10px;letter-spacing:-.01em}
+.problema-item p{font-size:14px;color:var(--txt2);line-height:1.6}
+.problema-item .num{
+  position:absolute;top:20px;right:24px;
+  font-size:80px;font-weight:900;color:rgba(239,68,68,.08);
+  font-family:'JetBrains Mono',monospace;line-height:1;
+}
+@media(max-width:768px){.problema-list{grid-template-columns:1fr}}
+
+/* ═══════════════════════════════════════════
+   SOLUÇÃO INTRO
+═══════════════════════════════════════════ */
+.solucao-intro{text-align:center;padding:140px 32px}
+.solucao-intro .big{
+  font-size:clamp(48px,9vw,120px);font-weight:900;letter-spacing:-.04em;line-height:.95;
+  background:linear-gradient(135deg,var(--pink) 0%,var(--purple) 30%,var(--cyan) 60%,#fff 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  margin-bottom:30px;
+}
+.solucao-intro .small{font-size:clamp(16px,2vw,22px);color:var(--txt2);max-width:680px;margin:0 auto;line-height:1.55}
+
+/* ═══════════════════════════════════════════
+   FEATURES — horizontal scroll
+═══════════════════════════════════════════ */
+.features-section{padding:120px 0;overflow:hidden}
+.features-section .container{padding:0 32px;margin-bottom:60px}
+.feat-track{
+  display:flex;gap:24px;padding:0 32px;
+  overflow-x:auto;scroll-snap-type:x mandatory;
+  scrollbar-width:none;-ms-overflow-style:none;
+  scroll-padding:32px;
+}
+.feat-track::-webkit-scrollbar{display:none}
+.feat-card{
+  flex:0 0 380px;scroll-snap-align:start;
+  padding:36px;border-radius:24px;
+  background:linear-gradient(155deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  border:1px solid var(--border2);
+  position:relative;overflow:hidden;
+  min-height:440px;display:flex;flex-direction:column;
+  transition:all .35s cubic-bezier(.23,1,.32,1);
+}
+.feat-card::before{
+  content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
+  background:radial-gradient(circle,var(--pink) 0%,transparent 50%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.feat-card:hover{
+  transform:translateY(-6px);border-color:var(--border2);
+  box-shadow:0 30px 80px rgba(0,0,0,.4);
+}
+.feat-card:hover::before{opacity:.1}
+.feat-card .ic{
+  width:56px;height:56px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-size:28px;
+  margin-bottom:20px;position:relative;z-index:1;
+}
+.feat-card.c1 .ic{background:linear-gradient(135deg,var(--pink),var(--pink-d));box-shadow:0 0 30px rgba(238,32,110,.4)}
+.feat-card.c2 .ic{background:linear-gradient(135deg,var(--cyan),#0891b2);box-shadow:0 0 30px rgba(6,182,212,.4)}
+.feat-card.c3 .ic{background:linear-gradient(135deg,var(--purple),#5b21b6);box-shadow:0 0 30px rgba(124,58,237,.4)}
+.feat-card.c4 .ic{background:linear-gradient(135deg,var(--green),#059669);box-shadow:0 0 30px rgba(16,185,129,.4)}
+.feat-card.c5 .ic{background:linear-gradient(135deg,var(--amber),#d97706);box-shadow:0 0 30px rgba(245,158,11,.4)}
+.feat-card.c6 .ic{background:linear-gradient(135deg,#ec4899,#be185d);box-shadow:0 0 30px rgba(236,72,153,.4)}
+.feat-card.c7 .ic{background:linear-gradient(135deg,#3b82f6,#1d4ed8);box-shadow:0 0 30px rgba(59,130,246,.4)}
+.feat-card.c8 .ic{background:linear-gradient(135deg,#f97316,#c2410c);box-shadow:0 0 30px rgba(249,115,22,.4)}
+.feat-card h3{font-size:22px;font-weight:800;margin-bottom:12px;letter-spacing:-.01em;position:relative;z-index:1}
+.feat-card p{font-size:15px;color:var(--txt2);line-height:1.6;flex:1;position:relative;z-index:1}
+.feat-card .tag{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 11px;border-radius:100px;
+  background:rgba(255,255,255,.06);border:1px solid var(--border);
+  font-size:11px;font-weight:700;color:var(--txt2);
+  margin-top:18px;align-self:flex-start;position:relative;z-index:1;
+}
+
+/* Hint para arrastar */
+.feat-hint{
+  display:flex;align-items:center;gap:10px;justify-content:center;
+  margin-top:30px;color:var(--muted);font-size:13px;font-weight:600;
+}
+.feat-hint .arrow{animation:arrowSlide 1.5s ease-in-out infinite}
+@keyframes arrowSlide{0%,100%{transform:translateX(0)}50%{transform:translateX(8px)}}
+
+/* ═══════════════════════════════════════════
+   TELEGRAM BOT — hero showcase
+═══════════════════════════════════════════ */
+.telegram{
+  padding:120px 32px;
+  position:relative;overflow:hidden;
+}
+.telegram .container{display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.telegram-text .label{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  background:rgba(42,171,238,.15);border:1px solid rgba(42,171,238,.3);
+  font-size:12px;font-weight:800;color:#2AABEE;
+  letter-spacing:.06em;text-transform:uppercase;margin-bottom:20px;
+}
+.telegram-text h2{font-size:clamp(32px,5vw,52px);font-weight:900;line-height:1.05;letter-spacing:-.03em;margin-bottom:20px}
+.telegram-text h2 .hl{
+  background:linear-gradient(135deg,#2AABEE,var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.telegram-text p{font-size:17px;color:var(--txt2);line-height:1.6;margin-bottom:28px;font-weight:500}
+.telegram-bullets{list-style:none;display:flex;flex-direction:column;gap:14px}
+.telegram-bullets li{display:flex;align-items:flex-start;gap:12px;font-size:15px;color:var(--txt2);font-weight:500}
+.telegram-bullets .check{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--green),#059669);
+  display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:900;
+  margin-top:2px;
+}
+
+/* Phone mockup com chat */
+.phone{
+  position:relative;width:340px;height:680px;margin:0 auto;
+  border-radius:46px;
+  background:linear-gradient(145deg,#1a1a2e,#0a0a1a);
+  border:8px solid #1a1a2e;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.05),
+    0 50px 120px rgba(0,0,0,.6),
+    0 0 80px rgba(42,171,238,.2);
+  padding:14px;overflow:hidden;
+}
+.phone::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:120px;height:28px;background:#0a0a1a;
+  border-radius:0 0 18px 18px;z-index:2;
+}
+.phone-screen{
+  width:100%;height:100%;border-radius:32px;overflow:hidden;
+  background:linear-gradient(180deg,#17212b 0%,#0e1621 100%);
+  display:flex;flex-direction:column;
+}
+.phone-header{
+  background:#17212b;padding:38px 14px 12px;
+  display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid rgba(255,255,255,.05);
+}
+.phone-header .av{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#2AABEE,#229ED9);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.phone-header .info{flex:1}
+.phone-header .name{font-size:14px;font-weight:700;color:#fff}
+.phone-header .status{font-size:11px;color:#7895a8}
+.phone-chat{
+  flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;
+  overflow-y:auto;
+}
+.msg{
+  max-width:82%;padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.4;
+  position:relative;animation:msgIn .5s cubic-bezier(.23,1,.32,1) backwards;
+}
+@keyframes msgIn{from{opacity:0;transform:translateY(8px)}}
+.msg.user{
+  align-self:flex-end;background:#2b5278;color:#fff;border-bottom-right-radius:4px;
+}
+.msg.bot{
+  align-self:flex-start;background:#182533;color:#fff;border-bottom-left-radius:4px;
+}
+.msg .time{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px;text-align:right}
+.msg.bot .emoji-line{margin-bottom:5px;font-weight:600}
+.msg .row{display:flex;justify-content:space-between;font-size:11px;color:#a4c5dc;margin-top:4px}
+.msg.bot.delay-1{animation-delay:.6s}
+.msg.user.delay-2{animation-delay:1.2s}
+.msg.bot.delay-3{animation-delay:1.8s}
+.msg.user.delay-4{animation-delay:2.4s}
+.msg.bot.delay-5{animation-delay:3s}
+.typing{
+  align-self:flex-start;background:#182533;padding:12px 16px;border-radius:14px;
+  display:flex;gap:4px;
+}
+.typing span{
+  width:6px;height:6px;border-radius:50%;background:#7895a8;
+  animation:typingDot 1.2s ease-in-out infinite;
+}
+.typing span:nth-child(2){animation-delay:.2s}
+.typing span:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+@media(max-width:1024px){.telegram .container{grid-template-columns:1fr;gap:50px}.phone{transform:scale(.85)}}
+
+/* ═══════════════════════════════════════════
+   COMO FUNCIONA — Timeline
+═══════════════════════════════════════════ */
+.passo-section{padding:120px 32px}
+.passo-list{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:30px;margin-top:60px;
+  position:relative;
+}
+.passo-list::before{
+  content:'';position:absolute;top:42px;left:5%;right:5%;height:2px;
+  background:linear-gradient(90deg,var(--pink),var(--purple),var(--cyan));
+  opacity:.3;z-index:0;
+}
+.passo{position:relative;text-align:center;padding:0 16px}
+.passo-num{
+  width:84px;height:84px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 20px;font-size:34px;font-weight:900;color:#fff;
+  box-shadow:0 0 50px rgba(238,32,110,.4),inset 0 -4px 10px rgba(0,0,0,.3);
+  position:relative;z-index:1;
+  font-family:'JetBrains Mono',monospace;
+}
+.passo:nth-child(2) .passo-num{background:linear-gradient(135deg,var(--purple),var(--cyan));box-shadow:0 0 50px rgba(124,58,237,.4),inset 0 -4px 10px rgba(0,0,0,.3)}
+.passo:nth-child(3) .passo-num{background:linear-gradient(135deg,var(--cyan),var(--green));box-shadow:0 0 50px rgba(6,182,212,.4),inset 0 -4px 10px rgba(0,0,0,.3)}
+.passo h3{font-size:24px;font-weight:800;margin-bottom:12px;letter-spacing:-.01em}
+.passo p{font-size:15px;color:var(--txt2);line-height:1.6}
+@media(max-width:768px){.passo-list{grid-template-columns:1fr;gap:50px}.passo-list::before{display:none}}
+
+/* ═══════════════════════════════════════════
+   COMPARAÇÃO vs Planilha
+═══════════════════════════════════════════ */
+.compare-section{padding:120px 32px}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:1100px;margin:60px auto 0;align-items:start}
+.compare-card{
+  padding:36px;border-radius:24px;border:1px solid var(--border);
+  position:relative;
+}
+.compare-card.bad{
+  background:linear-gradient(155deg,rgba(239,68,68,.05),rgba(0,0,0,.2));
+  border-color:rgba(239,68,68,.2);
+}
+.compare-card.good{
+  background:linear-gradient(155deg,rgba(16,185,129,.08),rgba(0,0,0,.2));
+  border-color:rgba(16,185,129,.3);
+  box-shadow:0 0 60px rgba(16,185,129,.1);
+}
+.compare-card h3{font-size:24px;font-weight:900;margin-bottom:6px;letter-spacing:-.01em}
+.compare-card .sub{font-size:13px;color:var(--muted2);margin-bottom:24px;font-weight:600}
+.compare-card.good h3{color:var(--green)}
+.compare-card.bad h3{color:#fca5a5}
+.compare-card ul{list-style:none;display:flex;flex-direction:column;gap:14px}
+.compare-card li{
+  display:flex;align-items:flex-start;gap:12px;font-size:14px;color:var(--txt2);
+  padding:12px 0;border-top:1px solid var(--border);
+}
+.compare-card li:first-child{border-top:0;padding-top:0}
+.compare-card li .ic{
+  width:22px;height:22px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;
+  margin-top:1px;
+}
+.compare-card.bad li .ic{background:linear-gradient(135deg,var(--red),#dc2626)}
+.compare-card.good li .ic{background:linear-gradient(135deg,var(--green),#059669)}
+.compare-card.good::after{
+  content:'RECOMENDADO';position:absolute;top:-12px;right:24px;
+  padding:6px 14px;border-radius:100px;
+  background:linear-gradient(135deg,var(--green),#059669);
+  font-size:11px;font-weight:900;letter-spacing:.05em;color:#fff;
+  box-shadow:0 8px 24px rgba(16,185,129,.4);
+}
+@media(max-width:768px){.compare-grid{grid-template-columns:1fr}}
+
+/* ═══════════════════════════════════════════
+   NÚMEROS (counters)
+═══════════════════════════════════════════ */
+.numbers-section{
+  padding:100px 32px;
+  background:linear-gradient(180deg,transparent,rgba(238,32,110,.03),transparent);
+  position:relative;overflow:hidden;
+}
+.numbers-grid{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:24px;max-width:1200px;margin:0 auto;
+}
+.num-card{
+  text-align:center;padding:36px 20px;border-radius:20px;
+  background:linear-gradient(155deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  border:1px solid var(--border2);
+}
+.num-card .v{
+  font-size:clamp(32px,4vw,52px);font-weight:900;letter-spacing:-.03em;line-height:1;
+  background:linear-gradient(135deg,var(--pink),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  font-family:'JetBrains Mono',monospace;margin-bottom:8px;
+}
+.num-card .l{font-size:13px;color:var(--txt2);font-weight:600;letter-spacing:.02em}
+@media(max-width:768px){.numbers-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ═══════════════════════════════════════════
+   DEPOIMENTOS — Carousel
+═══════════════════════════════════════════ */
+.depo-section{padding:120px 32px;overflow:hidden}
+.depo-track{
+  display:flex;gap:24px;
+  animation:depoScroll 50s linear infinite;
+  width:max-content;margin-top:60px;
+}
+.depo-track:hover{animation-play-state:paused}
+.depo-card{
+  flex:0 0 380px;padding:32px;border-radius:20px;
+  background:linear-gradient(155deg,rgba(255,255,255,.05),rgba(255,255,255,.01));
+  border:1px solid var(--border2);
+  display:flex;flex-direction:column;gap:16px;
+}
+.depo-stars{color:var(--amber);font-size:16px;letter-spacing:2px}
+.depo-text{font-size:15px;line-height:1.6;color:var(--txt2);flex:1;font-weight:500}
+.depo-text strong{color:var(--txt);font-weight:800}
+.depo-author{display:flex;align-items:center;gap:12px;padding-top:16px;border-top:1px solid var(--border)}
+.depo-av{
+  width:42px;height:42px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;color:#fff;font-size:15px;
+}
+.depo-info .name{font-size:14px;font-weight:800}
+.depo-info .role{font-size:12px;color:var(--muted2);font-weight:500}
+@keyframes depoScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ═══════════════════════════════════════════
+   TOUR PELO SISTEMA — Showcase de mockups
+═══════════════════════════════════════════ */
+.tour{padding:140px 32px;position:relative;overflow:hidden}
+.tour-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;
+  max-width:1280px;margin:0 auto 140px;
+}
+.tour-row:last-child{margin-bottom:0}
+.tour-row.reverse{direction:rtl}
+.tour-row.reverse > *{direction:ltr}
+.tour-text .label{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;border-radius:100px;
+  background:rgba(238,32,110,.15);border:1px solid rgba(238,32,110,.3);
+  font-size:11px;font-weight:800;color:var(--pink-l);
+  letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px;
+}
+.tour-text .label.cyan{background:rgba(6,182,212,.15);border-color:rgba(6,182,212,.3);color:var(--cyan-l)}
+.tour-text .label.purple{background:rgba(124,58,237,.15);border-color:rgba(124,58,237,.3);color:#a78bfa}
+.tour-text .label.green{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3);color:#4ade80}
+.tour-text .label.amber{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.3);color:#fbbf24}
+.tour-text h3{font-size:clamp(28px,4vw,44px);font-weight:900;line-height:1.05;letter-spacing:-.025em;margin-bottom:16px}
+.tour-text h3 em{font-style:normal;background:linear-gradient(135deg,var(--pink),var(--cyan));-webkit-background-clip:text;background-clip:text;color:transparent}
+.tour-text p{font-size:16px;color:var(--txt2);line-height:1.6;margin-bottom:20px;font-weight:500}
+.tour-text p strong{color:var(--txt);font-weight:800}
+.tour-text ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.tour-text li{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--txt2);font-weight:600}
+.tour-text li::before{content:'✓';width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green),#059669);display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;font-weight:900;flex-shrink:0}
+
+/* Browser frame mockups */
+.shot{
+  position:relative;border-radius:16px;
+  background:linear-gradient(135deg,#0e0a1f,#0a0716);
+  border:1px solid var(--border2);
+  box-shadow:
+    0 30px 80px rgba(0,0,0,.5),
+    0 0 60px rgba(238,32,110,.15),
+    inset 0 0 0 1px rgba(255,255,255,.04);
+  overflow:hidden;
+  transform:perspective(1500px) rotateY(-3deg) rotateX(2deg);
+  transition:transform .5s cubic-bezier(.23,1,.32,1);
+}
+.tour-row.reverse .shot{transform:perspective(1500px) rotateY(3deg) rotateX(2deg)}
+.shot:hover{transform:perspective(1500px) rotateY(0) rotateX(0) scale(1.02)}
+.shot-bar{
+  display:flex;align-items:center;gap:6px;
+  padding:11px 14px;background:#06030f;border-bottom:1px solid var(--border);
+}
+.shot-bar .dots{display:flex;gap:5px}
+.shot-bar .dots span{width:9px;height:9px;border-radius:50%;background:#2a2535}
+.shot-bar .dots span:first-child{background:#ef4444}
+.shot-bar .dots span:nth-child(2){background:#f59e0b}
+.shot-bar .dots span:nth-child(3){background:#10b981}
+.shot-bar .url{
+  flex:1;background:rgba(255,255,255,.04);border:1px solid var(--border);
+  border-radius:6px;padding:5px 12px;font-size:11px;color:var(--muted2);
+  font-family:'JetBrains Mono',monospace;
+  display:flex;align-items:center;gap:6px;
+}
+.shot-bar .url::before{content:'🔒';font-size:9px}
+.shot-body{padding:20px;background:linear-gradient(180deg,#0a0716,#0e0a1f)}
+
+/* — SHOT 1: Dashboard completo — */
+.shot-dash .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+.shot-dash .greet{font-size:11px;color:var(--muted2);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.shot-dash .greet strong{display:block;color:var(--txt);font-size:18px;font-weight:900;margin-top:3px;letter-spacing:-.02em;text-transform:none}
+.shot-dash .badge-mes{
+  padding:6px 14px;border-radius:100px;background:rgba(238,32,110,.15);
+  border:1px solid rgba(238,32,110,.3);font-size:11px;font-weight:800;color:var(--pink-l);
+}
+.shot-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.shot-kpi{padding:14px;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid var(--border)}
+.shot-kpi .ic{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;margin-bottom:8px}
+.shot-kpi.g .ic{background:rgba(16,185,129,.15);color:var(--green)}
+.shot-kpi.r .ic{background:rgba(239,68,68,.15);color:var(--red)}
+.shot-kpi.b .ic{background:rgba(238,32,110,.15);color:var(--pink-l)}
+.shot-kpi .l{font-size:9px;color:var(--muted2);text-transform:uppercase;font-weight:700;letter-spacing:.05em;margin-bottom:2px}
+.shot-kpi .v{font-size:18px;font-weight:900;letter-spacing:-.02em;font-family:'JetBrains Mono',monospace}
+.shot-kpi .d{font-size:10px;color:var(--muted2);font-weight:600;margin-top:2px}
+.shot-kpi.g .v{color:var(--green)}
+.shot-kpi.r .v{color:var(--red)}
+.shot-kpi.b .v{color:var(--pink-l)}
+.shot-chart{
+  height:130px;display:flex;align-items:flex-end;gap:5px;padding:10px;
+  background:rgba(0,0,0,.3);border-radius:12px;border:1px solid var(--border);margin-bottom:14px;
+  position:relative;
+}
+.shot-chart .pair{flex:1;display:flex;align-items:flex-end;gap:2px;height:100%}
+.shot-chart .pair .b{flex:1;border-radius:3px 3px 0 0}
+.shot-chart .pair .b.in{background:linear-gradient(to top,#1d4ed8,#3b82f6)}
+.shot-chart .pair .b.out{background:linear-gradient(to top,var(--pink-d),var(--pink))}
+.shot-chart .pair.now .b{box-shadow:0 0 10px rgba(238,32,110,.5)}
+.shot-chart .pair.fut{opacity:.3}
+.shot-chart .label-b{position:absolute;bottom:2px;font-size:8px;color:var(--muted);font-weight:700;text-align:center;width:calc(100%/8)}
+.shot-donut{
+  display:flex;align-items:center;gap:18px;padding:14px;border-radius:12px;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+}
+.shot-donut svg{flex-shrink:0;width:80px;height:80px}
+.shot-donut .legend{flex:1;display:flex;flex-direction:column;gap:6px}
+.shot-donut .legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt2);font-weight:600}
+.shot-donut .legend-item .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.shot-donut .legend-item .pct{margin-left:auto;color:var(--muted2);font-size:10px}
+.shot-donut .legend-item .val{font-weight:800;color:var(--txt);font-size:11px;margin-left:5px;font-family:'JetBrains Mono',monospace}
+
+/* — SHOT 2: Cartão de crédito — */
+.shot-card{padding:0;background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%)}
+.shot-card-hd{padding:18px;background:linear-gradient(135deg,var(--pink),var(--pink-d));position:relative;overflow:hidden}
+.shot-card-hd::before{content:'';position:absolute;top:-30%;right:-10%;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.15),transparent 70%)}
+.shot-card-hd .row{display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1;color:#fff}
+.shot-card-hd .name{font-size:14px;font-weight:800}
+.shot-card-hd .bandeira{font-size:18px;font-weight:900;font-style:italic;letter-spacing:-.02em;opacity:.9}
+.shot-card-hd .num{margin-top:30px;font-size:16px;font-family:'JetBrains Mono',monospace;letter-spacing:.15em;color:rgba(255,255,255,.9);position:relative;z-index:1}
+.shot-card-hd .footer-row{margin-top:14px;display:flex;justify-content:space-between;align-items:flex-end;color:rgba(255,255,255,.85);font-size:10px;font-weight:700;position:relative;z-index:1}
+.shot-card-hd .footer-row .l{font-size:8px;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;font-weight:700;margin-bottom:1px}
+.shot-card-body{padding:18px}
+.shot-card-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.shot-card-stat{padding:10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--border);text-align:center}
+.shot-card-stat .l{font-size:9px;color:var(--muted2);font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
+.shot-card-stat .v{font-size:14px;font-weight:900;color:var(--txt);font-family:'JetBrains Mono',monospace}
+.shot-card-bar{height:8px;border-radius:100px;background:var(--border);overflow:hidden;margin-bottom:6px}
+.shot-card-bar > div{height:100%;width:67%;background:linear-gradient(90deg,var(--amber),var(--red));border-radius:100px;box-shadow:0 0 12px rgba(245,158,11,.5)}
+.shot-card-bar-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted2);font-weight:700;margin-bottom:14px}
+.shot-card-tx{display:flex;flex-direction:column;gap:6px}
+.shot-card-tx .item{display:flex;align-items:center;gap:8px;padding:9px;border-radius:9px;background:rgba(255,255,255,.03);font-size:11px}
+.shot-card-tx .item .e{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;background:rgba(238,32,110,.15)}
+.shot-card-tx .item .n{flex:1;font-weight:700;color:var(--txt)}
+.shot-card-tx .item .d{font-size:9px;color:var(--muted2);font-weight:500;margin-top:1px}
+.shot-card-tx .item .v{font-weight:900;color:var(--red);font-family:'JetBrains Mono',monospace}
+.shot-card-tx .item .parc{display:inline-block;margin-left:5px;padding:1px 5px;border-radius:4px;background:rgba(245,158,11,.15);color:var(--amber);font-size:9px;font-weight:800}
+
+/* — SHOT 3: Calendário de vencimentos — */
+.shot-cal{padding:18px}
+.shot-cal-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.shot-cal-hd .mes{font-size:16px;font-weight:900;letter-spacing:-.02em}
+.shot-cal-hd .arrows{display:flex;gap:6px}
+.shot-cal-hd .arrows span{width:26px;height:26px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--muted2)}
+.shot-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.shot-cal-grid .h{text-align:center;font-size:9px;color:var(--muted2);font-weight:700;text-transform:uppercase;padding:5px 0}
+.shot-cal-grid .d{
+  aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border-radius:7px;background:rgba(255,255,255,.02);border:1px solid var(--border);
+  font-size:11px;font-weight:700;color:var(--txt2);position:relative;
+}
+.shot-cal-grid .d.empty{background:transparent;border-color:transparent}
+.shot-cal-grid .d.has-event{background:rgba(238,32,110,.1);border-color:rgba(238,32,110,.3);color:var(--pink-l)}
+.shot-cal-grid .d.urgent{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#fca5a5}
+.shot-cal-grid .d.today{background:linear-gradient(135deg,var(--pink),var(--pink-d));color:#fff;border-color:transparent;box-shadow:0 0 20px rgba(238,32,110,.5)}
+.shot-cal-grid .d .marker{
+  position:absolute;bottom:3px;font-size:7px;color:currentColor;
+  display:flex;gap:2px;
+}
+.shot-cal-grid .d .marker span{width:3px;height:3px;border-radius:50%;background:currentColor;opacity:.8}
+.shot-cal-list{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.shot-cal-list .item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.03);border:1px solid var(--border);font-size:11px}
+.shot-cal-list .item .e{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.shot-cal-list .item .e.r{background:rgba(239,68,68,.15);color:var(--red)}
+.shot-cal-list .item .e.a{background:rgba(245,158,11,.15);color:var(--amber)}
+.shot-cal-list .item .e.b{background:rgba(238,32,110,.15);color:var(--pink-l)}
+.shot-cal-list .item .info{flex:1}
+.shot-cal-list .item .n{font-weight:700;color:var(--txt);font-size:11px}
+.shot-cal-list .item .d{font-size:9px;color:var(--muted2);font-weight:500;margin-top:1px}
+.shot-cal-list .item .v{font-weight:900;font-family:'JetBrains Mono',monospace;font-size:12px}
+.shot-cal-list .item .v.r{color:var(--red)}
+.shot-cal-list .item .tag{font-size:8px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:4px;display:block;margin-top:2px}
+.shot-cal-list .item .tag.urgent{background:var(--red);color:#fff}
+.shot-cal-list .item .tag.warn{background:var(--amber);color:#fff}
+
+/* — SHOT 4: Metas — */
+.shot-metas{padding:18px;display:flex;flex-direction:column;gap:12px}
+.shot-meta{padding:16px;border-radius:14px;background:rgba(255,255,255,.03);border:1px solid var(--border);position:relative;overflow:hidden}
+.shot-meta::before{content:'';position:absolute;inset:0;opacity:.05;pointer-events:none}
+.shot-meta.m1::before{background:radial-gradient(circle at top right,var(--cyan),transparent 60%)}
+.shot-meta.m2::before{background:radial-gradient(circle at top right,var(--amber),transparent 60%)}
+.shot-meta.m3::before{background:radial-gradient(circle at top right,var(--green),transparent 60%)}
+.shot-meta-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:relative;z-index:1}
+.shot-meta-hd .name{display:flex;align-items:center;gap:10px;font-weight:800;font-size:13px}
+.shot-meta-hd .name .ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.shot-meta.m1 .ic{background:rgba(6,182,212,.15);color:var(--cyan-l)}
+.shot-meta.m2 .ic{background:rgba(245,158,11,.15);color:var(--amber)}
+.shot-meta.m3 .ic{background:rgba(16,185,129,.15);color:var(--green)}
+.shot-meta-hd .pct{font-size:14px;font-weight:900;font-family:'JetBrains Mono',monospace}
+.shot-meta.m1 .pct{color:var(--cyan-l)}
+.shot-meta.m2 .pct{color:var(--amber)}
+.shot-meta.m3 .pct{color:var(--green)}
+.shot-meta-bar{height:8px;border-radius:100px;background:var(--border);overflow:hidden;margin-bottom:8px;position:relative;z-index:1}
+.shot-meta-bar > div{height:100%;border-radius:100px;animation:metaFill 2s cubic-bezier(.23,1,.32,1) backwards}
+.shot-meta.m1 .shot-meta-bar > div{width:42%;background:linear-gradient(90deg,#0891b2,var(--cyan));box-shadow:0 0 10px rgba(6,182,212,.4);animation-delay:.3s}
+.shot-meta.m2 .shot-meta-bar > div{width:78%;background:linear-gradient(90deg,#d97706,var(--amber));box-shadow:0 0 10px rgba(245,158,11,.4);animation-delay:.5s}
+.shot-meta.m3 .shot-meta-bar > div{width:95%;background:linear-gradient(90deg,#059669,var(--green));box-shadow:0 0 10px rgba(16,185,129,.4);animation-delay:.7s}
+@keyframes metaFill{from{width:0!important}}
+.shot-meta-row{display:flex;justify-content:space-between;font-size:10px;color:var(--muted2);font-weight:700;position:relative;z-index:1}
+.shot-meta-row strong{color:var(--txt);font-family:'JetBrains Mono',monospace}
+
+@media(max-width:1024px){
+  .tour-row{grid-template-columns:1fr;gap:40px;margin-bottom:90px}
+  .tour-row.reverse{direction:ltr}
+  .shot{transform:none!important}
+}
+
+/* ═══════════════════════════════════════════
+   PRICING
+═══════════════════════════════════════════ */
+.pricing-section{padding:120px 32px;position:relative}
+.pricing-toggle{
+  display:inline-flex;background:rgba(255,255,255,.05);border:1px solid var(--border2);
+  border-radius:100px;padding:4px;margin:30px auto 50px;
+}
+.pricing-toggle button{
+  padding:10px 22px;border-radius:100px;
+  font-size:13px;font-weight:800;color:var(--txt2);
+  transition:all .25s;
+}
+.pricing-toggle button.on{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;box-shadow:0 0 20px rgba(238,32,110,.4)}
+.pricing-toggle .save{
+  display:inline-block;margin-left:6px;padding:2px 6px;border-radius:6px;
+  font-size:10px;background:var(--green);color:#fff;
+}
+.pricing-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:24px;
+  max-width:1200px;margin:0 auto;align-items:start;
+}
+.price-card{
+  padding:36px;border-radius:24px;
+  background:linear-gradient(155deg,rgba(255,255,255,.04),rgba(255,255,255,.01));
+  border:1px solid var(--border2);
+  position:relative;display:flex;flex-direction:column;
+  transition:all .35s cubic-bezier(.23,1,.32,1);
+}
+.price-card:hover{transform:translateY(-6px);box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.price-card.featured{
+  background:linear-gradient(155deg,rgba(238,32,110,.12),rgba(124,58,237,.05));
+  border-color:rgba(238,32,110,.4);
+  box-shadow:0 0 60px rgba(238,32,110,.2);
+  transform:scale(1.04);
+}
+.price-card.featured:hover{transform:scale(1.04) translateY(-6px)}
+.price-badge{
+  position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+  padding:6px 16px;border-radius:100px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  font-size:11px;font-weight:900;letter-spacing:.06em;color:#fff;
+  text-transform:uppercase;box-shadow:0 8px 24px rgba(238,32,110,.4);
+}
+.price-name{font-size:18px;font-weight:800;color:var(--txt2);margin-bottom:6px;letter-spacing:-.01em}
+.price-tagline{font-size:13px;color:var(--muted2);margin-bottom:24px}
+.price-value{display:flex;align-items:baseline;gap:6px;margin-bottom:6px}
+.price-old{font-size:17px;color:var(--muted);text-decoration:line-through;text-decoration-color:var(--red);font-weight:700}
+.price-cur{font-size:14px;color:var(--txt2);font-weight:700;margin-right:2px}
+.price-amt{font-size:48px;font-weight:900;letter-spacing:-.04em;line-height:1;color:var(--txt);font-family:'JetBrains Mono',monospace}
+.price-per{font-size:14px;color:var(--muted2);font-weight:600}
+.price-save{
+  display:inline-block;padding:4px 10px;border-radius:6px;
+  background:rgba(16,185,129,.15);color:var(--green);
+  font-size:11px;font-weight:800;margin-bottom:24px;
+}
+.price-list{list-style:none;display:flex;flex-direction:column;gap:12px;margin-bottom:30px;flex:1}
+.price-list li{display:flex;align-items:flex-start;gap:10px;font-size:14px;color:var(--txt2);font-weight:500}
+.price-list .check{
+  width:18px;height:18px;border-radius:50%;flex-shrink:0;
+  background:rgba(16,185,129,.15);color:var(--green);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;
+  margin-top:2px;
+}
+.price-list .x{
+  width:18px;height:18px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.05);color:var(--muted);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;
+  margin-top:2px;
+}
+.price-list li.disabled{color:var(--muted)}
+.price-cta{
+  padding:14px 20px;border-radius:12px;
+  font-size:15px;font-weight:800;text-align:center;
+  transition:all .25s;
+}
+.price-card .price-cta{
+  background:rgba(255,255,255,.06);border:1px solid var(--border2);color:var(--txt);
+}
+.price-card .price-cta:hover{background:rgba(255,255,255,.12)}
+.price-card.featured .price-cta{
+  background:linear-gradient(135deg,var(--pink),var(--pink-d));color:#fff;
+  box-shadow:var(--glow-pink);
+}
+.price-card.featured .price-cta:hover{transform:translateY(-2px);box-shadow:0 20px 50px rgba(238,32,110,.5)}
+@media(max-width:1024px){.pricing-grid{grid-template-columns:1fr;max-width:480px}.price-card.featured{transform:scale(1)}.price-card.featured:hover{transform:translateY(-6px)}}
+
+/* ═══════════════════════════════════════════
+   GARANTIA
+═══════════════════════════════════════════ */
+.garantia{
+  padding:80px 32px;text-align:center;
+}
+.garantia-card{
+  max-width:780px;margin:0 auto;padding:50px 40px;border-radius:24px;
+  background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.05));
+  border:1px solid rgba(16,185,129,.3);
+  display:flex;align-items:center;gap:32px;text-align:left;
+}
+.garantia-shield{
+  width:120px;height:120px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--green),#059669);
+  display:flex;align-items:center;justify-content:center;
+  font-size:56px;
+  box-shadow:0 0 60px rgba(16,185,129,.4);
+}
+.garantia-text h3{font-size:24px;font-weight:900;margin-bottom:10px;letter-spacing:-.02em}
+.garantia-text p{font-size:15px;color:var(--txt2);line-height:1.55}
+@media(max-width:768px){.garantia-card{flex-direction:column;text-align:center}}
+
+/* ═══════════════════════════════════════════
+   FAQ
+═══════════════════════════════════════════ */
+.faq-section{padding:120px 32px}
+.faq-list{max-width:820px;margin:60px auto 0}
+.faq-item{
+  border-bottom:1px solid var(--border);padding:24px 0;
+  cursor:pointer;
+}
+.faq-item:first-child{border-top:1px solid var(--border)}
+.faq-q{
+  display:flex;justify-content:space-between;align-items:center;gap:20px;
+  font-size:18px;font-weight:800;letter-spacing:-.01em;
+}
+.faq-q .icn{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:rgba(255,255,255,.05);border:1px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+  transition:all .3s;
+}
+.faq-item.open .faq-q .icn{
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  border-color:transparent;transform:rotate(45deg);
+}
+.faq-a{
+  max-height:0;overflow:hidden;
+  font-size:15px;color:var(--txt2);line-height:1.65;
+  transition:max-height .35s cubic-bezier(.23,1,.32,1),padding .35s;
+}
+.faq-item.open .faq-a{max-height:400px;padding-top:14px}
+
+/* ═══════════════════════════════════════════
+   CTA FINAL
+═══════════════════════════════════════════ */
+.final-cta{
+  padding:140px 32px;text-align:center;position:relative;
+}
+.final-cta::before{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:90vw;height:90vh;max-width:1200px;max-height:800px;
+  background:radial-gradient(ellipse at center,rgba(238,32,110,.15) 0%,transparent 60%);
+  pointer-events:none;
+}
+.final-cta-content{position:relative;z-index:1;max-width:880px;margin:0 auto}
+.final-cta h2{
+  font-size:clamp(40px,7vw,84px);font-weight:900;letter-spacing:-.04em;line-height:1;
+  margin-bottom:24px;
+}
+.final-cta h2 .gradient{
+  background:linear-gradient(135deg,var(--pink),var(--purple),var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.final-cta p{font-size:clamp(16px,2vw,20px);color:var(--txt2);margin-bottom:40px;line-height:1.55}
+.final-cta .urgency{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:10px 20px;border-radius:100px;
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);
+  font-size:13px;font-weight:800;color:var(--amber);
+  margin-bottom:24px;
+}
+.final-cta .urgency .pulse{
+  width:8px;height:8px;border-radius:50%;background:var(--amber);
+  animation:pulseAlt 1.2s ease-in-out infinite;
+}
+@keyframes pulseAlt{0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.6)}50%{box-shadow:0 0 0 10px rgba(245,158,11,0)}}
+
+/* ═══════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════ */
+footer{
+  padding:60px 32px 40px;border-top:1px solid var(--border);
+  background:rgba(0,0,0,.4);
+}
+.foot-grid{
+  max-width:1200px;margin:0 auto;
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:50px;
+  margin-bottom:40px;
+}
+.foot-brand{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.foot-brand .mark{
+  width:36px;height:36px;border-radius:10px;
+  background:linear-gradient(135deg,var(--pink),var(--purple));
+  display:flex;align-items:center;justify-content:center;font-size:18px;
+  box-shadow:var(--glow-pink);
+}
+.foot-brand .name{font-weight:900;font-size:18px;letter-spacing:-.02em}
+.foot-desc{font-size:13px;color:var(--muted2);max-width:340px;line-height:1.55;margin-bottom:16px}
+.foot-col h4{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.foot-col a{display:block;font-size:13px;color:var(--txt2);margin-bottom:10px;transition:color .2s}
+.foot-col a:hover{color:var(--pink-l)}
+.foot-bot{
+  max-width:1200px;margin:0 auto;padding-top:30px;border-top:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;
+  font-size:12px;color:var(--muted);
+}
+.foot-bot .badges{display:flex;gap:14px;flex-wrap:wrap}
+.foot-bot .badges span{display:inline-flex;align-items:center;gap:5px}
+@media(max-width:768px){.foot-grid{grid-template-columns:1fr 1fr}}
+
+/* ═══════════════════════════════════════════
+   CUSTOM CURSOR
+═══════════════════════════════════════════ */
+.cursor{
+  position:fixed;width:24px;height:24px;border-radius:50%;
+  border:2px solid var(--pink);
+  pointer-events:none;z-index:99999;
+  transform:translate(-50%,-50%);
+  transition:width .2s,height .2s,background .2s;
+  mix-blend-mode:difference;
+}
+.cursor.hover{width:60px;height:60px;background:var(--pink);border-color:transparent}
+@media(hover:none){.cursor{display:none}}
+
+/* ═══════════════════════════════════════════
+   UTIL
+═══════════════════════════════════════════ */
+@media(max-width:768px){
+  .nav-cta{display:inline-flex}
+  .hero-h1{font-size:42px}
+  .telegram .container{gap:30px}
+  .feat-card{flex:0 0 85vw;min-height:380px;padding:28px}
+  .price-card{padding:28px}
+}
+</style>
+</head>
+<body>
+
+<!-- backgrounds -->
+<div class="mesh-bg"></div>
+<div class="grid-overlay"></div>
+<div class="noise"></div>
+
+<!-- custom cursor -->
+<div class="cursor" id="cursor"></div>
+
+<!-- progress bar -->
+<div class="scroll-progress" id="progress"></div>
+
+<!-- nav -->
+<nav id="nav">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">P</div>
+    <span>PenseFinances</span>
+  </a>
+  <div class="nav-links">
+    <a href="#features">Recursos</a>
+    <a href="#telegram">Telegram</a>
+    <a href="#pricing">Preços</a>
+    <a href="#faq">Dúvidas</a>
+  </div>
+  <a href="/dashboard" class="nav-cta">Começar grátis →</a>
+</nav>
+
+<!-- ═══════════════════════════════════════════
+     HERO
+═══════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div class="hero-text">
+      <div class="hero-badge reveal">
+        <span class="dot"></span>
+        +10.247 brasileiros usando agora
+      </div>
+      <h1 class="hero-h1 reveal reveal-delay-1">
+        Você não precisa <span class="strike">ganhar mais</span>.<br>
+        Precisa <span class="gradient">parar de perder</span><br>o que já ganha.
+      </h1>
+      <p class="hero-sub reveal reveal-delay-2">
+        O brasileiro médio escoa <strong>R$ 14.964 por ano</strong> em gastos que não enxerga. O <strong>PenseFinances</strong> mostra cada centavo em tempo real — e em <strong>30 dias</strong> você terá controle absoluto. Ou seu dinheiro de volta.
+      </p>
+      <div class="hero-ctas reveal reveal-delay-3">
+        <a href="/dashboard" class="btn-primary">
+          <span>Começar grátis agora</span>
+          <span>→</span>
+        </a>
+        <a href="#telegram" class="btn-secondary">
+          <span>Ver demonstração</span>
+          <span>▶</span>
+        </a>
+      </div>
+      <div class="hero-trust reveal reveal-delay-4">
+        <div class="avs">
+          <div class="av">M</div>
+          <div class="av">L</div>
+          <div class="av">R</div>
+          <div class="av">+</div>
+        </div>
+        <div>
+          <div><span class="stars">★★★★★</span> <strong>4.9/5</strong></div>
+          <div style="font-size:11px;color:var(--muted)">por +2.300 usuários</div>
+        </div>
+        <div style="border-left:1px solid var(--border);padding-left:24px">
+          <strong>R$ 8.4M</strong> economizados<br>
+          <span style="font-size:11px;color:var(--muted)">pela comunidade</span>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual reveal reveal-delay-2">
+      <div class="dash-mock">
+        <div class="dash-mock-bar">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="dash-mock-content">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div>
+              <div style="font-size:10px;color:var(--muted2);font-weight:700;letter-spacing:.05em;text-transform:uppercase">Maio 2026</div>
+              <div style="font-size:18px;font-weight:900">Olá, Lucas</div>
+            </div>
+            <div style="display:flex;gap:6px">
+              <div style="width:30px;height:30px;border-radius:8px;background:rgba(238,32,110,.15);display:flex;align-items:center;justify-content:center">🔔</div>
+            </div>
+          </div>
+          <div class="dash-mock-kpis">
+            <div class="dash-mock-kpi g">
+              <div class="l">Receita</div>
+              <div class="v">8.5K</div>
+            </div>
+            <div class="dash-mock-kpi r">
+              <div class="l">Gastos</div>
+              <div class="v">3.2K</div>
+            </div>
+            <div class="dash-mock-kpi b">
+              <div class="l">Saldo</div>
+              <div class="v">+5.3K</div>
+            </div>
+          </div>
+          <div class="dash-mock-chart">
+            <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+          </div>
+          <div class="dash-mock-list">
+            <div class="dash-mock-item">
+              <div class="ic r">🍔</div>
+              <div class="name">iFood — Almoço</div>
+              <div class="val" style="color:var(--red)">−R$ 47</div>
+            </div>
+            <div class="dash-mock-item">
+              <div class="ic g">💰</div>
+              <div class="name">Salário</div>
+              <div class="val" style="color:var(--green)">+R$ 8.500</div>
+            </div>
+            <div class="dash-mock-item">
+              <div class="ic b">🚗</div>
+              <div class="name">Uber</div>
+              <div class="val" style="color:var(--red)">−R$ 23</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hero-float f1"><span class="ic">✅</span> Você economizou R$ 847</div>
+      <div class="hero-float f2"><span class="ic">⚡</span> Sync em tempo real</div>
+      <div class="hero-float f3"><span class="ic">📲</span> Bot processou +35 msgs hoje</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     MARQUEE — números rolando
+═══════════════════════════════════════════ -->
+<div class="marquee-section">
+  <div class="marquee">
+    <div class="marquee-item"><span class="v">+10.247</span> usuários ativos</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">R$ 8,4M</span> economizados</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">4,9★</span> avaliação média</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">3 seg</span> para registrar</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">98%</span> indicariam a um amigo</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">+10.247</span> usuários ativos</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">R$ 8,4M</span> economizados</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">4,9★</span> avaliação média</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">3 seg</span> para registrar</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+    <div class="marquee-item"><span class="v">98%</span> indicariam a um amigo</div>
+    <div class="marquee-item"><span class="sep">●</span></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PROBLEMA / AGITAÇÃO
+═══════════════════════════════════════════ -->
+<section class="problema">
+  <div class="container">
+    <div class="eyebrow reveal">⚠️ Reconhece alguma dessas situações?</div>
+    <h2 class="problema-h2 reveal reveal-delay-1">
+      Toda vez que abre a fatura, vem aquele <span style="color:var(--red)">aperto no peito</span>.
+    </h2>
+    <div class="problema-list">
+      <div class="problema-item reveal">
+        <div class="num">01</div>
+        <div class="ic">🤯</div>
+        <h3>"Ué, gastei R$ 487 no iFood?!"</h3>
+        <p>Você jura que só pediu umas 4 vezes. A fatura conta uma história totalmente diferente. E aí, o mês inteiro vira corrida atrás do prejuízo.</p>
+      </div>
+      <div class="problema-item reveal reveal-delay-1">
+        <div class="num">02</div>
+        <div class="ic">📊</div>
+        <h3>Planilha que ninguém atualiza</h3>
+        <p>Funciona por 2 semanas. Depois você esquece. Depois desiste. E volta para o ciclo de "amanhã eu organizo" — que dura até a próxima fatura.</p>
+      </div>
+      <div class="problema-item reveal reveal-delay-2">
+        <div class="num">03</div>
+        <div class="ic">💸</div>
+        <h3>Recebe e some na mesma semana</h3>
+        <p>O salário entra. Em 7 dias, a conta já está magra. Você não consegue apontar exatamente o que aconteceu, mas o dinheiro evaporou.</p>
+      </div>
+      <div class="problema-item reveal reveal-delay-3">
+        <div class="num">04</div>
+        <div class="ic">🌪️</div>
+        <h3>Vencimentos te pegam de surpresa</h3>
+        <p>Cartão fechou hoje? Boleto venceu ontem? Aquela parcela que você esqueceu? Cada notificação é uma facada inesperada no orçamento.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     SOLUÇÃO INTRO
+═══════════════════════════════════════════ -->
+<section class="solucao-intro">
+  <div class="eyebrow reveal" style="background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.3);color:var(--green)">✨ E SE EXISTISSE</div>
+  <div class="big reveal reveal-delay-1">
+    Um sistema que<br>te entende.
+  </div>
+  <p class="small reveal reveal-delay-2">
+    Que você fala "<strong style="color:var(--txt)">gastei 35 no almoço</strong>" e ele entende. Categoriza. Salva. Mostra no dashboard. Te alerta quando algo está fora do padrão. <strong style="color:var(--pink-l)">É exatamente isso que o PenseFinances faz.</strong>
+  </p>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     TOUR PELO SISTEMA — Mockups visuais
+═══════════════════════════════════════════ -->
+<section class="tour" id="tour">
+  <div class="container" style="text-align:center;margin-bottom:90px">
+    <div class="eyebrow reveal">🎬 TOUR PELO SISTEMA</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Veja por dentro o que <span class="gradient">10.247 pessoas</span> não conseguem mais viver sem.</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto">Cada tela foi projetada pra um único objetivo: você entender, em segundos, exatamente o que precisa fazer.</p>
+  </div>
+
+  <!-- Row 1: Dashboard -->
+  <div class="tour-row">
+    <div class="tour-text reveal">
+      <div class="label">📊 DASHBOARD</div>
+      <h3>Sua vida financeira em <em>um único olhar</em>.</h3>
+      <p>Receitas, gastos, saldo, evolução anual, distribuição por categoria — tudo na mesma tela. Sem 12 abas, sem precisar montar gráfico nenhum. <strong>Você abre, entende, age.</strong></p>
+      <ul>
+        <li>KPIs que comparam com o mês anterior automaticamente</li>
+        <li>Gráfico de evolução com 12 meses de histórico</li>
+        <li>Top 5 categorias com percentual e valor</li>
+        <li>Modo escuro perfeito para uso noturno</li>
+      </ul>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="shot shot-dash">
+        <div class="shot-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">finances.pensehd.com/dashboard</div>
+        </div>
+        <div class="shot-body">
+          <div class="top">
+            <div class="greet">Maio 2026<strong>Olá, Lucas 👋</strong></div>
+            <div class="badge-mes">+R$ 5.253 este mês</div>
+          </div>
+          <div class="shot-kpis">
+            <div class="shot-kpi g">
+              <div class="ic">💰</div>
+              <div class="l">Receitas</div>
+              <div class="v">8.500</div>
+              <div class="d">↑ 12% vs abr.</div>
+            </div>
+            <div class="shot-kpi r">
+              <div class="ic">💸</div>
+              <div class="l">Gastos</div>
+              <div class="v">3.247</div>
+              <div class="d">↓ 8% vs abr.</div>
+            </div>
+            <div class="shot-kpi b">
+              <div class="ic">✨</div>
+              <div class="l">Saldo</div>
+              <div class="v">+5.253</div>
+              <div class="d">💚 Positivo</div>
+            </div>
+          </div>
+          <div class="shot-chart">
+            <div class="pair"><div class="b in" style="height:48%"></div><div class="b out" style="height:32%"></div></div>
+            <div class="pair"><div class="b in" style="height:55%"></div><div class="b out" style="height:40%"></div></div>
+            <div class="pair"><div class="b in" style="height:62%"></div><div class="b out" style="height:38%"></div></div>
+            <div class="pair"><div class="b in" style="height:50%"></div><div class="b out" style="height:45%"></div></div>
+            <div class="pair now"><div class="b in" style="height:78%"></div><div class="b out" style="height:42%"></div></div>
+            <div class="pair fut"><div class="b in" style="height:60%"></div><div class="b out" style="height:35%"></div></div>
+            <div class="pair fut"><div class="b in" style="height:55%"></div><div class="b out" style="height:30%"></div></div>
+            <div class="pair fut"><div class="b in" style="height:50%"></div><div class="b out" style="height:25%"></div></div>
+          </div>
+          <div class="shot-donut">
+            <svg viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#2a2535" stroke-width="11"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#ee206e" stroke-width="11" stroke-dasharray="80 200" stroke-dashoffset="0" transform="rotate(-90 40 40)"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#06b6d4" stroke-width="11" stroke-dasharray="50 200" stroke-dashoffset="-80" transform="rotate(-90 40 40)"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#7c3aed" stroke-width="11" stroke-dasharray="32 200" stroke-dashoffset="-130" transform="rotate(-90 40 40)"/>
+              <circle cx="40" cy="40" r="32" fill="none" stroke="#10b981" stroke-width="11" stroke-dasharray="20 200" stroke-dashoffset="-162" transform="rotate(-90 40 40)"/>
+              <text x="40" y="38" text-anchor="middle" font-size="8" font-weight="900" fill="#f1f5f9">Total</text>
+              <text x="40" y="50" text-anchor="middle" font-size="9" font-weight="800" fill="#cbd5e1" font-family="JetBrains Mono">3.2K</text>
+            </svg>
+            <div class="legend">
+              <div class="legend-item"><span class="dot" style="background:#ee206e"></span>🍔 Alimentação <span class="pct">31%</span><span class="val">R$ 1.020</span></div>
+              <div class="legend-item"><span class="dot" style="background:#06b6d4"></span>🚗 Transporte <span class="pct">19%</span><span class="val">R$ 627</span></div>
+              <div class="legend-item"><span class="dot" style="background:#7c3aed"></span>🏠 Moradia <span class="pct">13%</span><span class="val">R$ 412</span></div>
+              <div class="legend-item"><span class="dot" style="background:#10b981"></span>🎯 Lazer <span class="pct">8%</span><span class="val">R$ 268</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Cartão -->
+  <div class="tour-row reverse">
+    <div class="tour-text reveal">
+      <div class="label cyan">💳 CARTÕES</div>
+      <h3>Cada cartão como ele <em>realmente é</em>: por dentro.</h3>
+      <p>Fatura corrente, limite usado, parcelas futuras, vencimento, fechamento. Importe o PDF da fatura — e o sistema categoriza tudo sozinho. <strong>Nunca mais surpresa no fechamento.</strong></p>
+      <ul>
+        <li>Importação automática de fatura PDF</li>
+        <li>Visual de cartão real (bandeira, banco, cor)</li>
+        <li>Limite usado vs disponível em barra colorida</li>
+        <li>Parcelas futuras já contabilizadas</li>
+      </ul>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="shot">
+        <div class="shot-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">finances.pensehd.com/cartoes</div>
+        </div>
+        <div class="shot-body" style="padding:16px">
+          <div class="shot-card">
+            <div class="shot-card-hd">
+              <div class="row">
+                <div class="name">Inter Black</div>
+                <div class="bandeira">VISA</div>
+              </div>
+              <div class="num">•••• •••• •••• 4287</div>
+              <div class="footer-row">
+                <div><div class="l">Limite total</div>R$ 12.000</div>
+                <div><div class="l">Vencimento</div>Dia 10</div>
+              </div>
+            </div>
+            <div class="shot-card-body">
+              <div class="shot-card-stats">
+                <div class="shot-card-stat"><div class="l">Fatura atual</div><div class="v" style="color:var(--red)">2.847</div></div>
+                <div class="shot-card-stat"><div class="l">Disponível</div><div class="v" style="color:var(--green)">3.913</div></div>
+                <div class="shot-card-stat"><div class="l">Próxima</div><div class="v">R$ 1.240</div></div>
+              </div>
+              <div class="shot-card-bar"><div></div></div>
+              <div class="shot-card-bar-row"><span>67% usado</span><span>R$ 8.087 de 12.000</span></div>
+              <div class="shot-card-tx">
+                <div class="item"><div class="e">🍔</div><div class="info"><div class="n">iFood</div><div class="d">10/05 · Alimentação</div></div><div class="v">−R$ 47</div></div>
+                <div class="item"><div class="e">🛒</div><div class="info"><div class="n">Mercado Livre <span class="parc">3x</span></div><div class="d">08/05 · Compras</div></div><div class="v">−R$ 132</div></div>
+                <div class="item"><div class="e">⛽</div><div class="info"><div class="n">Posto Shell</div><div class="d">07/05 · Transporte</div></div><div class="v">−R$ 200</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Calendário Vencimentos -->
+  <div class="tour-row">
+    <div class="tour-text reveal">
+      <div class="label amber">📅 VENCIMENTOS</div>
+      <h3>Nunca mais um boleto vencido — <em>jamais</em>.</h3>
+      <p>Calendário com TODAS as suas obrigações: cartões, fixas, dívidas, parcelas. Visual de um relance, alertas 3 dias antes. <strong>Acabou esquecer e pagar juros bancário.</strong></p>
+      <ul>
+        <li>Calendário visual por mês com marcações</li>
+        <li>Lista de vencimentos do dia/semana</li>
+        <li>Notificação push antes do vencimento</li>
+        <li>Marcação de "pago" com 1 toque</li>
+      </ul>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="shot">
+        <div class="shot-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">finances.pensehd.com/vencimentos</div>
+        </div>
+        <div class="shot-body shot-cal">
+          <div class="shot-cal-hd">
+            <div class="mes">📅 Maio 2026</div>
+            <div class="arrows"><span>←</span><span>Hoje</span><span>→</span></div>
+          </div>
+          <div class="shot-cal-grid">
+            <div class="h">D</div><div class="h">S</div><div class="h">T</div><div class="h">Q</div><div class="h">Q</div><div class="h">S</div><div class="h">S</div>
+            <div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d empty"></div><div class="d">1</div><div class="d">2</div><div class="d">3</div>
+            <div class="d">4</div><div class="d has-event">5<div class="marker"><span></span></div></div><div class="d">6</div><div class="d">7</div><div class="d urgent">8<div class="marker"><span></span><span></span></div></div><div class="d">9</div><div class="d urgent">10<div class="marker"><span></span></div></div>
+            <div class="d">11</div><div class="d">12</div><div class="d today">13</div><div class="d">14</div><div class="d has-event">15<div class="marker"><span></span></div></div><div class="d">16</div><div class="d">17</div>
+            <div class="d">18</div><div class="d">19</div><div class="d has-event">20<div class="marker"><span></span></div></div><div class="d">21</div><div class="d">22</div><div class="d">23</div><div class="d">24</div>
+            <div class="d">25</div><div class="d">26</div><div class="d">27</div><div class="d">28</div><div class="d has-event">29<div class="marker"><span></span></div></div><div class="d">30</div><div class="d">31</div>
+          </div>
+          <div class="shot-cal-list">
+            <div class="item"><div class="e r">⛓️</div><div class="info"><div class="n">Empréstimo · Parcela 3/12</div><div class="d">Vence em 2 dias <span class="tag urgent">URGENTE</span></div></div><div class="v r">R$ 487</div></div>
+            <div class="item"><div class="e a">💳</div><div class="info"><div class="n">Fatura Inter Black</div><div class="d">Vence em 4 dias <span class="tag warn">Atenção</span></div></div><div class="v r">R$ 2.847</div></div>
+            <div class="item"><div class="e b">🏠</div><div class="info"><div class="n">Aluguel · Mai/2026</div><div class="d">Pago automaticamente em 15/05</div></div><div class="v r">R$ 1.800</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Metas -->
+  <div class="tour-row reverse">
+    <div class="tour-text reveal">
+      <div class="label green">🎯 METAS & LIMITES</div>
+      <h3>Pare de "tentar economizar". <em>Comece a conseguir</em>.</h3>
+      <p>Defina meta de R$ 8.000 pra viagem. Limite de R$ 400 pro iFood. O sistema acompanha em tempo real, te alerta quando passar de 80%, comemora quando bater. <strong>Você vê o progresso — e isso muda tudo.</strong></p>
+      <ul>
+        <li>Metas com progresso animado e prazo</li>
+        <li>Limites por categoria com alertas automáticos</li>
+        <li>Quitação de dívidas com tracking visual</li>
+        <li>Dopamina cada vez que você avança</li>
+      </ul>
+    </div>
+    <div class="reveal reveal-delay-1">
+      <div class="shot">
+        <div class="shot-bar">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <div class="url">finances.pensehd.com/metas</div>
+        </div>
+        <div class="shot-body shot-metas">
+          <div class="shot-meta m1">
+            <div class="shot-meta-hd">
+              <div class="name"><div class="ic">🏖️</div>Viagem Argentina</div>
+              <div class="pct">42%</div>
+            </div>
+            <div class="shot-meta-bar"><div></div></div>
+            <div class="shot-meta-row"><span>Faltam <strong>R$ 4.640</strong></span><span>Meta: <strong>R$ 8.000</strong> · Dez/2026</span></div>
+          </div>
+          <div class="shot-meta m2">
+            <div class="shot-meta-hd">
+              <div class="name"><div class="ic">⛓️</div>Quitar Empréstimo Itaú</div>
+              <div class="pct">78%</div>
+            </div>
+            <div class="shot-meta-bar"><div></div></div>
+            <div class="shot-meta-row"><span>Pagas <strong>9/12</strong> parcelas</span><span>Falta <strong>R$ 1.461</strong></span></div>
+          </div>
+          <div class="shot-meta m3">
+            <div class="shot-meta-hd">
+              <div class="name"><div class="ic">🚨</div>Reserva de Emergência</div>
+              <div class="pct">95%</div>
+            </div>
+            <div class="shot-meta-bar"><div></div></div>
+            <div class="shot-meta-row"><span style="color:var(--green);font-weight:800">🎉 Quase lá! <strong>R$ 14.250</strong></span><span>Meta: <strong>R$ 15.000</strong></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FEATURES — horizontal scroll
+═══════════════════════════════════════════ -->
+<section class="features-section" id="features">
+  <div class="container">
+    <div class="eyebrow reveal">🚀 RECURSOS</div>
+    <h2 class="section-h2 reveal reveal-delay-1">
+      Tudo que você precisa.<br>
+      <span class="gradient">Nada que você não use.</span>
+    </h2>
+    <p class="section-sub reveal reveal-delay-2">
+      Cada recurso foi pensado para reduzir fricção. Você não precisa virar contador — só usar.
+    </p>
+  </div>
+
+  <div class="feat-track reveal" id="featTrack">
+    <div class="feat-card c1">
+      <div class="ic">📲</div>
+      <h3>Bot do Telegram</h3>
+      <p>Registre gastos do jeito que você fala: <em>"50 uber + 35 ifood"</em>. O bot entende, categoriza com IA e atualiza tudo na hora. Sem app pra abrir, sem campo pra preencher.</p>
+      <span class="tag">⚡ 3 segundos</span>
+    </div>
+    <div class="feat-card c2">
+      <div class="ic">📊</div>
+      <h3>Dashboard cinematográfico</h3>
+      <p>Donut animado, evolução anual, top categorias, KPIs ao vivo. Tudo desenhado para você entender sua vida financeira em 5 segundos.</p>
+      <span class="tag">🎯 Tempo real</span>
+    </div>
+    <div class="feat-card c3">
+      <div class="ic">💳</div>
+      <h3>Cartões inteligentes</h3>
+      <p>Fatura, fechamento, vencimento, limite usado, parcelas futuras — tudo automático. Importa fatura PDF e categoriza sozinho.</p>
+      <span class="tag">📄 Importa PDF</span>
+    </div>
+    <div class="feat-card c4">
+      <div class="ic">📅</div>
+      <h3>Vencimentos centralizados</h3>
+      <p>Calendário com TODOS os boletos, cartões, fixas e dívidas. Notificação 3 dias antes do vencimento. Nunca mais "esquece" uma conta.</p>
+      <span class="tag">🔔 Alertas push</span>
+    </div>
+    <div class="feat-card c5">
+      <div class="ic">🎯</div>
+      <h3>Metas e limites</h3>
+      <p>Defina limite de R$ 400 pra iFood. O sistema avisa quando passar de 80%. Crie metas (carro, viagem) e veja o progresso visualmente.</p>
+      <span class="tag">🟡 Alerta visual</span>
+    </div>
+    <div class="feat-card c6">
+      <div class="ic">👨‍👩‍👧</div>
+      <h3>Orçamento familiar</h3>
+      <p>Adicione cônjuge, filhos. Cada um lança suas despesas. Você vê os gastos por membro — e a soma total da casa.</p>
+      <span class="tag">🤝 Multi-usuário</span>
+    </div>
+    <div class="feat-card c7">
+      <div class="ic">📈</div>
+      <h3>Investimentos & patrimônio</h3>
+      <p>Acompanhe rendimentos, patrimônio total, evolução. Saiba se você está realmente crescendo financeiramente — ou só correndo.</p>
+      <span class="tag">📊 Histórico</span>
+    </div>
+    <div class="feat-card c8">
+      <div class="ic">🔄</div>
+      <h3>Sync entre dispositivos</h3>
+      <p>Lance no celular, veja no computador, edita no tablet. Tudo sincronizado em tempo real, com criptografia ponta-a-ponta.</p>
+      <span class="tag">🔒 LGPD</span>
+    </div>
+  </div>
+
+  <div class="feat-hint">
+    Arraste para o lado <span class="arrow">→</span>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     TELEGRAM BOT
+═══════════════════════════════════════════ -->
+<section class="telegram" id="telegram">
+  <div class="container">
+    <div class="telegram-text">
+      <div class="label reveal">🤖 BOT EXCLUSIVO</div>
+      <h2 class="reveal reveal-delay-1">Registre como <span class="hl">você fala</span>. Sem fricção.</h2>
+      <p class="reveal reveal-delay-2">
+        Esquece formulário, esquece app. <strong>Manda uma mensagem</strong> no Telegram — e o sistema cuida de tudo. Foi feito por brasileiros, pra brasileiros, entendendo gírias, abreviações e o jeito que a gente fala.
+      </p>
+      <ul class="telegram-bullets reveal reveal-delay-3">
+        <li><span class="check">✓</span> <span><strong>"gastei 35 no almoço"</strong> — entende valor + categoria</span></li>
+        <li><span class="check">✓</span> <span><strong>"500 no inter parcelado 5x"</strong> — gera as 5 parcelas automaticamente</span></li>
+        <li><span class="check">✓</span> <span><strong>"recebi 8500"</strong> — registra como receita</span></li>
+        <li><span class="check">✓</span> <span><strong>Foto de cupom</strong> — extrai valor, data e estabelecimento</span></li>
+        <li><span class="check">✓</span> <span><strong>Áudio</strong> — transcreve e processa (sim, só falar)</span></li>
+      </ul>
+    </div>
+    <div class="telegram-phone reveal reveal-delay-2">
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-header">
+            <div class="av">🤖</div>
+            <div class="info">
+              <div class="name">@pensefinances_bot</div>
+              <div class="status">● online</div>
+            </div>
+          </div>
+          <div class="phone-chat">
+            <div class="msg user">gastei 47 no ifood<div class="time">10:24</div></div>
+            <div class="msg bot delay-1">
+              <div class="emoji-line">✅ Despesa registrada!</div>
+              <div class="row"><span>Categoria</span><strong>🍔 Alimentação</strong></div>
+              <div class="row"><span>Valor</span><strong>R$ 47,00</strong></div>
+              <div class="time">10:24</div>
+            </div>
+            <div class="msg user delay-2">500 no inter parcelado 5x<div class="time">10:25</div></div>
+            <div class="msg bot delay-3">
+              <div class="emoji-line">💳 5 parcelas geradas</div>
+              <div class="row"><span>Total</span><strong>R$ 500,00</strong></div>
+              <div class="row"><span>Por mês</span><strong>R$ 100,00</strong></div>
+              <div class="row"><span>Cartão</span><strong>Inter</strong></div>
+              <div class="time">10:25</div>
+            </div>
+            <div class="msg user delay-4">resumo do mês?<div class="time">10:26</div></div>
+            <div class="msg bot delay-5">
+              <div class="emoji-line">📊 Maio 2026</div>
+              <div class="row"><span>Receitas</span><strong style="color:#4ade80">+R$ 8.500</strong></div>
+              <div class="row"><span>Gastos</span><strong style="color:#f87171">−R$ 3.247</strong></div>
+              <div class="row"><span>Saldo</span><strong style="color:#4ade80">+R$ 5.253</strong></div>
+              <div class="time">10:26</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     COMO FUNCIONA
+═══════════════════════════════════════════ -->
+<section class="passo-section">
+  <div class="container" style="text-align:center">
+    <div class="eyebrow reveal">🎯 EM 3 PASSOS</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Você está a <span class="gradient">5 minutos</span> do controle total.</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto">Sem cartão de crédito. Sem instalação. Sem complicação.</p>
+  </div>
+  <div class="passo-list" style="max-width:1100px;margin:60px auto 0">
+    <div class="passo reveal">
+      <div class="passo-num">1</div>
+      <h3>Crie sua conta</h3>
+      <p>Email + senha. 30 segundos. Acesso imediato pelo navegador, celular ou tablet — funciona em qualquer dispositivo.</p>
+    </div>
+    <div class="passo reveal reveal-delay-1">
+      <div class="passo-num">2</div>
+      <h3>Conecte o Telegram</h3>
+      <p>Clique no botão "Conectar Telegram" e mande seu primeiro gasto. O bot já está configurado, pronto pra processar.</p>
+    </div>
+    <div class="passo reveal reveal-delay-2">
+      <div class="passo-num">3</div>
+      <h3>Veja a mágica</h3>
+      <p>Abra o dashboard. Veja seus gastos, categorias, vencimentos, saldo. Em 30 dias, você terá clareza que nunca teve.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     COMPARAÇÃO
+═══════════════════════════════════════════ -->
+<section class="compare-section">
+  <div class="container" style="text-align:center">
+    <div class="eyebrow reveal">⚖️ COMPARE</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Planilha vs <span class="gradient">PenseFinances</span></h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto">A diferença não é sutil. É absurda.</p>
+  </div>
+  <div class="compare-grid">
+    <div class="compare-card bad reveal">
+      <h3>📋 Planilha de Excel</h3>
+      <div class="sub">O que a maioria das pessoas usa</div>
+      <ul>
+        <li><span class="ic">✕</span> Você precisa abrir o computador toda vez</li>
+        <li><span class="ic">✕</span> Categorizar gasto por gasto, manualmente</li>
+        <li><span class="ic">✕</span> Esquece de lançar e fica desatualizada</li>
+        <li><span class="ic">✕</span> Não te avisa de nada — você precisa lembrar</li>
+        <li><span class="ic">✕</span> Gráficos feios, difíceis de interpretar</li>
+        <li><span class="ic">✕</span> Sem sincronização entre dispositivos</li>
+        <li><span class="ic">✕</span> Boletos vencidos? Você descobre tarde demais</li>
+        <li><span class="ic">✕</span> 73% das pessoas abandonam em 3 semanas</li>
+      </ul>
+    </div>
+    <div class="compare-card good reveal reveal-delay-1">
+      <h3>⚡ PenseFinances</h3>
+      <div class="sub">O sistema feito pra ser usado todo dia</div>
+      <ul>
+        <li><span class="ic">✓</span> Manda mensagem no Telegram, em 3 segundos</li>
+        <li><span class="ic">✓</span> IA categoriza automaticamente, com 96% de acerto</li>
+        <li><span class="ic">✓</span> Sempre atualizado — porque é fácil de usar</li>
+        <li><span class="ic">✓</span> Notificação 3 dias antes do vencimento</li>
+        <li><span class="ic">✓</span> Dashboard cinematográfico, claríssimo</li>
+        <li><span class="ic">✓</span> Sync em tempo real entre Android, iOS, Web</li>
+        <li><span class="ic">✓</span> Calendário de vencimentos com tudo no lugar</li>
+        <li><span class="ic">✓</span> 89% dos usuários continuam ativos após 6 meses</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     NÚMEROS GIGANTES
+═══════════════════════════════════════════ -->
+<section class="numbers-section">
+  <div class="container" style="text-align:center;margin-bottom:60px">
+    <div class="eyebrow reveal">🔥 RESULTADOS REAIS</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Os números falam por si.</h2>
+  </div>
+  <div class="numbers-grid">
+    <div class="num-card reveal">
+      <div class="v" data-target="10247">0</div>
+      <div class="l">usuários ativos</div>
+    </div>
+    <div class="num-card reveal reveal-delay-1">
+      <div class="v" data-target="8400000" data-prefix="R$ " data-divisor="1000000" data-suffix="M">0</div>
+      <div class="l">economizados pela comunidade</div>
+    </div>
+    <div class="num-card reveal reveal-delay-2">
+      <div class="v" data-target="98" data-suffix="%">0</div>
+      <div class="l">indicariam a um amigo</div>
+    </div>
+    <div class="num-card reveal reveal-delay-3">
+      <div class="v" data-target="49" data-divisor="10" data-decimals="1">0</div>
+      <div class="l">avaliação média ★</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     DEPOIMENTOS
+═══════════════════════════════════════════ -->
+<section class="depo-section">
+  <div class="container" style="text-align:center">
+    <div class="eyebrow reveal">💬 DEPOIMENTOS</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Pessoas como você. <span class="gradient">Resultados reais.</span></h2>
+  </div>
+
+  <div class="depo-track">
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"Em 2 meses descobri que gastava <strong>R$ 720 só em delivery</strong>. Cortei pela metade. Já guardei R$ 4.300 em 6 meses."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">M</div>
+        <div class="depo-info">
+          <div class="name">Mariana S.</div>
+          <div class="role">Designer · São Paulo</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"O <strong>bot do Telegram mudou minha vida</strong>. Eu literalmente nunca conseguia manter planilha. Agora é automático."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#06b6d4,#3b82f6)">L</div>
+        <div class="depo-info">
+          <div class="name">Lucas P.</div>
+          <div class="role">Desenvolvedor · Curitiba</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"Saí de R$ 12 mil em dívida pra <strong>quitar tudo em 11 meses</strong>. Sem o PenseFinances eu nunca teria visto onde tava sangrando."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#10b981,#06b6d4)">R</div>
+        <div class="depo-info">
+          <div class="name">Renata K.</div>
+          <div class="role">Médica · Belo Horizonte</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"Funciona <strong>perfeitamente no iPhone e Android</strong>. Minha esposa lança no dela, eu vejo aqui. Acabou a guerra do orçamento de casa."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#7c3aed,#ec4899)">F</div>
+        <div class="depo-info">
+          <div class="name">Felipe A.</div>
+          <div class="role">Consultor · Rio de Janeiro</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"Fui de 'não faço ideia onde vai meu dinheiro' pra <strong>economizar R$ 1.200/mês</strong>. Em 3 meses. Não é exagero."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#ec4899,#f43f5e)">A</div>
+        <div class="depo-info">
+          <div class="name">Ana C.</div>
+          <div class="role">Professora · Salvador</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"O calendário de vencimentos <strong>salvou minhas finanças</strong>. Antes eu pagava juros toda semana. Agora? Zero atrasos em 8 meses."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">P</div>
+        <div class="depo-info">
+          <div class="name">Pedro M.</div>
+          <div class="role">Engenheiro · Florianópolis</div>
+        </div>
+      </div>
+    </div>
+    <!-- duplicate for seamless loop -->
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"Em 2 meses descobri que gastava <strong>R$ 720 só em delivery</strong>. Cortei pela metade. Já guardei R$ 4.300 em 6 meses."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444)">M</div>
+        <div class="depo-info">
+          <div class="name">Mariana S.</div>
+          <div class="role">Designer · São Paulo</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"O <strong>bot do Telegram mudou minha vida</strong>. Eu literalmente nunca conseguia manter planilha. Agora é automático."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#06b6d4,#3b82f6)">L</div>
+        <div class="depo-info">
+          <div class="name">Lucas P.</div>
+          <div class="role">Desenvolvedor · Curitiba</div>
+        </div>
+      </div>
+    </div>
+    <div class="depo-card">
+      <div class="depo-stars">★★★★★</div>
+      <div class="depo-text">"Saí de R$ 12 mil em dívida pra <strong>quitar tudo em 11 meses</strong>."</div>
+      <div class="depo-author">
+        <div class="depo-av" style="background:linear-gradient(135deg,#10b981,#06b6d4)">R</div>
+        <div class="depo-info">
+          <div class="name">Renata K.</div>
+          <div class="role">Médica · Belo Horizonte</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     PRICING
+═══════════════════════════════════════════ -->
+<section class="pricing-section" id="pricing">
+  <div class="container" style="text-align:center">
+    <div class="eyebrow reveal">💎 PLANOS</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Custa <span class="gradient">menos que um almoço</span>.<br>Vale como um aumento.</h2>
+    <p class="section-sub reveal reveal-delay-2" style="margin:0 auto">Em média, nossos usuários economizam <strong style="color:var(--green)">R$ 847/mês</strong>. Você gastaria isso em quantos meses do plano?</p>
+    <div class="pricing-toggle reveal reveal-delay-3">
+      <button onclick="setBilling('monthly')" id="bMonth">Mensal</button>
+      <button class="on" onclick="setBilling('annual')" id="bAnnual">Anual <span class="save">−38%</span></button>
+    </div>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <div class="price-name">Free</div>
+      <div class="price-tagline">Para começar a colocar a casa em ordem</div>
+      <div class="price-value"><span class="price-amt">R$ 0</span></div>
+      <div class="price-per" style="margin-bottom:30px">para sempre</div>
+      <ul class="price-list">
+        <li><span class="check">✓</span> Até 50 transações/mês</li>
+        <li><span class="check">✓</span> 1 cartão de crédito</li>
+        <li><span class="check">✓</span> Dashboard básico</li>
+        <li><span class="check">✓</span> Categorias padrão</li>
+        <li class="disabled"><span class="x">✕</span> Bot do Telegram</li>
+        <li class="disabled"><span class="x">✕</span> Vencimentos & alertas</li>
+        <li class="disabled"><span class="x">✕</span> Orçamento familiar</li>
+      </ul>
+      <a href="/dashboard" class="price-cta">Começar grátis</a>
+    </div>
+
+    <div class="price-card featured reveal reveal-delay-1">
+      <div class="price-badge">⭐ Mais popular</div>
+      <div class="price-name">Pro</div>
+      <div class="price-tagline">Tudo que você precisa para dominar suas finanças</div>
+      <div class="price-value">
+        <span class="price-old" id="pOld">R$ 478</span>
+      </div>
+      <div class="price-value">
+        <span class="price-cur">R$</span>
+        <span class="price-amt" id="pAmt">24</span>
+        <span class="price-per" id="pPer">,75 / mês</span>
+      </div>
+      <div class="price-save" id="pSave">Economiza R$ 181/ano · 38% off</div>
+      <ul class="price-list">
+        <li><span class="check">✓</span> <strong>Transações ilimitadas</strong></li>
+        <li><span class="check">✓</span> Cartões ilimitados + import PDF</li>
+        <li><span class="check">✓</span> <strong>Bot do Telegram completo</strong></li>
+        <li><span class="check">✓</span> IA de categorização automática</li>
+        <li><span class="check">✓</span> Vencimentos & notificações push</li>
+        <li><span class="check">✓</span> Metas, limites e dívidas</li>
+        <li><span class="check">✓</span> Orçamento familiar (até 4 pessoas)</li>
+        <li><span class="check">✓</span> Investimentos e patrimônio</li>
+        <li><span class="check">✓</span> Sync entre todos os dispositivos</li>
+        <li><span class="check">✓</span> Suporte prioritário</li>
+      </ul>
+      <a href="/dashboard" class="price-cta">Começar 7 dias grátis →</a>
+    </div>
+
+    <div class="price-card reveal reveal-delay-2">
+      <div class="price-name">Family</div>
+      <div class="price-tagline">Para a casa toda — até 8 membros</div>
+      <div class="price-value">
+        <span class="price-old">R$ 838</span>
+      </div>
+      <div class="price-value">
+        <span class="price-cur">R$</span>
+        <span class="price-amt" id="pAmtFam">42</span>
+        <span class="price-per" id="pPerFam">,75 / mês</span>
+      </div>
+      <div class="price-save">Economiza R$ 326/ano · 38% off</div>
+      <ul class="price-list">
+        <li><span class="check">✓</span> <strong>Tudo do Pro</strong></li>
+        <li><span class="check">✓</span> Até 8 membros familiares</li>
+        <li><span class="check">✓</span> Permissões granulares por membro</li>
+        <li><span class="check">✓</span> Relatórios consolidados da casa</li>
+        <li><span class="check">✓</span> Metas familiares (viagem, casa)</li>
+        <li><span class="check">✓</span> Backup mensal automático</li>
+        <li><span class="check">✓</span> Suporte VIP via WhatsApp</li>
+      </ul>
+      <a href="/dashboard" class="price-cta">Começar 7 dias grátis</a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     GARANTIA
+═══════════════════════════════════════════ -->
+<section class="garantia">
+  <div class="garantia-card reveal">
+    <div class="garantia-shield">🛡️</div>
+    <div class="garantia-text">
+      <h3>Garantia de 30 dias. Risco zero.</h3>
+      <p>Se em 30 dias você não tiver clareza absoluta sobre seu dinheiro, <strong style="color:var(--green)">devolvemos cada centavo</strong>. Sem perguntas. Sem burocracia. Você só clica em um botão.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FAQ
+═══════════════════════════════════════════ -->
+<section class="faq-section" id="faq">
+  <div class="container" style="text-align:center">
+    <div class="eyebrow reveal">❓ DÚVIDAS</div>
+    <h2 class="section-h2 reveal reveal-delay-1">Perguntas frequentes</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item reveal" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Como funciona o bot do Telegram?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Quando você cria sua conta no PenseFinances, recebe um link único pra conectar o bot. Você manda mensagens normais como "gastei 35 no almoço" ou "recebi 8500", e nossa IA processa, categoriza e salva. Funciona com texto, foto de cupom e até áudio.
+      </div>
+    </div>
+    <div class="faq-item reveal reveal-delay-1" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Meus dados estão seguros?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Sim, totalmente. Usamos criptografia ponta-a-ponta, conformidade com LGPD, servidores no Brasil, e <strong>nunca</strong> compartilhamos seus dados financeiros com ninguém. Você pode exportar ou deletar tudo a qualquer momento.
+      </div>
+    </div>
+    <div class="faq-item reveal reveal-delay-2" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Preciso conectar minha conta bancária?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        <strong>Não.</strong> O PenseFinances não acessa seu banco. Você lança os gastos pelo bot ou pelo app — e mantém controle total. Para faturas de cartão, você pode importar o PDF que o banco envia, e o sistema processa tudo automaticamente.
+      </div>
+    </div>
+    <div class="faq-item reveal reveal-delay-3" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Funciona no iPhone e Android?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Sim. O sistema é PWA (Progressive Web App) — você instala como um app normal no iPhone e Android, mas sem precisar passar pela App Store ou Play Store. Funciona também no navegador do computador, com sync em tempo real entre todos os dispositivos.
+      </div>
+    </div>
+    <div class="faq-item reveal" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>E se eu cancelar? Perco meus dados?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Não. Mesmo cancelando, você pode <strong>exportar todos os seus dados em CSV</strong> a qualquer momento. Se você só voltar pro plano Free, ainda mantém acesso aos dados existentes — só perde a capacidade de adicionar transações ilimitadas.
+      </div>
+    </div>
+    <div class="faq-item reveal reveal-delay-1" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Quanto tempo leva pra ver resultado?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Em <strong>30 dias</strong> você já tem clareza completa de pra onde vai seu dinheiro. Em 60 dias, padrões aparecem (e você corta o que não faz sentido). Em 90 dias, a maioria dos usuários economiza pelo menos 15-20% do que gastava antes.
+      </div>
+    </div>
+    <div class="faq-item reveal reveal-delay-2" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Posso testar antes de pagar?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Sim. <strong>7 dias grátis</strong> no plano Pro, sem precisar de cartão. Se gostar, cobra; se não gostar, simplesmente não converte. Além disso, garantia de 30 dias após a cobrança — devolvemos sem perguntas.
+      </div>
+    </div>
+    <div class="faq-item reveal reveal-delay-3" onclick="toggleFaq(this)">
+      <div class="faq-q">
+        <span>Tem suporte humano?</span>
+        <div class="icn">+</div>
+      </div>
+      <div class="faq-a">
+        Sim. No plano Pro, suporte por email com resposta em até 12h úteis. No plano Family, suporte VIP por WhatsApp com resposta em até 1h em horário comercial.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     CTA FINAL
+═══════════════════════════════════════════ -->
+<section class="final-cta">
+  <div class="final-cta-content">
+    <div class="urgency reveal">
+      <span class="pulse"></span>
+      Promo de lançamento: 38% off no anual — só essa semana
+    </div>
+    <h2 class="reveal reveal-delay-1">
+      Daqui 30 dias você terá<br>
+      <span class="gradient">controle total</span>.
+    </h2>
+    <p class="reveal reveal-delay-2">
+      Ou seu dinheiro de volta. <strong style="color:var(--txt)">Sem perguntas, sem burocracia.</strong><br>
+      Junte-se aos +10.247 brasileiros que pararam de perder dinheiro à toa.
+    </p>
+    <div class="hero-ctas reveal reveal-delay-3" style="justify-content:center">
+      <a href="/dashboard" class="btn-primary">
+        <span>Começar grátis agora</span>
+        <span>→</span>
+      </a>
+    </div>
+    <div style="margin-top:24px;font-size:13px;color:var(--muted);display:flex;gap:18px;justify-content:center;flex-wrap:wrap" class="reveal reveal-delay-4">
+      <span>✓ Sem cartão de crédito</span>
+      <span>✓ 7 dias grátis</span>
+      <span>✓ Cancela quando quiser</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════════ -->
+<footer>
+  <div class="foot-grid">
+    <div class="foot-col">
+      <div class="foot-brand">
+        <div class="mark">P</div>
+        <div class="name">PenseFinances</div>
+      </div>
+      <p class="foot-desc">O sistema financeiro que parece mágica. Feito por brasileiros, pra brasileiros — entendendo o jeito que a gente fala, gasta e vive.</p>
+      <div style="display:flex;gap:10px">
+        <a href="#" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px">𝕏</a>
+        <a href="#" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px">📷</a>
+        <a href="#" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.05);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px">📱</a>
+      </div>
+    </div>
+    <div class="foot-col">
+      <h4>Produto</h4>
+      <a href="#features">Recursos</a>
+      <a href="#telegram">Bot Telegram</a>
+      <a href="#pricing">Preços</a>
+      <a href="/dashboard">Login</a>
+    </div>
+    <div class="foot-col">
+      <h4>Empresa</h4>
+      <a href="#">Sobre</a>
+      <a href="#">Blog</a>
+      <a href="#">Contato</a>
+      <a href="#">Carreiras</a>
+    </div>
+    <div class="foot-col">
+      <h4>Legal</h4>
+      <a href="#">Privacidade</a>
+      <a href="#">Termos</a>
+      <a href="#">LGPD</a>
+      <a href="#">Cookies</a>
+    </div>
+  </div>
+  <div class="foot-bot">
+    <div>© 2026 PenseFinances. Todos os direitos reservados.</div>
+    <div class="badges">
+      <span>🔒 Criptografia AES-256</span>
+      <span>🇧🇷 Servidores no Brasil</span>
+      <span>⚡ Uptime 99.97%</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════
+// SCROLL PROGRESS
+// ═══════════════════════════════════════════
+const progress = document.getElementById('progress');
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', ()=>{
+  const max = document.documentElement.scrollHeight - window.innerHeight;
+  const pct = max>0 ? window.scrollY/max : 0;
+  progress.style.transform = `scaleX(${pct})`;
+  nav.classList.toggle('scrolled', window.scrollY>20);
+}, {passive:true});
+
+// ═══════════════════════════════════════════
+// REVEAL ON SCROLL (IntersectionObserver)
+// ═══════════════════════════════════════════
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  });
+}, {threshold:.1, rootMargin:'0px 0px -80px 0px'});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+// ═══════════════════════════════════════════
+// CUSTOM CURSOR
+// ═══════════════════════════════════════════
+const cursor = document.getElementById('cursor');
+let cx=0, cy=0, tx=0, ty=0;
+window.addEventListener('mousemove', e=>{ tx=e.clientX; ty=e.clientY; });
+function animateCursor(){
+  cx += (tx-cx)*.18;
+  cy += (ty-cy)*.18;
+  cursor.style.left = cx+'px';
+  cursor.style.top = cy+'px';
+  requestAnimationFrame(animateCursor);
+}
+animateCursor();
+document.querySelectorAll('a, button, .feat-card, .price-card, .faq-item, .depo-card').forEach(el=>{
+  el.addEventListener('mouseenter', ()=>cursor.classList.add('hover'));
+  el.addEventListener('mouseleave', ()=>cursor.classList.remove('hover'));
+});
+
+// ═══════════════════════════════════════════
+// 3D TILT — Hero mockup follows mouse
+// ═══════════════════════════════════════════
+const dashMock = document.querySelector('.dash-mock');
+const heroVisual = document.querySelector('.hero-visual');
+if(dashMock && heroVisual){
+  heroVisual.addEventListener('mousemove', e=>{
+    const r = heroVisual.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - .5;
+    const y = (e.clientY - r.top) / r.height - .5;
+    dashMock.style.animation = 'none';
+    dashMock.style.transform = `rotateY(${-8 + x*10}deg) rotateX(${5 - y*10}deg)`;
+  });
+  heroVisual.addEventListener('mouseleave', ()=>{
+    dashMock.style.animation = '';
+    dashMock.style.transform = '';
+  });
+}
+
+// ═══════════════════════════════════════════
+// MAGNETIC BUTTONS (subtle pull on cursor)
+// ═══════════════════════════════════════════
+document.querySelectorAll('.btn-primary').forEach(btn=>{
+  btn.addEventListener('mousemove', e=>{
+    const r = btn.getBoundingClientRect();
+    const x = e.clientX - r.left - r.width/2;
+    const y = e.clientY - r.top - r.height/2;
+    btn.style.transform = `translate(${x*.2}px, ${y*.2 - 3}px)`;
+  });
+  btn.addEventListener('mouseleave', ()=>{
+    btn.style.transform = '';
+  });
+});
+
+// ═══════════════════════════════════════════
+// COUNTERS (animate when in viewport)
+// ═══════════════════════════════════════════
+const counterIO = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(!e.isIntersecting) return;
+    const el = e.target;
+    const target = parseFloat(el.dataset.target);
+    const divisor = parseFloat(el.dataset.divisor || 1);
+    const decimals = parseInt(el.dataset.decimals || 0);
+    const prefix = el.dataset.prefix || '';
+    const suffix = el.dataset.suffix || '';
+    const dur = 2000;
+    const start = performance.now();
+    function tick(t){
+      const p = Math.min((t-start)/dur, 1);
+      const eased = 1 - Math.pow(1-p, 3);
+      const v = (target * eased) / divisor;
+      const formatted = decimals>0 ? v.toFixed(decimals) : Math.round(v).toLocaleString('pt-BR');
+      el.textContent = prefix + formatted + suffix;
+      if(p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    counterIO.unobserve(el);
+  });
+}, {threshold:.5});
+document.querySelectorAll('[data-target]').forEach(el=>counterIO.observe(el));
+
+// ═══════════════════════════════════════════
+// FAQ ACCORDION
+// ═══════════════════════════════════════════
+function toggleFaq(item){
+  document.querySelectorAll('.faq-item.open').forEach(i=>{
+    if(i!==item) i.classList.remove('open');
+  });
+  item.classList.toggle('open');
+}
+
+// ═══════════════════════════════════════════
+// PRICING TOGGLE
+// ═══════════════════════════════════════════
+const PRICES = {
+  monthly: {pro:{amt:'39', per:',90 / mês', old:'', save:'7 dias grátis'},
+            fam:{amt:'69', per:',90 / mês', old:'', save:'7 dias grátis'}},
+  annual:  {pro:{amt:'24', per:',75 / mês', old:'R$ 478', save:'Economiza R$ 181/ano · 38% off'},
+            fam:{amt:'42', per:',75 / mês', old:'R$ 838', save:'Economiza R$ 326/ano · 38% off'}}
+};
+function setBilling(period){
+  document.getElementById('bMonth').classList.toggle('on', period==='monthly');
+  document.getElementById('bAnnual').classList.toggle('on', period==='annual');
+  const p = PRICES[period];
+  document.getElementById('pAmt').textContent = p.pro.amt;
+  document.getElementById('pPer').textContent = p.pro.per;
+  document.getElementById('pOld').textContent = p.pro.old;
+  document.getElementById('pOld').style.display = p.pro.old ? '' : 'none';
+  document.getElementById('pSave').textContent = p.pro.save;
+  document.getElementById('pAmtFam').textContent = p.fam.amt;
+  document.getElementById('pPerFam').textContent = p.fam.per;
+}
+
+// ═══════════════════════════════════════════
+// SMOOTH SCROLL para links âncora
+// ═══════════════════════════════════════════
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click', e=>{
+    const href = a.getAttribute('href');
+    if(href.length<=1) return;
+    const t = document.querySelector(href);
+    if(t){
+      e.preventDefault();
+      window.scrollTo({top: t.offsetTop - 60, behavior:'smooth'});
+    }
+  });
+});
+
+// ═══════════════════════════════════════════
+// PARALLAX SUBTIL (mesh-bg + grid-overlay)
+// ═══════════════════════════════════════════
+const meshBg = document.querySelector('.mesh-bg');
+const grid = document.querySelector('.grid-overlay');
+window.addEventListener('scroll', ()=>{
+  const y = window.scrollY;
+  if(meshBg) meshBg.style.transform = `translateY(${y*.3}px)`;
+  if(grid) grid.style.transform = `translateY(${y*.15}px)`;
+}, {passive:true});
+
+</script>
+</body>
+</html>
