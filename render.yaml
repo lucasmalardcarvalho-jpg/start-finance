@@ -1,0 +1,30 @@
+# Configuração do Render — auto-deploy quando push pra main
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: pensefinances
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: oregon
+    plan: free
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      # Estas precisam ser configuradas manualmente no painel Render:
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_KEY
+        sync: false
+      - key: BRAPI_TOKEN
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: TELEGRAM_TOKEN
+        sync: false
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: PORT
+        value: "8080"
+      - key: ALLOWED_ORIGINS
+        value: "https://finances.pensehd.com,https://pensefinances.onrender.com"
