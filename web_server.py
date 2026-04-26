@@ -106,23 +106,8 @@ def serve_sw():
     return resp
 
 
-# ── Landing Page (vendas) ──────────────────────────────────────────
+# ── Dashboard / Login (rota raiz) ──────────────────────────────────
 @app.route("/")
-@app.route("/vendas")
-@app.route("/lp")
-def landing():
-    try:
-        resp = send_file("vendas.html")
-        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        resp.headers["Pragma"] = "no-cache"
-        resp.headers["Expires"] = "0"
-        return resp
-    except FileNotFoundError:
-        # Fallback: se vendas.html não existir, serve o dashboard
-        return send_file("dashboard.html")
-
-
-# ── Dashboard HTML ──────────────────────────────────────────────────
 @app.route("/dashboard")
 @app.route("/app")
 def dashboard():
@@ -134,6 +119,20 @@ def dashboard():
         return resp
     except FileNotFoundError:
         return "<h2>dashboard.html não encontrado</h2>", 404
+
+
+# ── Landing Page (vendas) ──────────────────────────────────────────
+@app.route("/vendas")
+@app.route("/lp")
+def landing():
+    try:
+        resp = send_file("vendas.html")
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+        resp.headers["Expires"] = "0"
+        return resp
+    except FileNotFoundError:
+        return "<h2>vendas.html não encontrado</h2>", 404
 
 
 # ── GET todas as transações ─────────────────────────────────────────

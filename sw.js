@@ -1,6 +1,7 @@
-// PenseFinances — Service Worker v1.4 (landing page split)
-const CACHE = 'pf-v1.4';
+// PenseFinances — Service Worker v1.5 (rotas: / = dashboard, /vendas = landing)
+const CACHE = 'pf-v1.5';
 const STATIC = [
+  '/',
   '/dashboard',
   '/logo.svg',
   '/logo-icon.svg',
@@ -37,7 +38,7 @@ self.addEventListener('fetch', e => {
   }
 
   // Dashboard HTML: network-first (garante versão atualizada)
-  if(url.pathname === '/dashboard' || url.pathname === '/app') {
+  if(url.pathname === '/' || url.pathname === '/dashboard' || url.pathname === '/app') {
     e.respondWith(
       fetch(e.request)
         .then(res => {
