@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.3 (consórcio: investimento integrado a despesa fixa)
-const CACHE = 'pf-v2.3';
+// PenseFinances — Service Worker v2.7 (rollback estável — força cache bust)
+const CACHE = 'pf-v2.7';
 const STATIC = [
   '/',
   '/dashboard',
