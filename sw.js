@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.5 (toggle de visibilidade da senha no login)
-const CACHE = 'pf-v2.5';
+// PenseFinances — Service Worker v2.6 (revert do toggle senha — força cache bust)
+const CACHE = 'pf-v2.6';
 const STATIC = [
   '/',
   '/dashboard',
