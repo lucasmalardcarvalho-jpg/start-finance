@@ -3306,13 +3306,23 @@ async function pushDataToServer(){
   try{
     const isJWT = AUTH_TOKEN && AUTH_TOKEN.split('.').length === 3;
     if(!isJWT || !AUTH_USER) return;
+    // PROTEÇÃO CRÍTICA: nunca pusha antes do pull inicial completar.
+    // Sem isso, se o app inicializa com TODAS_TX=[] e algum debounce dispara
+    // um push antes de carregar o servidor, podemos sobrescrever dados reais.
+    if(!_dataPullComplete && !_intentionalClear){
+      console.warn('[push] abortado — pull inicial ainda não completou');
+      return;
+    }
     const data = _collectAllUserData();
     // Proteção anti-wipe: não envia dados vazios a menos que seja uma limpeza intencional
     if(!_intentionalClear){
       const hasData = (data.txs||[]).length > 0 || (data.fixas||[]).length > 0 ||
                       (data.dividas||[]).length > 0 || (data.metas||[]).length > 0 ||
                       (data.inv||[]).length > 0 || (data.cartoes||[]).length > 0;
-      if(!hasData) return;
+      if(!hasData){
+        console.warn('[push] abortado — todos os dados estão vazios (anti-wipe)');
+        return;
+      }
     }
     data._pushTs = Date.now();
     data._device = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
@@ -10808,19 +10818,31 @@ function coletarVencimentos(ano, mes){
     if(dtV>=new Date(ano,mes,1)) items.push({dia:vDia,tipo:'divida',nome:`⛓️ ${d.nome}`,valor:d.mensal,desc:'Parcela dívida',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal'});
   });
 
-  // 4) Transações avulsas (Gasto, não cartão crédito) do mês visualizado
+  // 4) Transações avulsas (Gasto, não cartão crédito) do mês visualizado.
+  // BUG ANTIGO: filtrava por t.data (que é a data ORIGINAL da compra), o que
+  // fazia parcelas futuras aparecerem todas no mês da compra (ex: compra
+  // parcelada em 40x lançada em janeiro mostrava 40 entradas em janeiro).
+  // FIX: filtra por t.mes_ano (mês de referência da parcela, sempre único
+  // por parcela) e ajusta a data do vencimento pra cair no mês correto.
+  const mLabel = `${MESES_PT[mes]}/${ano}`;
   TODAS_TX.forEach(t=>{
     if(t.tipo!=='Gasto' || t.valor>=0) return;
     if((t.metodo||'')==='Cartão crédito') return; // já contabilizado na fatura
-    const pts=t.data.split('/');
+    if(t.mes_ano !== mLabel) return; // só conta parcelas DESTE mês
+    const pts=(t.data||'').split('/');
     if(pts.length!==3) return;
-    const tDia=parseInt(pts[0]), tMes=parseInt(pts[1])-1, tAno=parseInt(pts[2]);
-    if(tAno!==ano||tMes!==mes) return;
-    const dtT=new Date(tAno,tMes,tDia);
+    const tDia=parseInt(pts[0]) || 1; // dia original da compra (vira o dia do venc na parcela)
+    // Se o dia for inválido para o mês (ex: dia 31 em fevereiro), ajusta
+    const diaSeguro = Math.min(tDia, new Date(ano, mes+1, 0).getDate());
+    const dtT=new Date(ano, mes, diaSeguro);
     const diasAte=Math.ceil((dtT-hoje)/(86400000));
-    const nome=`📝 ${t.descricao||t.categoria||'Despesa'}`;
-    const chave=`tx_${t.data}_${(t.descricao||t.categoria||'').replace(/[^a-zA-Z0-9]/g,'')}_${Math.round(Math.abs(t.valor))}`;
-    items.push({dia:tDia,tipo:'tx',nome,valor:Math.abs(t.valor),desc:'Despesa avulsa',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal',_txKey:chave});
+    // Identifica se é parcela e enriquece o nome
+    const ptotal = parseInt(t.parcelas)||0;
+    const patual = parseInt(t.parcela_atual)||1;
+    const parcLabel = ptotal>1 ? ` (${patual}/${ptotal})` : '';
+    const nome=`📝 ${t.descricao||t.categoria||'Despesa'}${parcLabel}`;
+    const chave=`tx_${t.mes_ano}_${(t.descricao||t.categoria||'').replace(/[^a-zA-Z0-9]/g,'')}_${patual}_${Math.round(Math.abs(t.valor))}`;
+    items.push({dia:diaSeguro,tipo:'tx',nome,valor:Math.abs(t.valor),desc:ptotal>1?`Parcela ${patual} de ${ptotal}`:'Despesa avulsa',diasAte,urgencia:diasAte<=3?'critico':diasAte<=7?'atencao':'normal',_txKey:chave});
   });
 
   return items.sort((a,b)=>a.dia-b.dia);

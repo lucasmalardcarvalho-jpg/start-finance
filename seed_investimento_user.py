@@ -444,6 +444,13 @@ def _run_seed() -> None:
         uid = None
         if resp.status_code == 200 and resp.json():
             uid = resp.json()[0]["id"]
+            # GUARD CRÍTICO: só prosseguir se o ID bater com TEST_ID, OU se o user
+            # nunca teve dados (linha sf_userdata vazia). Sem isso, se um usuário
+            # real registrar com investimento01@gmail.com, perderia os dados dele.
+            if uid != TEST_ID:
+                logger.warning(f"⚠️  Seed invest ABORTADO: email {TEST_EMAIL} pertence a "
+                               f"user real (id={uid}, esperado={TEST_ID}). Não sobrescreve.")
+                return
             logger.info(f"Seed invest: {TEST_EMAIL} já existe (id={uid}).")
         else:
             h = {**_sb_headers(), "Prefer": "resolution=merge-duplicates"}
@@ -457,7 +464,8 @@ def _run_seed() -> None:
                 return
 
         # 2. Já tem dados NA VERSÃO ATUAL do seed? Pula.
-        # Se a versão estiver desatualizada, sobrescreve (re-seed).
+        # Se a versão estiver desatualizada, sobrescreve APENAS se confirmar que
+        # é o user de demonstração (ID == TEST_ID, já validado acima).
         resp2 = httpx.get(
             f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{uid}&select=data",
             headers=_sb_headers(), timeout=10
@@ -471,6 +479,9 @@ def _run_seed() -> None:
                 _write_local_fallback(new_user, mock_data)
                 return
             elif existing_ver < SEED_VERSION:
+                # GUARD: só faz re-seed se o user é claramente o de demonstração.
+                # Se houver dados sem _seed_version mas o ID bater com TEST_ID,
+                # significa que é da v1 do seed (antes da version key existir) — OK sobrescrever.
                 logger.info(f"Seed invest: {TEST_EMAIL} v{existing_ver} → v{SEED_VERSION} (re-seed forçado).")
 
         _upsert_userdata(uid, mock_data)

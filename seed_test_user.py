@@ -381,6 +381,12 @@ def _run_seed() -> None:
         uid = None
         if resp.status_code == 200 and resp.json():
             uid = resp.json()[0]["id"]
+            # GUARD CRÍTICO: só prosseguir se o ID bater com TEST_ID. Se um usuário
+            # real registrou com este email, perderia os dados dele se sobrescrevêssemos.
+            if uid != TEST_ID:
+                logger.warning(f"⚠️  Seed ABORTADO: email {TEST_EMAIL} pertence a "
+                               f"user real (id={uid}, esperado={TEST_ID}). Não sobrescreve.")
+                return
             logger.info(f"Seed: usuário {TEST_EMAIL} já existe em Supabase (id={uid}).")
         else:
             # Cria o usuário
