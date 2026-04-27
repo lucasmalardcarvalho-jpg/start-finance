@@ -16,6 +16,9 @@ TEST_EMAIL    = "investimento01@gmail.com"
 TEST_PASSWORD = "1234567"
 TEST_NAME     = "Maria Investidora"
 TEST_ID       = "u_demo_invest01"
+# Versão do seed — bump quando mudar a estrutura dos dados mockados
+# pra forçar re-seed em usuários existentes
+SEED_VERSION  = 2  # v2: removidas TXs duplicadas de consórcio (já cobertas por fixas)
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -306,19 +309,19 @@ def _build_mock_data() -> dict:
             "mes_ano": f"{meses[int(m)-1]}/{y}",
         }
 
+    # IMPORTANTE: NÃO incluir transações de "Consórcio · X" aqui!
+    # Os 4 consórcios já têm fixa correspondente (origem='consorcio'),
+    # que aparece nos vencimentos e é contabilizada em calcularMes().
+    # Adicionar TX duplicaria os valores no dashboard e em vencimentos.
     txs = [
         # Maio 2026 (mês corrente — coincide com user's currentDate)
         tx("01/05/2026", "Salário CLT",                  15000, "Salário", "Pix"),
         tx("05/05/2026", "Aluguel apartamento",          -2200, "Moradia", "Pix"),
-        tx("05/05/2026", "Consórcio Móveis Cozinha",      -580, "Investimentos", "Boleto"),
         tx("08/05/2026", "Netflix + Spotify + Prime",      -95, "Assinaturas", "Cartão crédito", "Nubank"),
-        tx("10/05/2026", "Consórcio Apto Vila Madalena", -1850, "Investimentos", "Boleto"),
         tx("12/05/2026", "Plano de Saúde Bradesco",       -580, "Saúde", "Débito automático"),
         tx("15/05/2026", "Energia Elétrica CEMIG",        -280, "Contas", "Boleto"),
-        tx("15/05/2026", "Consórcio Honda HR-V",         -1280, "Investimentos", "Boleto"),
         tx("18/05/2026", "Aporte mensal Tesouro",        -2000, "Investimentos", "Pix"),
         tx("18/05/2026", "Aporte mensal PGBL XP",        -1000, "Investimentos", "Débito automático"),
-        tx("20/05/2026", "Consórcio Viagem Disney",      -1100, "Investimentos", "Boleto"),
         tx("20/05/2026", "Internet Vivo Fibra",           -120, "Contas", "Débito automático"),
         tx("22/05/2026", "Aporte BTC mensal (DCA)",       -500, "Investimentos", "Pix"),
         tx("22/05/2026", "Aporte VALE3 (10 cotas)",       -858, "Investimentos", "Pix"),
@@ -330,19 +333,13 @@ def _build_mock_data() -> dict:
         # Abril 2026
         tx("01/04/2026", "Salário CLT",                  15000, "Salário", "Pix"),
         tx("05/04/2026", "Aluguel apartamento",          -2200, "Moradia", "Pix"),
-        tx("05/04/2026", "Consórcio Móveis Cozinha",      -580, "Investimentos", "Boleto"),
-        tx("10/04/2026", "Consórcio Apto Vila Madalena", -1850, "Investimentos", "Boleto"),
-        tx("15/04/2026", "Consórcio Honda HR-V",         -1280, "Investimentos", "Boleto"),
         tx("18/04/2026", "Aporte mensal Tesouro",        -2000, "Investimentos", "Pix"),
-        tx("20/04/2026", "Consórcio Viagem Disney",      -1100, "Investimentos", "Boleto"),
         tx("22/04/2026", "Aporte BTC mensal (DCA)",       -500, "Investimentos", "Pix"),
         tx("28/04/2026", "Dividendos MXRF11",               55, "Dividendos", "Pix"),
 
         # Março 2026
         tx("01/03/2026", "Salário CLT",                  15000, "Salário", "Pix"),
         tx("05/03/2026", "Aluguel apartamento",          -2200, "Moradia", "Pix"),
-        tx("10/03/2026", "Consórcio Apto Vila Madalena", -1850, "Investimentos", "Boleto"),
-        tx("15/03/2026", "Consórcio Honda HR-V",         -1280, "Investimentos", "Boleto"),
         tx("18/03/2026", "Aporte mensal Tesouro",        -2000, "Investimentos", "Pix"),
         tx("28/03/2026", "Dividendos MXRF11",               53, "Dividendos", "Pix"),
     ]
@@ -368,6 +365,7 @@ def _build_mock_data() -> dict:
         "vcal_pagos":      {},
         "recorr_geradas":  {},
         "recorr_ultimo_mes": "",
+        "_seed_version":   SEED_VERSION,
     }
 
 
@@ -458,7 +456,8 @@ def _run_seed() -> None:
                 _write_local_fallback(new_user, mock_data)
                 return
 
-        # 2. Já tem dados? Pula.
+        # 2. Já tem dados NA VERSÃO ATUAL do seed? Pula.
+        # Se a versão estiver desatualizada, sobrescreve (re-seed).
         resp2 = httpx.get(
             f"{_SB_URL}/rest/v1/sf_userdata?user_id=eq.{uid}&select=data",
             headers=_sb_headers(), timeout=10
@@ -466,10 +465,13 @@ def _run_seed() -> None:
         if resp2.status_code == 200 and resp2.json():
             existing = resp2.json()[0].get("data", {}) or {}
             inv_count = len(existing.get("inv") or [])
-            if inv_count >= 5:
-                logger.info(f"Seed invest: {TEST_EMAIL} já tem {inv_count} investimentos, pulando.")
+            existing_ver = existing.get("_seed_version", 0)
+            if inv_count >= 5 and existing_ver >= SEED_VERSION:
+                logger.info(f"Seed invest: {TEST_EMAIL} já tem v{existing_ver} (>= {SEED_VERSION}), pulando.")
                 _write_local_fallback(new_user, mock_data)
                 return
+            elif existing_ver < SEED_VERSION:
+                logger.info(f"Seed invest: {TEST_EMAIL} v{existing_ver} → v{SEED_VERSION} (re-seed forçado).")
 
         _upsert_userdata(uid, mock_data)
         _write_local_fallback(new_user, mock_data)

@@ -1,5 +1,5 @@
-// PenseFinances — Service Worker v2.8 (rollback + detalhe customizado por tipo)
-const CACHE = 'pf-v2.8';
+// PenseFinances — Service Worker v2.9 (fix dupla contagem consórcio + força re-seed)
+const CACHE = 'pf-v2.9';
 const STATIC = [
   '/',
   '/dashboard',
