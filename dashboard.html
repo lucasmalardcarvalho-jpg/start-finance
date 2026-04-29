@@ -292,7 +292,8 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 
 /* MODAIS */
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:800;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px)}
-#ovConfirm{z-index:1000}
+#ovConfirm{z-index:1000!important}
+#ovEditAporte{z-index:900!important}
 .ov.open{display:flex}
 .modal{background:var(--card);border-radius:var(--r);box-shadow:var(--sh-lg);width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:mIn .22s ease}
 @keyframes mIn{from{opacity:0;transform:translateY(-18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
@@ -368,6 +369,8 @@ input,select,textarea{-webkit-text-size-adjust:none;text-size-adjust:none}
 .ivd-aporte-row .vl{font-weight:900;font-family:'JetBrains Mono',monospace;font-size:13px;text-align:right}
 .ivd-aporte-row .del{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;border-radius:5px}
 .ivd-aporte-row .del:hover{background:var(--verm-l);color:var(--verm)}
+.ivd-aporte-row .edt{background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;border-radius:5px}
+.ivd-aporte-row .edt:hover{background:rgba(59,130,246,.1);color:#3B82F6}
 /* DÍVIDA CARD */
 .dv-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;box-shadow:var(--sh);cursor:default;transition:all .2s}
 .dv-card:hover{box-shadow:var(--sh-md);border-color:var(--verm)}
@@ -1540,7 +1543,7 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
     <div style="padding:14px 22px;border-top:1px solid var(--border)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.06em">💸 Aportes & Retiradas</div>
-        <button class="btn bp btn-sm" onclick="ivdAddAporte()" id="ivdAddBtn">+ Aporte/Retirada</button>
+        <button class="btn bp btn-sm" onclick="ivdOpenAporteForm(-1)" id="ivdAddBtn">+ Aporte/Retirada</button>
       </div>
       <div id="ivdAportes" style="display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto"></div>
     </div>
@@ -1548,6 +1551,41 @@ input.valor-fmt{font-variant-numeric:tabular-nums}
   <div class="mf" style="border-top:1px solid var(--border)">
     <button class="btn bg" onclick="CM('ovIvDetail')">Fechar</button>
     <button class="btn bs" onclick="ivdEditAtivo()">✏️ Editar ativo</button>
+  </div>
+</div></div>
+
+<!-- Modal Editar/Adicionar Aporte -->
+<div class="ov" id="ovEditAporte"><div class="modal" style="max-width:400px">
+  <div class="mh">
+    <div class="mt" id="editAporteTit">Novo Aporte/Retirada</div>
+    <button class="mc" onclick="CM('ovEditAporte')">✕</button>
+  </div>
+  <div class="mb2">
+    <div style="display:grid;gap:12px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Tipo</label>
+        <select id="editAporteTipo" class="sf-s" style="width:100%;margin-top:5px">
+          <option value="aporte">↑ Aporte (compra)</option>
+          <option value="retirada">↓ Retirada (venda)</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Valor (R$)</label>
+        <input id="editAporteValor" type="number" step="0.01" min="0.01" class="sf-f" style="width:100%;margin-top:5px" placeholder="0,00">
+      </div>
+      <div id="editAporteQtdBlock">
+        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Qtd. de cotas (opcional)</label>
+        <input id="editAporteQtd" type="number" step="any" min="0" class="sf-f" style="width:100%;margin-top:5px" placeholder="0">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">Data</label>
+        <input id="editAporteData" type="date" class="sf-f" style="width:100%;margin-top:5px">
+      </div>
+    </div>
+  </div>
+  <div class="mf">
+    <button class="btn bg" onclick="CM('ovEditAporte')">Cancelar</button>
+    <button class="btn bp" onclick="_ivdSalvarAporte()">Salvar</button>
   </div>
 </div></div>
 
@@ -7583,7 +7621,8 @@ function _ivdRenderAportes(v){
     el.innerHTML = `<div style="text-align:center;padding:18px;color:var(--muted);font-size:12px">Nenhum aporte registrado.<br><span style="font-size:10px">Use o botão acima para adicionar compras/vendas</span></div>`;
     return;
   }
-  el.innerHTML = aportes.map((a,i)=>{
+  el.innerHTML = aportes.map((a)=>{
+    const origIdx = (v.aportes||[]).indexOf(a);
     const isOut = (a.tipo||'aporte')==='retirada';
     const valor = parseFloat(a.valor||0);
     const qtd = parseFloat(a.qtd||0);
@@ -7596,7 +7635,8 @@ function _ivdRenderAportes(v){
         <div class="dt">${dt}${a.preco?' · R$ '+parseFloat(a.preco).toFixed(2)+'/ud':''}</div>
       </div>
       <div class="vl" style="color:${isOut?'var(--verm)':'var(--verde)'}">${sign} ${fmt(valor)}</div>
-      <button class="del" onclick="ivdRemoveAporte(${i})" title="Remover">🗑</button>
+      <button class="edt" onclick="ivdOpenAporteForm(${origIdx})" title="Editar">✏️</button>
+      <button class="del" onclick="ivdRemoveAporte(${origIdx})" title="Remover">🗑</button>
     </div>`;
   }).join('');
 }
@@ -7644,6 +7684,49 @@ function ivdRemoveAporte(i){
     renderInv();
     toast('🗑️ Removido','info');
   },'🗑️','Remover','bd');
+}
+
+let _editAporteIdx = -1;
+
+function ivdOpenAporteForm(i){
+  const v = INVESTIMENTOS[IVD_IDX];
+  if(!v) return;
+  _editAporteIdx = i;
+  const a = i >= 0 ? (v.aportes||[])[i] : null;
+  const isTradable = !!v.ticker;
+  document.getElementById('editAporteTit').textContent = i >= 0 ? '✏️ Editar Movimento' : '+ Novo Aporte/Retirada';
+  document.getElementById('editAporteTipo').value = a ? (a.tipo||'aporte') : 'aporte';
+  document.getElementById('editAporteValor').value = a ? parseFloat(a.valor||0).toFixed(2) : '';
+  document.getElementById('editAporteQtd').value = a && parseFloat(a.qtd||0)>0 ? parseFloat(a.qtd).toString() : '';
+  document.getElementById('editAporteData').value = a && a.data ? a.data : new Date().toISOString().split('T')[0];
+  document.getElementById('editAporteQtdBlock').style.display = isTradable ? '' : 'none';
+  OM('ovEditAporte');
+}
+
+function _ivdSalvarAporte(){
+  const v = INVESTIMENTOS[IVD_IDX];
+  if(!v) return;
+  const tipo = document.getElementById('editAporteTipo').value;
+  const valor = parseFloat(document.getElementById('editAporteValor').value)||0;
+  if(valor<=0) return toast('Valor inválido','error');
+  const qtd = parseFloat(document.getElementById('editAporteQtd').value)||0;
+  const preco = qtd>0 ? valor/qtd : 0;
+  const dataISO = document.getElementById('editAporteData').value || new Date().toISOString().split('T')[0];
+  if(!v.aportes) v.aportes = [];
+  if(_editAporteIdx>=0){
+    const orig = v.aportes[_editAporteIdx]||{};
+    v.aportes[_editAporteIdx] = {...orig, tipo, valor, qtd, preco, data:dataISO};
+    toast('✅ Movimento atualizado','success');
+  } else {
+    v.aportes.push({tipo, valor, qtd, preco, data:dataISO, ts:Date.now()});
+    toast(`✅ ${tipo==='retirada'?'Retirada':'Aporte'} de ${fmt(valor)} registrado`,'success');
+  }
+  CM('ovEditAporte');
+  _ivdRecalcular(v);
+  salvarInv();
+  _ivdRenderAportes(v);
+  _ivdRenderPosicao(v, IVD_DATA);
+  renderInv();
 }
 
 // Recalcula qtd total e valor investido baseado nos aportes
