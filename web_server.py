@@ -988,7 +988,7 @@ def _detectar_banco_txt(txt: str) -> str | None:
             return codes[bid.group(1)]
     if 'nu pagamentos' in t or 'nubank' in t: return 'Nubank'
     if 'instituição: banco inter' in t or 'banco inter' in t or 'inter s.a' in t: return 'Inter'
-    if 'bradesco' in t: return 'Bradesco'
+    if 'bradescard' in t or 'bradesco' in t: return 'Bradesco'
     if 'itaú' in t or 'itau' in t: return 'Itaú'
     if 'santander' in t: return 'Santander'
     if 'caixa econômica' in t or ' cef ' in t: return 'Caixa'
@@ -1038,7 +1038,7 @@ _PAGTO_DESC_RE = _re.compile(
 def _parse_valor_str(s: str):
     """(float_abs, is_negative)  — formato brasileiro 1.234,56"""
     s = str(s or '').strip()
-    neg = s.startswith('-') or s.endswith('-')
+    neg = s.startswith('-') or (s.startswith('(') and ')' in s)
     clean = _re.sub(r'[^\d,]', '', s)           # keep only digits + comma
     if ',' in clean:
         int_part, dec_part = clean.rsplit(',', 1)
@@ -1157,7 +1157,7 @@ def _try_table_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                         elif cd_c is None and (h in CD_HDR or h_clean in CD_HDR): cd_c = j
                         elif cre_c is None and (h in CRE_HDR or h_clean in CRE_HDR): cre_c = j
                         elif deb_c is None and (h in DEB_HDR or h_clean in DEB_HDR): deb_c = j
-                        elif val_c is None and (h in VAL_HDR or h_clean in VAL_HDR): val_c = j
+                        elif val_c is None and (h in VAL_HDR or h_clean in VAL_HDR or any(h.startswith(v) for v in VAL_HDR)): val_c = j
                         elif bal_c is None and (h in BAL_HDR or h_clean in BAL_HDR): bal_c = j
                         elif desc_c is None and any(k in h for k in DESC_HDR): desc_c = j
 
@@ -1319,7 +1319,9 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                     am = _AMT_RE.search(rest or full)
                     desc = ((rest or full)[:am.start()] if am else (rest or full)).strip()
                     desc = _re.sub(r'\s*[-–]\s*$', '', desc).strip()
-                    tipo = 'receita' if tx_str.strip().startswith('+') else 'gasto'
+                    # Trailing '-' = indicador de crédito (Bradescard, C&A, alguns extratos)
+                    trailing_dash = texts and texts[-1] == '-'
+                    tipo = 'receita' if (tx_str.strip().startswith('+') or trailing_dash) else 'gasto'
                     return data, desc, valor, tipo
         return None
 
@@ -1396,7 +1398,8 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                                 desc = (full[:am.start()] if am else full).strip()
                                 desc = _re.sub(r'\s*[-–]\s*$', '', desc).strip()
                                 if desc and len(desc) > 2:
-                                    tipo = 'receita' if tx_str.strip().startswith('+') else 'gasto'
+                                    trailing_dash = texts and texts[-1] == '-'
+                                    tipo = 'receita' if (tx_str.strip().startswith('+') or trailing_dash) else 'gasto'
                                     _add_row(rows, seen, ctx_date, desc, valor, tipo)
     except Exception as _e:
         import logging as _lg; _lg.getLogger(__name__).debug(f"word_grid_parse: {_e}")
