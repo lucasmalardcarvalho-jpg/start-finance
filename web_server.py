@@ -1027,6 +1027,8 @@ _PARC_CONT_RE = _re.compile(r'^\s*(?:Parc(?:ela)?\s*\.?\s*)(\d{1,3})\s*[/\-]\s*(
 
 # ── Helpers de parsing ───────────────────────────────────────────────────────
 _AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})', _re.I)
+# Como _AMT_RE mas captura '-' opcional colado ao valor (Bradescard/C&A: "115,40-" = crédito)
+_AMT_DASH = _re.compile(r'([+\-]?\s*R?\$?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})\s*(-)?')
 # Detecta entradas de pagamento/crédito em faturas de cartão (não são compras)
 _PAGTO_DESC_RE = _re.compile(
     r'^(?:pagamento|pgt\b|pgto\b|pag\.\s*fat|pag\s+fat|pag\s+cart|'
@@ -1407,6 +1409,72 @@ def _word_grid_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
     return len(rows) - added_before
 
 
+# ── Strategy 2c — fatura de cartão linha a linha (Bradescard, C&A) ───────────
+def _is_fatura_cc(txt: str) -> bool:
+    """Detecta se o PDF é fatura de cartão (não extrato bancário)."""
+    t = txt.lower()
+    return ('nacionais em reais' in t or
+            ('fatura' in t and ('lançamentos' in t or 'lancamentos' in t)) or
+            'pagamento recebido - obrigado' in t)
+
+def _fatura_cc_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
+    """
+    Parser para faturas de cartão de crédito (Bradescard, C&A, Bradesco Fatura).
+    Usa extract_text() que lida corretamente com layout de duas colunas.
+    Default tipo=gasto; '-' colado ao primeiro valor = receita (crédito/pagamento).
+
+    Estratégia:
+    - O extract_text() às vezes concatena conteúdo da coluna direita na mesma linha.
+    - O valor da transação é sempre o PRIMEIRO valor monetário da linha.
+    - Usamos _AMT_DASH para capturar o primeiro valor + indicador '-' em um passo só.
+    """
+    import pdfplumber
+    from datetime import datetime
+    cur_year = str(datetime.utcnow().year)
+
+    _DATE_SHORT = _re.compile(r'^(\d{1,2})[/\-](\d{1,2})\s+(.*)')
+
+    added_before = len(rows)
+
+    try:
+        with pdfplumber.open(_io.BytesIO(pdf_bytes)) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if not text:
+                    continue
+                for raw_line in text.splitlines():
+                    line = raw_line.strip()
+                    if len(line) < 8:
+                        continue
+                    m = _DATE_SHORT.match(line)
+                    if not m:
+                        continue
+                    data = _make_date(m.group(1), m.group(2), cur_year)
+                    if not data:
+                        continue
+                    rest = m.group(3).strip()
+                    # _AMT_DASH: captura PRIMEIRO valor e '-' colado (indicador de crédito)
+                    am = _AMT_DASH.search(rest)
+                    if not am:
+                        continue
+                    tx_str   = am.group(1).strip()
+                    is_credit = bool(am.group(2))   # '-' imediatamente após o valor
+                    valor, _ = _parse_valor_str(tx_str)
+                    if valor <= 0:
+                        continue
+                    # Descrição: tudo antes do primeiro valor monetário
+                    desc = rest[:am.start()].strip()
+                    desc = _re.sub(r'\s*[-–]\s*$', '', desc).strip()
+                    if not desc:
+                        continue
+                    tipo = 'receita' if is_credit else 'gasto'
+                    _add_row(rows, seen, data, desc, valor, tipo)
+    except Exception as _e:
+        import logging as _lg; _lg.getLogger(__name__).debug(f"fatura_cc_parse: {_e}")
+
+    return len(rows) - added_before
+
+
 # ── Strategy 2 — line-based heuristics ──────────────────────────────────────
 def _line_parse(txt: str, rows: list, seen: set):
     """
@@ -1601,6 +1669,7 @@ def _line_parse(txt: str, rows: list, seen: set):
 def _parse_pdf_rows(txt: str, pdf_bytes: bytes = None) -> list:
     """
     Parser universal de extratos bancários.
+    Estratégia 0 : fatura de cartão linha a linha (Bradescard, C&A — layout 2 colunas)
     Estratégia 1 : extração de tabelas pdfplumber (Bradesco, Itaú, Caixa, Sicredi…)
     Estratégia 2a: heurística linha a linha (Inter, Nubank, formatos livres)
     Estratégia 2b: word-grid — reconstrói linhas por posição Y (C6 Bank, Neon…)
@@ -1609,6 +1678,16 @@ def _parse_pdf_rows(txt: str, pdf_bytes: bytes = None) -> list:
     seen = set()
 
     if pdf_bytes:
+        # Estratégia 0 — fatura de cartão (detect by content; resolve two-column layout)
+        if _is_fatura_cc(txt):
+            try:
+                n = _fatura_cc_parse(pdf_bytes, rows, seen)
+                if n >= 2:
+                    return rows
+            except Exception as _e:
+                logger.debug(f"fatura_cc parse falhou: {_e}")
+            rows.clear(); seen.clear()
+
         # Estratégia 1 — tabelas estruturadas
         try:
             n = _try_table_parse(pdf_bytes, rows, seen)
