@@ -1022,6 +1022,8 @@ _parcela_re  = _re.compile(r'[(\[]\s*[Pp]arcela\s+(\d+)\s+de\s+(\d+)\s*[)\]]')
 _parc_kw_re  = _re.compile(r'\bPARC(?:ELA)?\s*[. ]*(\d{1,3})[/\- ]+(\d{1,3})\b', _re.I)
 _parc_XY_re  = _re.compile(r'\b(\d{1,3})[/](\d{2,3})\s*$')
 _parc_xN_re  = _re.compile(r'\b(\d{1,2})[Xx]\b\s*$')
+# Formato "(01/12)" ou "[01/12]" — Bradescard, C&A (entre parênteses/colchetes)
+_parc_brace_re = _re.compile(r'[(\[]\s*(\d{1,3})\s*/\s*(\d{2,3})\s*[)\]]')
 # Linha que contém APENAS info de parcelamento (sem data, sem valor) — C6 Bank, Nubank…
 _PARC_CONT_RE = _re.compile(r'^\s*(?:Parc(?:ela)?\s*\.?\s*)(\d{1,3})\s*[/\-]\s*(\d{1,3})\s*$', _re.I)
 
@@ -1079,6 +1081,11 @@ def _detectar_parcelas(desc: str):
     if m:
         a, b = int(m.group(1)), int(m.group(2))
         if 1 <= a <= b and 1 < b <= 72: return a, b
+    # Formato "(01/12)" ou "[01/12]" — Bradescard, C&A
+    m = _parc_brace_re.search(desc)
+    if m:
+        a, b = int(m.group(1)), int(m.group(2))
+        if 1 <= a <= b and 1 < b <= 72: return a, b
     # Formato "01/12" no fim da descrição (Itaú, Bradesco, Santander)
     m = _parc_XY_re.search(desc)
     if m:
@@ -1099,6 +1106,9 @@ def _add_row(rows, seen, data, desc, valor, tipo, pa=1, pt=1):
     if key in seen: return
     seen.add(key)
     pa, pt = _detectar_parcelas(desc)
+    if pt > 1:
+        desc = _re.sub(r'\s*[(\[]\s*\d{1,3}\s*/\s*\d{2,3}\s*[)\]]\s*', ' ', desc).strip()
+        desc = _re.sub(r'\s+', ' ', desc)
     is_pagamento = tipo == 'receita' and bool(_PAGTO_DESC_RE.match(desc))
     rows.append({'data': data, 'descricao': desc, 'valor': round(valor, 2),
                  'tipo': tipo, 'parcela_atual': pa, 'parcelas': pt,
@@ -1430,7 +1440,9 @@ def _fatura_cc_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
     """
     import pdfplumber
     from datetime import datetime
-    cur_year = str(datetime.utcnow().year)
+    _now = datetime.utcnow()
+    cur_year = _now.year
+    cur_month = _now.month
 
     _DATE_SHORT = _re.compile(r'^(\d{1,2})[/\-](\d{1,2})\s+(.*)')
 
@@ -1449,7 +1461,9 @@ def _fatura_cc_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:
                     m = _DATE_SHORT.match(line)
                     if not m:
                         continue
-                    data = _make_date(m.group(1), m.group(2), cur_year)
+                    mo = int(m.group(2))
+                    yr = str(cur_year if mo <= cur_month + 2 else cur_year - 1)
+                    data = _make_date(m.group(1), m.group(2), yr)
                     if not data:
                         continue
                     rest = m.group(3).strip()
