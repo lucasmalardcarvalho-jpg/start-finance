@@ -1027,6 +1027,13 @@ _PARC_CONT_RE = _re.compile(r'^\s*(?:Parc(?:ela)?\s*\.?\s*)(\d{1,3})\s*[/\-]\s*(
 
 # ── Helpers de parsing ───────────────────────────────────────────────────────
 _AMT_RE = _re.compile(r'([+\-]?\s*R?\$?\s*(?:\d{1,3}(?:\.\d{3})+|\d+),\d{2})', _re.I)
+# Detecta entradas de pagamento/crédito em faturas de cartão (não são compras)
+_PAGTO_DESC_RE = _re.compile(
+    r'^(?:pagamento|pgt\b|pgto\b|pag\.\s*fat|pag\s+fat|pag\s+cart|'
+    r'cr[eé]dito\s+fat|cr[eé]dito\s+recebido|cr[eé]dito\s+em\s+conta|'
+    r'devolu[cç][aã]o\s+fat|lançamento\s+cr[eé]dito|lancamento\s+cr[eé]dito)',
+    _re.I
+)
 
 def _parse_valor_str(s: str):
     """(float_abs, is_negative)  — formato brasileiro 1.234,56"""
@@ -1090,8 +1097,10 @@ def _add_row(rows, seen, data, desc, valor, tipo, pa=1, pt=1):
     if key in seen: return
     seen.add(key)
     pa, pt = _detectar_parcelas(desc)
+    is_pagamento = tipo == 'receita' and bool(_PAGTO_DESC_RE.match(desc))
     rows.append({'data': data, 'descricao': desc, 'valor': round(valor, 2),
-                 'tipo': tipo, 'parcela_atual': pa, 'parcelas': pt})
+                 'tipo': tipo, 'parcela_atual': pa, 'parcelas': pt,
+                 'is_pagamento': is_pagamento})
 
 # ── Strategy 1 — pdfplumber table extraction ─────────────────────────────────
 def _try_table_parse(pdf_bytes: bytes, rows: list, seen: set) -> int:

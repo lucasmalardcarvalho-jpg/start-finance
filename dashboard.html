@@ -11709,7 +11709,8 @@ async function parsePDFExtrato(file){
     valor: r.valor,
     tipo: r.tipo,
     categoria: autoCategoria(r.descricao),
-    selecionado: true,
+    selecionado: !r.is_pagamento,
+    is_pagamento: !!r.is_pagamento,
     parcela_atual: r.parcela_atual || 1,
     parcelas: r.parcelas || 1
   })).map(row => { detectarParcelasDesc(row); return row; });
@@ -11790,10 +11791,15 @@ function importOnCartaoChange(){
   const nome = document.getElementById('importCartaoSel')?.value;
   const sel = document.getElementById('importCartaoSel');
   if(sel) sel.style.border = '2px solid var(--border)';
-  // Qualquer cartão selecionado + PDF = fatura → flip receita→gasto
+  // Qualquer cartão selecionado + PDF = fatura → flip receita→gasto (exceto pagamentos)
   if(nome && IMPORT_IS_PDF && IMPORT_ROWS.length){
-    const antesReceita = IMPORT_ROWS.filter(r => r.tipo === 'receita').length;
-    IMPORT_ROWS.forEach(r => { if(r.tipo === 'receita') r.tipo = 'gasto'; });
+    const antesReceita = IMPORT_ROWS.filter(r => r.tipo === 'receita' && !r.is_pagamento).length;
+    IMPORT_ROWS.forEach(r => {
+      if(r.tipo === 'receita') {
+        if(r.is_pagamento) r.selecionado = false;
+        else r.tipo = 'gasto';
+      }
+    });
     if(antesReceita > 0){ renderImportTable(); toast('💳 Tipos ajustados para gasto', 'info'); }
   }
 }
@@ -11815,6 +11821,7 @@ function renderImportTable(){
     const futuras = isParc ? (r.parcelas - r.parcela_atual) : 0;
     const badges = [
       r.duplicata ? `<span style="font-size:9px;background:#FEF3C7;color:#D97706;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">⚠️ Duplicada</span>` : '',
+      r.is_pagamento ? `<span style="font-size:9px;background:#F1F5F9;color:#64748B;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">💳 Pgto.</span>` : '',
       isParc ? `<span style="font-size:9px;background:#DBEAFE;color:#2563EB;padding:1px 5px;border-radius:3px;font-weight:700;margin-left:4px">🔄 ${r.parcela_atual}/${r.parcelas}${futuras>0?` +${futuras} futuras`:''}</span>` : ''
     ].join('');
     return `
@@ -12080,11 +12087,20 @@ function renderImportPreview(fileName, rows){
   importPreencherCartaoSel(autoCartao);
   importPreencherMesSel();
 
-  // PDF = fatura de cartão de crédito: cobranças aparecem como positivos → tudo gasto
-  // Sem detecção automática de banco, o flip precisa acontecer aqui (não só no onCartaoChange)
+  // PDF = fatura de cartão de crédito: cobranças aparecem como positivos → flip para gasto
+  // Entradas de pagamento/crédito (is_pagamento) são deselecionadas, não convertidas
   if(IMPORT_IS_PDF || (autoCartao && autoCartao.fech)){
-    rows.forEach(r => { if(r.tipo === 'receita') r.tipo = 'gasto'; });
+    rows.forEach(r => {
+      if(r.tipo === 'receita') {
+        if(r.is_pagamento) r.selecionado = false;
+        else r.tipo = 'gasto';
+      }
+    });
   }
+
+  const nPgto = rows.filter(r => r.is_pagamento).length;
+  if(nPgto) summary += ` · 💳 ${nPgto} pagamento(s) filtrado(s)`;
+  document.getElementById('importFileSummary').textContent = summary;
 
   renderImportTable();
 }
